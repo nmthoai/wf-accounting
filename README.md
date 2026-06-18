@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Workfactory Accounting Entry Tracker
+
+A modern, fast, and secure accounting ledger application tailored for recording financial transactions, categorizing entries, and maintaining transparent records. Built with Next.js 15, Prisma ORM, and styled with Tailwind CSS, this app provides a responsive dashboard, ledger overview, and settings management out of the box.
+
+## Key Features
+
+- **Dashboard**: A comprehensive snapshot of the company's financial health, displaying Total Cash, Net Amount, Expenses, and Recent Transactions at a glance.
+- **Ledger System**: A detailed and paginated list of all financial entries. Easily browse through income and expenses with descriptions, categorized accurately.
+- **Entry Management**: Log new transactions quickly with a streamlined "New Entry" form supporting dates, robust categorized dropdowns, custom units, and amounts.
+- **Categorization & Rates**: Define and manage global transaction categories. Maintain reference tables for Unit Rates (e.g., hourly rates, project rates) directly in the Settings dashboard.
+- **Authentication**: Secure JWT-based sign-in system using cookies for session management to ensure sensitive financial data is protected.
+- **Responsive Design**: Beautifully styled UI utilizing shadcn/ui components, completely responsive from desktop to mobile views, featuring dark/light mode adaptable aesthetics.
+
+## Tech Stack
+
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router, Server Actions)
+- **Database ORM**: [Prisma](https://www.prisma.io/) 
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) (Base UI)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Language**: TypeScript
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ installed
+- PostgreSQL database (or configured SQLite)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Installation
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd wf-accounting
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. **Set up environment variables:**
+   Create a `.env` file in the root directory and add your database connection string and JWT secret:
+   ```env
+   DATABASE_URL="file:./dev.db" # Default SQLite setup
+   JWT_SECRET="your_super_secret_key_here"
+   ```
 
-## Learn More
+4. **Initialize the database:**
+   ```bash
+   npx prisma db push
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+5. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. The application will immediately prompt for a login.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Application Structure
 
-## Deploy on Vercel
+- `/src/app/(dashboard)`: The authenticated core application containing the Dashboard (`/`), Ledger (`/ledger`), Entry Creation (`/entry`), and Settings (`/settings`).
+- `/src/app/api`: Backend routes, including authentication endpoints.
+- `/src/components`: Reusable UI components, layout wrappers (Sidebar, TopNav), and customized shadcn elements.
+- `/src/lib`: Core libraries and utilities, including Prisma client instantiation and session helpers.
+- `prisma/schema.prisma`: The database schema definition representing Transactions, Categories, Users, and Unit Rates.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Feedback, issues, and pull requests are welcome!
+
+---
+*Built for Workfactory.*

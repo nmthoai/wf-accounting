@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(cuid())
+  username         String   @unique
+  passwordHash     String
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean  @default(false)
+  role             String   @default("USER") // ADMIN, USER
+  defaultUsdRate   Float    @default(25400)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // INVOICE (Income), COST (Expense)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  date          DateTime
+  type          String   // INCOME, EXPENSE
+  currency      String   @default("VND") // VND or USD
+  exchangeRate  Float    @default(1.0)
+  amount        Float
+  description   String?
+  invoiceNumber String?
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  attachments   Attachment[]
+}
+
+model Attachment {
+  id            String   @id @default(cuid())
+  filePath      String
+  fileType      String
+  fileName      String
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+}
+
+model BankBalance {
+  id          String   @id @default(cuid())
+  balance     Float
+  date        DateTime
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UnitRate {
+  id          String   @id @default(cuid())
+  description String
+  rate        Float
+  unit        String   // hours, project, manday
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

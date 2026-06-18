@@ -1,0 +1,16 @@
+{
+  "Auth": {
+    "login": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "token": "2FA Token",
+    "tokenHint": "(Leave empty if not setup)",
+    "subtitle1": "Intelligence, Orchestrated.",
+    "subtitle2": "Sign in to your accounting dashboard"
+  },
+  "Common": {
+    "welcome": "Welcome, {name}",
+    "signOut": "Sign Out",
+    "dashboard": "Dashboard"
+  }
+}

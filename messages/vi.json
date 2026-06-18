@@ -1,0 +1,16 @@
+{
+  "Auth": {
+    "login": "Đăng nhập",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "token": "Mã xác thực 2FA",
+    "tokenHint": "(Bỏ trống nếu chưa cài đặt)",
+    "subtitle1": "Trí tuệ Nhân tạo, Điều phối Hiệu quả.",
+    "subtitle2": "Đăng nhập vào bảng điều khiển kế toán"
+  },
+  "Common": {
+    "welcome": "Xin chào, {name}",
+    "signOut": "Đăng xuất",
+    "dashboard": "Bảng điều khiển"
+  }
+}

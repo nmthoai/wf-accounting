@@ -1,0 +1,43 @@
+"use client";
+
+import { useActionState } from "react";
+import { authenticate } from "@/app/actions/auth";
+import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export function LoginForm() {
+  const [errorMessage, dispatch, isPending] = useActionState(
+    authenticate,
+    undefined
+  );
+  const t = useTranslations("Auth");
+
+  return (
+    <form action={dispatch} className="space-y-6">
+      <div className="space-y-4">
+        <div className="space-y-2 text-left">
+          <Label htmlFor="username">{t("username")}</Label>
+          <Input id="username" name="username" type="text" required className="bg-background/50" />
+        </div>
+        <div className="space-y-2 text-left">
+          <Label htmlFor="password">{t("password")}</Label>
+          <Input id="password" name="password" type="password" required className="bg-background/50" />
+        </div>
+        <div className="space-y-2 text-left">
+          <Label htmlFor="token">{t("token")} <span className="text-muted-foreground font-normal">{t("tokenHint")}</span></Label>
+          <Input id="token" name="token" type="text" placeholder="123456" className="bg-background/50 tracking-widest text-lg" />
+        </div>
+      </div>
+      <Button className="w-full py-6 text-md shadow-md" type="submit" disabled={isPending}>
+        {isPending ? "..." : t("login")}
+      </Button>
+      {errorMessage && (
+        <div className="text-sm text-destructive text-center font-medium">
+          {errorMessage}
+        </div>
+      )}
+    </form>
+  );
+}
