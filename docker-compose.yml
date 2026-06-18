@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  nextjs:
+    build: .
+    restart: always
+    environment:
+      - DATABASE_URL=file:/app/data/dev.db
+      - JWT_SECRET=your_production_secret_here
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "3000:3000"
+
+  caddy:
+    image: caddy:latest
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - nextjs
+
+volumes:
+  caddy_data:
+  caddy_config:
