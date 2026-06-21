@@ -3,9 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
+import { persistUploads, removeUploadFile } from "@/lib/uploads";
 
 export async function createTransaction(formData: FormData) {
   const session = await auth();
@@ -13,13 +11,15 @@ export async function createTransaction(formData: FormData) {
 
   const type = formData.get("type") as string;
   const amount = parseFloat(formData.get("amount") as string);
-  const currency = formData.get("currency") as string || "VND";
-  
+  const currency = (formData.get("currency") as string) || "VND";
+
   const dateStr = formData.get("date") as string;
   const description = formData.get("description") as string;
   const invoiceNumber = formData.get("invoiceNumber") as string;
   const categoryId = formData.get("categoryId") as string;
-  
+  const projectId = formData.get("projectId") as string;
+  const vendorId = formData.get("vendorId") as string;
+
   if (isNaN(amount) || !type || !dateStr) {
     return { success: false, message: "Invalid fields" };
   }
@@ -30,7 +30,6 @@ export async function createTransaction(formData: FormData) {
     exchangeRate = user?.defaultUsdRate || 25400;
   }
 
-  // Create Transaction
   const transaction = await prisma.transaction.create({
     data: {
       type,
@@ -41,44 +40,12 @@ export async function createTransaction(formData: FormData) {
       description: description || null,
       invoiceNumber: invoiceNumber || null,
       categoryId: categoryId || null,
+      projectId: projectId || null,
+      vendorId: vendorId || null,
     },
   });
 
-  // Handle files
-  const files = formData.getAll("files") as File[];
-  
-  if (files.length > 0) {
-    const uploadsDir = join(process.cwd(), "public", "uploads");
-    
-    // Ensure directory exists
-    try {
-      await mkdir(uploadsDir, { recursive: true });
-    } catch (e) {
-      console.error("Failed to create uploads dir", e);
-    }
-
-    for (const file of files) {
-      if (file.size === 0) continue;
-
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      
-      const ext = file.name.split('.').pop() || 'bin';
-      const safeName = `${randomUUID()}.${ext}`;
-      const path = join(uploadsDir, safeName);
-      
-      await writeFile(path, buffer);
-      
-      await prisma.attachment.create({
-        data: {
-          fileName: file.name,
-          fileType: file.type,
-          filePath: `/uploads/${safeName}`, // Public URL
-          transactionId: transaction.id,
-        }
-      });
-    }
-  }
+  await persistUploads(formData.getAll("files") as File[], { transactionId: transaction.id });
 
   revalidatePath("/ledger");
   revalidatePath("/");
@@ -89,11 +56,12 @@ export async function deleteTransaction(id: string) {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
-  // Deleting transaction will cascade delete attachments in DB
-  // Ideally, we should also delete the files from disk to save space.
+  // Cascade-delete removes the Attachment rows; also remove the files from disk.
   const attachments = await prisma.attachment.findMany({ where: { transactionId: id } });
-  
+
   await prisma.transaction.delete({ where: { id } });
+
+  for (const a of attachments) await removeUploadFile(a.filePath);
 
   revalidatePath("/ledger");
   revalidatePath("/");
@@ -106,13 +74,15 @@ export async function editTransaction(id: string, formData: FormData) {
 
   const type = formData.get("type") as string;
   const amount = parseFloat(formData.get("amount") as string);
-  const currency = formData.get("currency") as string || "VND";
-  
+  const currency = (formData.get("currency") as string) || "VND";
+
   const dateStr = formData.get("date") as string;
   const description = formData.get("description") as string;
   const invoiceNumber = formData.get("invoiceNumber") as string;
   const categoryId = formData.get("categoryId") as string;
-  
+  const projectId = formData.get("projectId") as string;
+  const vendorId = formData.get("vendorId") as string;
+
   if (isNaN(amount) || !type || !dateStr) {
     return { success: false, message: "Invalid fields" };
   }
@@ -134,10 +104,31 @@ export async function editTransaction(id: string, formData: FormData) {
       description: description || null,
       invoiceNumber: invoiceNumber || null,
       categoryId: categoryId || null,
+      projectId: projectId || null,
+      vendorId: vendorId || null,
     },
   });
 
+  // Append any newly attached receipts
+  await persistUploads(formData.getAll("files") as File[], { transactionId: id });
+
   revalidatePath("/ledger");
   revalidatePath("/");
+  revalidatePath(`/entry/${id}`);
   return { success: true };
+}
+
+export async function deleteAttachment(id: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const att = await prisma.attachment.findUnique({ where: { id } });
+  if (!att) return;
+
+  await prisma.attachment.delete({ where: { id } });
+  await removeUploadFile(att.filePath);
+
+  revalidatePath("/ledger");
+  revalidatePath("/invoices");
+  if (att.transactionId) revalidatePath(`/entry/${att.transactionId}`);
 }

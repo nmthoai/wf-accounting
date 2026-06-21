@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { LoginForm } from "./login-form";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -25,7 +26,9 @@ export default function LoginPage() {
             <p>{t("subtitle2")}</p>
           </div>
         </div>
-        <LoginForm />
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

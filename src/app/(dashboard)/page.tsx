@@ -1,28 +1,75 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+// Convert a transaction to VND (USD rows carry the exchangeRate used at entry time).
+const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
+
 export default async function DashboardPage() {
-  const transactions = await prisma.transaction.findMany({
-    orderBy: { date: "desc" },
-    include: { category: true },
-  });
+  const [transactions, bankMovements, openInvoices, projectList] = await Promise.all([
+    prisma.transaction.findMany({ orderBy: { date: "desc" }, include: { category: true } }),
+    prisma.bankBalance.findMany(),
+    prisma.invoice.findMany({
+      where: { status: "OPEN" },
+      orderBy: { dueDate: "asc" },
+      include: { client: true, vendor: true, project: true },
+    }),
+    prisma.project.findMany({ select: { id: true, name: true } }),
+  ]);
 
-  const latestBalance = await prisma.bankBalance.findFirst({
-    orderBy: { date: "desc" },
-  });
+  // All-time performance (in VND)
+  const income = transactions.filter(t => t.type === "INCOME");
+  const expense = transactions.filter(t => t.type === "EXPENSE");
+  const totalIncome = income.reduce((acc, t) => acc + toVnd(t), 0);
+  const totalExpense = expense.reduce((acc, t) => acc + toVnd(t), 0);
+  const netSurplus = totalIncome - totalExpense; // profit / surplus
 
-  const totalIncome = transactions.filter(t => t.type === "INCOME").reduce((acc, t) => acc + (t.amount * t.exchangeRate), 0);
-  const totalExpense = transactions.filter(t => t.type === "EXPENSE").reduce((acc, t) => acc + (t.amount * t.exchangeRate), 0);
+  // Cash on Hand = bank opening + non-business deposits − withdrawals, plus the
+  // business flows from the ledger (income − expenses auto-track).
+  const opening = bankMovements.filter(m => m.type === "OPENING").reduce((a, m) => a + m.amount, 0);
+  const deposits = bankMovements.filter(m => m.type === "DEPOSIT").reduce((a, m) => a + m.amount, 0);
+  const withdrawals = bankMovements.filter(m => m.type === "WITHDRAWAL").reduce((a, m) => a + m.amount, 0);
+  const cashOnHand = opening + deposits - withdrawals + totalIncome - totalExpense;
+  const hasOpening = bankMovements.some(m => m.type === "OPENING");
 
   const recentTransactions = transactions.slice(0, 5);
+
+  // Coming payments (unpaid). AR = clients owe me, AP = I owe vendors.
+  const now = new Date();
+  const vndOf = (i: { amount: number; exchangeRate: number }) => i.amount * i.exchangeRate;
+  const arOutstanding = openInvoices.filter((i) => i.direction === "RECEIVABLE").reduce((a, i) => a + vndOf(i), 0);
+  const apOutstanding = openInvoices.filter((i) => i.direction === "PAYABLE").reduce((a, i) => a + vndOf(i), 0);
+  const comingItem = (i: typeof openInvoices[number]) => ({
+    id: i.id,
+    label: i.direction === "PAYABLE" ? (i.vendor?.name ?? "Vendor") : (i.client?.name ?? "Client"),
+    sub: [i.number, i.project?.name].filter(Boolean).join(" · "),
+    amount: vndOf(i),
+    due: i.dueDate.toLocaleDateString(),
+    overdue: i.dueDate < now,
+  });
+  const comingOut = openInvoices.filter((i) => i.direction === "PAYABLE").map(comingItem);
+  const comingIn = openInvoices.filter((i) => i.direction === "RECEIVABLE").map(comingItem);
+
+  // Top projects by net profit — grouped from the transactions already fetched (no extra query).
+  const projName = new Map(projectList.map((p) => [p.id, p.name]));
+  const projAgg = new Map<string, { inc: number; exp: number; n: number }>();
+  for (const t of transactions) {
+    if (!t.projectId) continue;
+    const a = projAgg.get(t.projectId) ?? { inc: 0, exp: 0, n: 0 };
+    if (t.type === "INCOME") a.inc += toVnd(t); else a.exp += toVnd(t);
+    a.n++;
+    projAgg.set(t.projectId, a);
+  }
+  const topProjects = [...projAgg.entries()]
+    .map(([id, a]) => ({ id, name: projName.get(id) ?? "—", net: a.inc - a.exp, txns: a.n }))
+    .sort((x, y) => y.net - x.net)
+    .slice(0, 5);
 
   const formatVnd = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
-  
   const formatTransactionAmount = (t: any) => {
     if (t.currency === "USD") {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount);
@@ -30,39 +77,55 @@ export default async function DashboardPage() {
     return formatVnd(t.amount);
   };
 
-  const bankBalance = latestBalance?.balance || 0;
-  const totalCash = bankBalance + totalIncome;
-  const netAmount = totalCash - totalExpense;
+  const cashSubtitle = hasOpening
+    ? "Opening + deposits − withdrawals + business flows"
+    : "Set an opening balance in the Balance tab";
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Financial overview for WorkFactory</p>
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-serif font-bold text-primary">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Financial overview for WorkFactory</p>
+        </div>
+        <Link href="/entry">
+          <Button className="gap-2"><Plus className="h-4 w-4" />New Entry</Button>
+        </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cash</CardTitle>
+            <CardTitle className="text-sm font-medium">Cash on Hand</CardTitle>
             <Wallet className="h-4 w-4 opacity-75" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatVnd(totalCash)}</div>
-            <p className="text-xs opacity-75 mt-1">
-              Bank Balance + Income
-            </p>
+            <div className="text-2xl font-bold">{formatVnd(cashOnHand)}</div>
+            <p className="text-xs opacity-75 mt-1">{cashSubtitle}</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Amount</CardTitle>
+            <CardTitle className="text-sm font-medium">Net Surplus</CardTitle>
+            <TrendingUp className={`h-4 w-4 ${netSurplus >= 0 ? "text-green-500" : "text-red-500"}`} />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${netSurplus >= 0 ? "text-green-600" : "text-red-600"}`}>
+              {formatVnd(netSurplus)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Income − Expenses (all time)</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
             <ArrowUpRight className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatVnd(netAmount)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total Cash - Expenses</p>
+            <div className="text-2xl font-bold text-green-600">{formatVnd(totalIncome)}</div>
+            <p className="text-xs text-muted-foreground mt-1">{income.length} entries</p>
           </CardContent>
         </Card>
 
@@ -73,7 +136,72 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatVnd(totalExpense)}</div>
-            <p className="text-xs text-muted-foreground mt-1">All time</p>
+            <p className="text-xs text-muted-foreground mt-1">{expense.length} entries</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Coming Payments</CardTitle>
+            <Link href="/invoices"><Button variant="outline" size="sm">View all</Button></Link>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="font-medium text-red-600">Going out — you pay</span>
+                <span className="font-semibold text-red-600">{formatVnd(apOutstanding)}</span>
+              </div>
+              <div className="space-y-1">
+                {comingOut.slice(0, 4).map((i) => (
+                  <div key={i.id} className="flex items-center justify-between text-sm">
+                    <span className="truncate">{i.label}{i.sub ? <span className="text-muted-foreground"> · {i.sub}</span> : null}</span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">overdue</span>}
+                      <span className="text-muted-foreground text-xs">due {i.due}</span>
+                      <span className="font-medium">{formatVnd(i.amount)}</span>
+                    </span>
+                  </div>
+                ))}
+                {comingOut.length === 0 && <p className="text-xs text-muted-foreground">Nothing to pay.</p>}
+              </div>
+            </div>
+            <div className="border-t pt-3">
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="font-medium text-green-700">Coming in — you receive</span>
+                <span className="font-semibold text-green-700">{formatVnd(arOutstanding)}</span>
+              </div>
+              <div className="space-y-1">
+                {comingIn.slice(0, 4).map((i) => (
+                  <div key={i.id} className="flex items-center justify-between text-sm">
+                    <span className="truncate">{i.label}{i.sub ? <span className="text-muted-foreground"> · {i.sub}</span> : null}</span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">overdue</span>}
+                      <span className="text-muted-foreground text-xs">due {i.due}</span>
+                      <span className="font-medium">{formatVnd(i.amount)}</span>
+                    </span>
+                  </div>
+                ))}
+                {comingIn.length === 0 && <p className="text-xs text-muted-foreground">Nothing expected in.</p>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Top Projects by Profit</CardTitle>
+            <Link href="/projects"><Button variant="outline" size="sm">Projects</Button></Link>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {topProjects.map((p) => (
+              <div key={p.id} className="flex items-center justify-between text-sm">
+                <span className="truncate">{p.name}</span>
+                <span className={`font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{formatVnd(p.net)}</span>
+              </div>
+            ))}
+            {topProjects.length === 0 && <p className="text-sm text-muted-foreground">Tag transactions to a project to see profit here.</p>}
           </CardContent>
         </Card>
       </div>

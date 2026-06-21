@@ -13,6 +13,8 @@ model User {
   passwordHash     String
   twoFactorSecret  String?
   twoFactorEnabled Boolean  @default(false)
+  mustChangePassword Boolean @default(true) // force a password change on first login
+  isActive         Boolean  @default(true)  // admin can deactivate without deleting
   role             String   @default("USER") // ADMIN, USER
   defaultUsdRate   Float    @default(25400)
   createdAt        DateTime @default(now())
@@ -28,6 +30,7 @@ model Category {
   updatedAt   DateTime @updatedAt
 
   transactions Transaction[]
+  invoices     Invoice[]
 }
 
 model Transaction {
@@ -41,10 +44,81 @@ model Transaction {
   invoiceNumber String?
   categoryId    String?
   category      Category? @relation(fields: [categoryId], references: [id])
+  projectId     String?
+  project       Project?  @relation(fields: [projectId], references: [id])
+  vendorId      String?
+  vendor        Vendor?   @relation(fields: [vendorId], references: [id])
+  invoiceId     String?   @unique // set when this row settles an invoice/bill
+  invoice       Invoice?  @relation(fields: [invoiceId], references: [id])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   attachments   Attachment[]
+}
+
+model Vendor {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+  invoices     Invoice[]
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects  Project[]
+  invoices  Invoice[]
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  status    String   @default("ACTIVE") // ACTIVE, DONE, ARCHIVED
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+  invoices     Invoice[]
+}
+
+model Invoice {
+  id           String    @id @default(cuid())
+  number       String?   // number from the externally-issued PDF (optional)
+  direction    String    @default("RECEIVABLE") // RECEIVABLE = client owes me (AR); PAYABLE = I owe a vendor (AP)
+  clientId     String?
+  client       Client?   @relation(fields: [clientId], references: [id])
+  vendorId     String?
+  vendor       Vendor?   @relation(fields: [vendorId], references: [id])
+  projectId    String?
+  project      Project?  @relation(fields: [projectId], references: [id])
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id])
+  issueDate    DateTime
+  dueDate      DateTime
+  currency     String    @default("VND")
+  exchangeRate Float     @default(1.0)
+  amount       Float
+  status       String    @default("OPEN") // OPEN, PAID, VOID
+  paidDate     DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  transaction  Transaction? // income/expense row created when marked paid
+  attachments  Attachment[] // the real invoice/bill PDF
 }
 
 model Attachment {
@@ -52,14 +126,17 @@ model Attachment {
   filePath      String
   fileType      String
   fileName      String
-  transactionId String
-  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  invoiceId     String?
+  invoice       Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
 }
 
 model BankBalance {
   id          String   @id @default(cuid())
-  balance     Float
+  type        String   @default("DEPOSIT") // OPENING, DEPOSIT, WITHDRAWAL
+  amount      Float    @default(0)         // positive; sign is implied by type
   date        DateTime
   description String?
   createdAt   DateTime @default(now())

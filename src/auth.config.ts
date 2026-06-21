@@ -12,6 +12,7 @@ export const authConfig = {
         token.id = user.id;
         token.role = user.role;
         token.twoFactorEnabled = user.twoFactorEnabled;
+        token.mustChangePassword = user.mustChangePassword;
       }
       return token;
     },
@@ -20,6 +21,7 @@ export const authConfig = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
+        session.user.mustChangePassword = token.mustChangePassword as boolean;
       }
       return session;
     },

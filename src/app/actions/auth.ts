@@ -3,6 +3,7 @@
 import { signIn, signOut, auth } from "@/auth";
 import { AuthError } from "next-auth";
 import speakeasy from "speakeasy";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export async function authenticate(prevState: any, formData: FormData) {
@@ -61,6 +62,7 @@ export async function verifyAndEnable2FA(token: string) {
     secret: user.twoFactorSecret,
     encoding: "base32",
     token,
+    window: 1, // tolerate ±30s clock drift between server and authenticator
   });
 
   if (!isValidToken) {
@@ -72,6 +74,44 @@ export async function verifyAndEnable2FA(token: string) {
     data: { twoFactorEnabled: true },
   });
 
-  // Force the user to sign in again to mint a new JWT token with twoFactorEnabled = true
-  await signOut({ redirectTo: "/login" });
+  // Onboarding wizard performs a single signOut once all steps are done,
+  // which re-mints the JWT with the fresh flags.
+  return { success: true };
+}
+
+export async function changePassword(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const newPassword = formData.get("newPassword") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
+
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, message: "Password must be at least 8 characters." };
+  }
+  if (newPassword !== confirmPassword) {
+    return { success: false, message: "Passwords do not match." };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) throw new Error("User not found");
+
+  // Don't allow keeping the same (default) password
+  const sameAsOld = await bcrypt.compare(newPassword, user.passwordHash);
+  if (sameAsOld) {
+    return { success: false, message: "Please choose a new password, not the current one." };
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash, mustChangePassword: false },
+  });
+
+  return { success: true };
+}
+
+// Used by the onboarding wizard to finish: re-mint the JWT with fresh flags.
+export async function finishOnboarding() {
+  await signOut({ redirectTo: "/login?onboarded=1" });
 }

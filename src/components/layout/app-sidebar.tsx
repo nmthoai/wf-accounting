@@ -2,18 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  PlusCircle, 
-  Settings 
+import {
+  LayoutDashboard,
+  BookOpen,
+  Settings,
+  FileText,
+  Briefcase,
+  Users,
+  Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Ledger", href: "/ledger", icon: BookOpen },
-  { name: "New Entry", href: "/entry", icon: PlusCircle },
+  { name: "Invoices", href: "/invoices", icon: FileText },
+  { name: "Projects", href: "/projects", icon: Briefcase },
+  { name: "Clients & Vendors", href: "/contacts", icon: Users },
+  { name: "Balance", href: "/balance", icon: Wallet },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

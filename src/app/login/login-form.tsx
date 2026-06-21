@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { authenticate } from "@/app/actions/auth";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,15 @@ export function LoginForm() {
     undefined
   );
   const t = useTranslations("Auth");
+  const justOnboarded = useSearchParams().get("onboarded") === "1";
 
   return (
     <form action={dispatch} className="space-y-6">
+      {justOnboarded && (
+        <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700 text-center">
+          Setup complete — sign in with your new password and 2FA code.
+        </div>
+      )}
       <div className="space-y-4">
         <div className="space-y-2 text-left">
           <Label htmlFor="username">{t("username")}</Label>

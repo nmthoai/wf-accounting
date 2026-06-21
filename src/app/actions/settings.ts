@@ -38,57 +38,6 @@ export async function deleteCategory(id: string) {
   return;
 }
 
-export async function updateBankBalance(formData: FormData) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
-
-  const balance = parseFloat(formData.get("balance") as string);
-  const description = formData.get("description") as string;
-
-  if (isNaN(balance)) throw new Error("Invalid balance");
-
-  await prisma.bankBalance.create({
-    data: {
-      balance,
-      date: new Date(),
-      description,
-    },
-  });
-
-  revalidatePath("/settings");
-  revalidatePath("/");
-  return;
-}
-
-export async function editBankBalance(id: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
-
-  const balance = parseFloat(formData.get("balance") as string);
-  const description = formData.get("description") as string;
-
-  if (isNaN(balance)) throw new Error("Invalid balance");
-
-  // Get existing to log the old value
-  const existing = await prisma.bankBalance.findUnique({ where: { id } });
-  if (!existing) throw new Error("Not found");
-
-  const newDescription = description 
-    ? `${description} (Edited from ${existing.balance})` 
-    : `(Edited from ${existing.balance})`;
-
-  await prisma.bankBalance.update({
-    where: { id },
-    data: {
-      balance,
-      description: newDescription,
-    },
-  });
-
-  revalidatePath("/settings");
-  revalidatePath("/");
-  return;
-}
 
 export async function updateExchangeRate(formData: FormData) {
   const session = await auth();
