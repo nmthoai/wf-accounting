@@ -8,7 +8,8 @@ import {
   PlusCircle,
   Settings,
   FileText,
-  Briefcase
+  Briefcase,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ export const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Invoices", href: "/invoices", icon: FileText },
   { name: "Projects", href: "/projects", icon: Briefcase },
+  { name: "Clients & Vendors", href: "/contacts", icon: Users },
   { name: "Ledger", href: "/ledger", icon: BookOpen },
   { name: "New Entry", href: "/entry", icon: PlusCircle },
   { name: "Settings", href: "/settings", icon: Settings },

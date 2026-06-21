@@ -8,54 +8,24 @@ export default async function ProjectsPage() {
     orderBy: { createdAt: "desc" },
     include: { client: true, transactions: true },
   });
-  const clients = await prisma.client.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { projects: true, invoices: true } } },
-  });
-  const vendors = await prisma.vendor.findMany({
-    orderBy: { name: "asc" },
-    include: { transactions: true },
-  });
+  const clients = await prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
 
   const projectRows = projects.map((p) => {
     const income = p.transactions.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
     const expense = p.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
     return {
-      id: p.id,
-      name: p.name,
-      status: p.status,
-      clientId: p.clientId,
-      clientName: p.client?.name ?? null,
-      income,
-      expense,
-      net: income - expense,
-      txnCount: p.transactions.length,
+      id: p.id, name: p.name, status: p.status, clientId: p.clientId, clientName: p.client?.name ?? null,
+      income, expense, net: income - expense, txnCount: p.transactions.length,
     };
   });
-
-  const clientRows = clients.map((c) => ({
-    id: c.id,
-    name: c.name,
-    email: c.email,
-    projectCount: c._count.projects,
-    invoiceCount: c._count.invoices,
-  }));
-
-  const vendorRows = vendors.map((v) => ({
-    id: v.id,
-    name: v.name,
-    email: v.email,
-    spend: v.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0),
-    txnCount: v.transactions.length,
-  }));
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h1 className="text-3xl font-serif font-bold text-primary">Projects</h1>
-        <p className="text-muted-foreground mt-1">Per-project profitability and your clients</p>
+        <p className="text-muted-foreground mt-1">Per-project profitability — click in for the cost breakdown</p>
       </div>
-      <ProjectsClient projects={projectRows} clients={clientRows} vendors={vendorRows} />
+      <ProjectsClient projects={projectRows} clients={clients} />
     </div>
   );
 }
