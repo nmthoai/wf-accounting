@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createTransaction, editTransaction } from "@/app/actions/ledger";
-import { Loader2, UploadCloud } from "lucide-react";
+import { createTransaction, editTransaction, deleteAttachment } from "@/app/actions/ledger";
+import { Loader2, UploadCloud, Paperclip, X } from "lucide-react";
 
 export function EntryForm({ 
   categories, 
@@ -33,6 +33,20 @@ export function EntryForm({
   );
 
   const selectedCategory = categories.find(c => c.id === categoryId);
+
+  const [attachments, setAttachments] = useState<any[]>(initialData?.attachments || []);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  async function handleRemoveAttachment(id: string) {
+    if (!confirm("Remove this receipt? This deletes the file.")) return;
+    setRemovingId(id);
+    try {
+      await deleteAttachment(id);
+      setAttachments((prev) => prev.filter((a) => a.id !== id));
+    } finally {
+      setRemovingId(null);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -143,27 +157,56 @@ export function EntryForm({
               <Input id="description" name="description" placeholder="What was this for?" required defaultValue={initialData?.description || ""} />
             </div>
 
-            {!isEdit && (
-              <div className="space-y-2 md:col-span-2">
-                <Label>Attachments (Receipts / Invoices)</Label>
-                <div className="mt-2 flex justify-center rounded-lg border border-dashed border-border px-6 py-10 hover:bg-muted/50 transition-colors">
-                  <div className="text-center">
-                    <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden="true" />
-                    <div className="mt-4 flex text-sm leading-6 text-muted-foreground justify-center">
-                      <label
-                        htmlFor="files"
-                        className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:text-primary/80"
+            <div className="space-y-2 md:col-span-2">
+              <Label>Attachments (Receipts / Invoices)</Label>
+
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  {attachments.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between gap-2 bg-muted/50 p-2 rounded-md">
+                      <a
+                        href={`/api/uploads/${a.filePath.split('/').pop()}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 truncate"
+                        title={a.fileName}
                       >
-                        <span>Upload files</span>
-                        <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf" />
-                      </label>
-                      <p className="pl-1">or take a photo</p>
+                        <Paperclip className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{a.fileName}</span>
+                      </a>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+                        disabled={removingId === a.id}
+                        onClick={() => handleRemoveAttachment(a.id)}
+                        title="Remove receipt"
+                      >
+                        {removingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                      </Button>
                     </div>
-                    <p className="text-xs leading-5 text-muted-foreground mt-2">PNG, JPG, PDF up to 10MB</p>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-2 flex justify-center rounded-lg border border-dashed border-border px-6 py-10 hover:bg-muted/50 transition-colors">
+                <div className="text-center">
+                  <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden="true" />
+                  <div className="mt-4 flex text-sm leading-6 text-muted-foreground justify-center">
+                    <label
+                      htmlFor="files"
+                      className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:text-primary/80"
+                    >
+                      <span>{isEdit ? "Add more files" : "Upload files"}</span>
+                      <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf" />
+                    </label>
+                    <p className="pl-1">or take a photo</p>
                   </div>
+                  <p className="text-xs leading-5 text-muted-foreground mt-2">PNG, JPG, PDF up to 10MB</p>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>

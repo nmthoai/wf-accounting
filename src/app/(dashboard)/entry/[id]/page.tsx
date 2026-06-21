@@ -11,6 +11,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
 
   const transaction = await prisma.transaction.findUnique({
     where: { id },
+    include: { attachments: true },
   });
 
   if (!transaction) {

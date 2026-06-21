@@ -11,6 +11,34 @@ import { randomUUID } from "crypto";
 // not under public/. They are served through the auth-protected /api/uploads route.
 const UPLOAD_DIR = process.env.UPLOAD_DIR || join(process.cwd(), "data", "uploads");
 
+// Persist uploaded receipt files and create their Attachment rows.
+async function saveAttachments(transactionId: string, files: File[]) {
+  const real = files.filter((f) => f && f.size > 0);
+  if (real.length === 0) return;
+
+  try {
+    await mkdir(UPLOAD_DIR, { recursive: true });
+  } catch (e) {
+    console.error("Failed to create uploads dir", e);
+  }
+
+  for (const file of real) {
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const ext = (file.name.split(".").pop() || "bin").replace(/[^a-zA-Z0-9]/g, "").slice(0, 8);
+    const safeName = `${randomUUID()}.${ext}`;
+    await writeFile(join(UPLOAD_DIR, safeName), buffer);
+    await prisma.attachment.create({
+      data: {
+        fileName: file.name,
+        fileType: file.type,
+        filePath: safeName, // bare key; served via /api/uploads/<key>
+        transactionId,
+      },
+    });
+  }
+}
+
 export async function createTransaction(formData: FormData) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
@@ -48,39 +76,7 @@ export async function createTransaction(formData: FormData) {
     },
   });
 
-  // Handle files
-  const files = formData.getAll("files") as File[];
-  
-  if (files.length > 0) {
-    // Ensure directory exists
-    try {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    } catch (e) {
-      console.error("Failed to create uploads dir", e);
-    }
-
-    for (const file of files) {
-      if (file.size === 0) continue;
-
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const ext = (file.name.split('.').pop() || 'bin').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
-      const safeName = `${randomUUID()}.${ext}`;
-      const path = join(UPLOAD_DIR, safeName);
-
-      await writeFile(path, buffer);
-
-      await prisma.attachment.create({
-        data: {
-          fileName: file.name,
-          fileType: file.type,
-          filePath: safeName, // bare key; served via /api/uploads/<key>
-          transactionId: transaction.id,
-        }
-      });
-    }
-  }
+  await saveAttachments(transaction.id, formData.getAll("files") as File[]);
 
   revalidatePath("/ledger");
   revalidatePath("/");
@@ -148,7 +144,33 @@ export async function editTransaction(id: string, formData: FormData) {
     },
   });
 
+  // Append any newly attached receipts
+  await saveAttachments(id, formData.getAll("files") as File[]);
+
   revalidatePath("/ledger");
   revalidatePath("/");
+  revalidatePath(`/entry/${id}`);
   return { success: true };
+}
+
+export async function deleteAttachment(id: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const att = await prisma.attachment.findUnique({ where: { id } });
+  if (!att) return;
+
+  await prisma.attachment.delete({ where: { id } });
+
+  const key = att.filePath.split("/").pop(); // tolerate old "/uploads/x" paths
+  if (key) {
+    try {
+      await unlink(join(UPLOAD_DIR, key));
+    } catch {
+      // file already gone — ignore
+    }
+  }
+
+  revalidatePath("/ledger");
+  revalidatePath(`/entry/${att.transactionId}`);
 }
