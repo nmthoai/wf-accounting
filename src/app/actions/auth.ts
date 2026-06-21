@@ -115,3 +115,8 @@ export async function changePassword(formData: FormData) {
 export async function finishOnboarding() {
   await signOut({ redirectTo: "/login?onboarded=1" });
 }
+
+// Triggered by the idle-logout timer after inactivity.
+export async function signOutIdle() {
+  await signOut({ redirectTo: "/login?timeout=1" });
+}

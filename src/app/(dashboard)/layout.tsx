@@ -1,10 +1,12 @@
 import { ReactNode } from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { TopNav } from "@/components/layout/top-nav";
+import { IdleLogout } from "@/components/auth/idle-logout";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background bg-wf-pattern">
+      <IdleLogout />
       <AppSidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <TopNav />

@@ -4,7 +4,9 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
-  session: { strategy: "jwt" },
+  // Hard 12-hour session cap (no infinite rolling). Idle auto-logout (30 min)
+  // is enforced client-side via <IdleLogout/> in the dashboard layout.
+  session: { strategy: "jwt", maxAge: 60 * 60 * 12 },
   providers: [], // Add Node-specific providers in auth.ts
   callbacks: {
     async jwt({ token, user }) {

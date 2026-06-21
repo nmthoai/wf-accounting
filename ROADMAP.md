@@ -19,6 +19,8 @@ internal staff).
   (create / reset password / reset 2FA / deactivate / delete) with
   self/last-admin guards. ±30s TOTP tolerance.
 - Daily backup of the database + uploaded receipts (14-day retention).
+- **Session security** — HttpOnly/Secure/SameSite cookies, **12h hard session cap**,
+  and **30-min idle auto-logout** (so an unattended browser signs itself out).
 
 ### Phase 0 — Trustworthy foundation
 - **Fixed the cash math** (previously double-counted the bank balance).
