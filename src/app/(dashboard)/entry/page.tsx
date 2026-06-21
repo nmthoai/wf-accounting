@@ -11,6 +11,7 @@ export default async function NewEntryPage() {
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
+  const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -22,6 +23,7 @@ export default async function NewEntryPage() {
       <EntryForm
         categories={categories}
         projects={projects}
+        vendors={vendors}
         defaultUsdRate={currentUser?.defaultUsdRate || 25400}
       />
     </div>

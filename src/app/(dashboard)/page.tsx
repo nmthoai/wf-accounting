@@ -38,11 +38,12 @@ export default async function DashboardPage() {
 
   const recentTransactions = transactions.slice(0, 5);
 
-  // Accounts receivable (sent, not yet paid) + overdue
-  const openInvoices = await prisma.invoice.findMany({ where: { status: "SENT" } });
+  // Open invoices/bills → AR (clients owe me) and AP (I owe vendors)
+  const openInvoices = await prisma.invoice.findMany({ where: { status: "OPEN" } });
   const now = new Date();
-  const arOutstanding = openInvoices.reduce((a, i) => a + i.amount * i.exchangeRate, 0);
-  const arOverdue = openInvoices.filter((i) => i.dueDate < now).reduce((a, i) => a + i.amount * i.exchangeRate, 0);
+  const vndOf = (i: { amount: number; exchangeRate: number }) => i.amount * i.exchangeRate;
+  const arOutstanding = openInvoices.filter((i) => i.direction === "RECEIVABLE").reduce((a, i) => a + vndOf(i), 0);
+  const apOutstanding = openInvoices.filter((i) => i.direction === "PAYABLE").reduce((a, i) => a + vndOf(i), 0);
 
   // Top projects by net profit (cash-basis from linked transactions)
   const projects = await prisma.project.findMany({ include: { transactions: true } });
@@ -130,17 +131,17 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Accounts Receivable</CardTitle>
-            <Link href="/invoices"><Button variant="outline" size="sm">Invoices</Button></Link>
+            <CardTitle>Receivables &amp; Payables</CardTitle>
+            <Link href="/invoices"><Button variant="outline" size="sm">Open</Button></Link>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-muted-foreground">Outstanding</p>
-              <p className="text-xl font-bold text-amber-600">{formatVnd(arOutstanding)}</p>
+              <p className="text-xs text-muted-foreground">Owed to you (AR)</p>
+              <p className="text-xl font-bold text-green-600">{formatVnd(arOutstanding)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Overdue</p>
-              <p className="text-xl font-bold text-red-600">{formatVnd(arOverdue)}</p>
+              <p className="text-xs text-muted-foreground">You owe (AP)</p>
+              <p className="text-xl font-bold text-red-600">{formatVnd(apOutstanding)}</p>
             </div>
           </CardContent>
         </Card>

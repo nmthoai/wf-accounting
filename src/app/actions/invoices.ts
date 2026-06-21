@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { persistUploads, removeUploadFile } from "@/lib/uploads";
 
 async function requireUser() {
   const session = await auth();
@@ -17,11 +18,14 @@ function revalidateAll() {
   revalidatePath("/");
 }
 
+// Create a receivable (client owes you) or payable (you owe a vendor).
 export async function createInvoice(formData: FormData) {
   const session = await requireUser();
 
-  const number = (formData.get("number") as string)?.trim();
+  const direction = (formData.get("direction") as string) === "PAYABLE" ? "PAYABLE" : "RECEIVABLE";
+  const number = (formData.get("number") as string)?.trim() || null;
   const clientId = (formData.get("clientId") as string) || null;
+  const vendorId = (formData.get("vendorId") as string) || null;
   const projectId = (formData.get("projectId") as string) || null;
   const issueStr = formData.get("issueDate") as string;
   const dueStr = formData.get("dueDate") as string;
@@ -29,12 +33,8 @@ export async function createInvoice(formData: FormData) {
   const amount = parseFloat(formData.get("amount") as string);
   const notes = (formData.get("notes") as string)?.trim() || null;
 
-  if (!number) return { success: false, message: "Invoice number is required." };
   if (isNaN(amount) || amount <= 0) return { success: false, message: "Enter a valid amount." };
   if (!issueStr || !dueStr) return { success: false, message: "Issue and due dates are required." };
-
-  const existing = await prisma.invoice.findUnique({ where: { number } });
-  if (existing) return { success: false, message: "That invoice number already exists." };
 
   let exchangeRate = 1.0;
   if (currency === "USD") {
@@ -42,55 +42,56 @@ export async function createInvoice(formData: FormData) {
     exchangeRate = user?.defaultUsdRate || 25400;
   }
 
-  await prisma.invoice.create({
+  const invoice = await prisma.invoice.create({
     data: {
       number,
-      clientId: clientId || null,
+      direction,
+      clientId: direction === "RECEIVABLE" ? clientId : null,
+      vendorId: direction === "PAYABLE" ? vendorId : null,
       projectId: projectId || null,
       issueDate: new Date(issueStr),
       dueDate: new Date(dueStr),
       currency,
       exchangeRate,
       amount,
-      status: "DRAFT",
+      status: "OPEN",
       notes,
     },
   });
-  revalidateAll();
-  return { success: true };
-}
 
-export async function sendInvoice(id: string) {
-  await requireUser();
-  const inv = await prisma.invoice.findUnique({ where: { id } });
-  if (!inv) return { success: false, message: "Invoice not found." };
-  if (inv.status !== "DRAFT") return { success: false, message: "Only draft invoices can be sent." };
-  await prisma.invoice.update({ where: { id }, data: { status: "SENT" } });
+  // Attach the externally-issued PDF, if provided.
+  await persistUploads(formData.getAll("files") as File[], { invoiceId: invoice.id });
+
   revalidateAll();
   return { success: true };
 }
 
 export async function markInvoicePaid(id: string, formData?: FormData) {
   await requireUser();
-  const inv = await prisma.invoice.findUnique({ where: { id }, include: { transaction: true } });
-  if (!inv) return { success: false, message: "Invoice not found." };
-  if (inv.status === "PAID") return { success: false, message: "Invoice is already paid." };
-  if (inv.status === "VOID") return { success: false, message: "Voided invoices can't be paid." };
+  const inv = await prisma.invoice.findUnique({ where: { id } });
+  if (!inv) return { success: false, message: "Not found." };
+  if (inv.status === "PAID") return { success: false, message: "Already settled." };
+  if (inv.status === "VOID") return { success: false, message: "This is voided." };
 
   const paidStr = formData?.get("paidDate") as string | null;
   const paidDate = paidStr ? new Date(paidStr) : new Date();
 
-  // Record the actual cash as an income transaction linked back to the invoice.
+  const isReceivable = inv.direction === "RECEIVABLE";
+
+  // Record the actual cash movement, linked back to the invoice/bill.
   await prisma.transaction.create({
     data: {
-      type: "INCOME",
+      type: isReceivable ? "INCOME" : "EXPENSE",
       amount: inv.amount,
       currency: inv.currency,
       exchangeRate: inv.exchangeRate,
       date: paidDate,
-      description: `Payment — Invoice ${inv.number}`,
+      description: isReceivable
+        ? `Payment received${inv.number ? ` — Invoice ${inv.number}` : ""}`
+        : `Vendor payment${inv.number ? ` — Bill ${inv.number}` : ""}`,
       invoiceNumber: inv.number,
       projectId: inv.projectId,
+      vendorId: isReceivable ? null : inv.vendorId,
       invoiceId: inv.id,
     },
   });
@@ -103,9 +104,9 @@ export async function markInvoicePaid(id: string, formData?: FormData) {
 export async function voidInvoice(id: string) {
   await requireUser();
   const inv = await prisma.invoice.findUnique({ where: { id } });
-  if (!inv) return { success: false, message: "Invoice not found." };
+  if (!inv) return { success: false, message: "Not found." };
   if (inv.status === "PAID") {
-    return { success: false, message: "Paid invoices can't be voided — delete the payment in the ledger first." };
+    return { success: false, message: "Already paid — delete the linked transaction in the ledger first." };
   }
   await prisma.invoice.update({ where: { id }, data: { status: "VOID" } });
   revalidateAll();
@@ -115,11 +116,12 @@ export async function voidInvoice(id: string) {
 export async function deleteInvoice(id: string) {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
-  const inv = await prisma.invoice.findUnique({ where: { id } });
-  if (!inv) return { success: false, message: "Invoice not found." };
+  const inv = await prisma.invoice.findUnique({ where: { id }, include: { attachments: true } });
+  if (!inv) return { success: false, message: "Not found." };
   if (inv.status === "PAID") {
-    return { success: false, message: "Delete the linked payment in the ledger first." };
+    return { success: false, message: "Delete the linked transaction in the ledger first." };
   }
+  for (const a of inv.attachments) await removeUploadFile(a.filePath);
   await prisma.invoice.delete({ where: { id } });
   revalidateAll();
   return { success: true };

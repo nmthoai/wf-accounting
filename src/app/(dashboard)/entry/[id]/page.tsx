@@ -13,6 +13,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
+  const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
 
   const transaction = await prisma.transaction.findUnique({
     where: { id },
@@ -33,6 +34,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
       <EntryForm
         categories={categories}
         projects={projects}
+        vendors={vendors}
         defaultUsdRate={currentUser?.defaultUsdRate || 25400}
         initialData={transaction}
       />

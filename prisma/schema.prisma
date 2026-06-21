@@ -45,12 +45,26 @@ model Transaction {
   category      Category? @relation(fields: [categoryId], references: [id])
   projectId     String?
   project       Project?  @relation(fields: [projectId], references: [id])
-  invoiceId     String?   @unique // set when this income row is an invoice payment
+  vendorId      String?
+  vendor        Vendor?   @relation(fields: [vendorId], references: [id])
+  invoiceId     String?   @unique // set when this row settles an invoice/bill
   invoice       Invoice?  @relation(fields: [invoiceId], references: [id])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   attachments   Attachment[]
+}
+
+model Vendor {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+  invoices     Invoice[]
 }
 
 model Client {
@@ -81,9 +95,12 @@ model Project {
 
 model Invoice {
   id           String    @id @default(cuid())
-  number       String    @unique
+  number       String?   // number from the externally-issued PDF (optional)
+  direction    String    @default("RECEIVABLE") // RECEIVABLE = client owes me (AR); PAYABLE = I owe a vendor (AP)
   clientId     String?
   client       Client?   @relation(fields: [clientId], references: [id])
+  vendorId     String?
+  vendor       Vendor?   @relation(fields: [vendorId], references: [id])
   projectId    String?
   project      Project?  @relation(fields: [projectId], references: [id])
   issueDate    DateTime
@@ -91,13 +108,14 @@ model Invoice {
   currency     String    @default("VND")
   exchangeRate Float     @default(1.0)
   amount       Float
-  status       String    @default("DRAFT") // DRAFT, SENT, PAID, VOID
+  status       String    @default("OPEN") // OPEN, PAID, VOID
   paidDate     DateTime?
   notes        String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  transaction  Transaction? // income row created when marked paid
+  transaction  Transaction? // income/expense row created when marked paid
+  attachments  Attachment[] // the real invoice/bill PDF
 }
 
 model Attachment {
@@ -105,8 +123,10 @@ model Attachment {
   filePath      String
   fileType      String
   fileName      String
-  transactionId String
-  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  invoiceId     String?
+  invoice       Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
 }
 

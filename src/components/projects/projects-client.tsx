@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Loader2, FolderPlus, UserPlus } from "lucide-react";
+import { Trash2, Loader2, FolderPlus, UserPlus, Truck } from "lucide-react";
 import { createClient, deleteClient } from "@/app/actions/clients";
+import { createVendor, deleteVendor } from "@/app/actions/vendors";
 import { createProject, deleteProject, updateProject } from "@/app/actions/projects";
 
 type ProjectRow = {
@@ -16,13 +17,15 @@ type ProjectRow = {
   income: number; expense: number; net: number; txnCount: number;
 };
 type ClientRow = { id: string; name: string; email: string | null; projectCount: number; invoiceCount: number };
+type VendorRow = { id: string; name: string; email: string | null; spend: number; txnCount: number };
 
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " ₫";
 
-export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; clients: ClientRow[] }) {
+export function ProjectsClient({ projects, clients, vendors }: { projects: ProjectRow[]; clients: ClientRow[]; vendors: VendorRow[] }) {
   const router = useRouter();
   const [addingProject, setAddingProject] = useState(false);
   const [addingClient, setAddingClient] = useState(false);
+  const [addingVendor, setAddingVendor] = useState(false);
   const [projectClientId, setProjectClientId] = useState("");
   const [err, setErr] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -67,6 +70,20 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
       router.refresh();
     } finally {
       setAddingClient(false);
+    }
+  }
+
+  async function handleAddVendor(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setAddingVendor(true);
+    const form = e.currentTarget;
+    try {
+      const res = await createVendor(new FormData(form));
+      if (!res.success) { alert(res.message); return; }
+      form.reset();
+      router.refresh();
+    } finally {
+      setAddingVendor(false);
     }
   }
 
@@ -177,6 +194,46 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
               </div>
             ))}
             {clients.length === 0 && <p className="text-sm text-muted-foreground">No clients yet.</p>}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Vendors</CardTitle>
+          <CardDescription>Who you pay (e.g. subcontractors, services). Spend is total expenses tagged to them.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <form onSubmit={handleAddVendor} className="flex gap-3 items-end flex-wrap">
+            <div className="space-y-2 flex-1 min-w-[160px]">
+              <Label htmlFor="vname">Name</Label>
+              <Input id="vname" name="name" placeholder="e.g. ZDN" required />
+            </div>
+            <div className="space-y-2 flex-1 min-w-[160px]">
+              <Label htmlFor="vemail">Email (optional)</Label>
+              <Input id="vemail" name="email" type="email" placeholder="billing@zdn.co" />
+            </div>
+            <Button type="submit" disabled={addingVendor} className="gap-2">
+              {addingVendor ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />} Add
+            </Button>
+          </form>
+          <div className="space-y-2">
+            {vendors.map((v) => (
+              <div key={v.id} className="flex items-center justify-between gap-2 bg-muted/50 p-3 rounded-md">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{v.name}</span>
+                  <span className="text-xs text-muted-foreground">{v.email || "—"} · {v.txnCount} payments</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-red-600">{vnd(v.spend)}</span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === v.id}
+                    onClick={() => { if (confirm(`Delete vendor ${v.name}?`)) run(v.id, () => deleteVendor(v.id)); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {vendors.length === 0 && <p className="text-sm text-muted-foreground">No vendors yet.</p>}
           </div>
         </CardContent>
       </Card>

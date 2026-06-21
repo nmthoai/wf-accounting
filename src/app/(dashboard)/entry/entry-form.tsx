@@ -13,11 +13,13 @@ import { Loader2, UploadCloud, Paperclip, X } from "lucide-react";
 export function EntryForm({
   categories,
   projects = [],
+  vendors = [],
   defaultUsdRate,
   initialData
 }: {
   categories: any[];
   projects?: { id: string; name: string }[];
+  vendors?: { id: string; name: string }[];
   defaultUsdRate: number;
   initialData?: any;
 }) {
@@ -26,6 +28,7 @@ export function EntryForm({
   const [type, setType] = useState<"INCOME" | "EXPENSE">(initialData?.type || "EXPENSE");
   const [currency, setCurrency] = useState<"VND" | "USD">(initialData?.currency || "VND");
   const [projectId, setProjectId] = useState<string>(initialData?.projectId || "");
+  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || "");
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
@@ -60,6 +63,7 @@ export function EntryForm({
     formData.set("currency", currency);
     formData.set("categoryId", categoryId);
     formData.set("projectId", projectId);
+    formData.set("vendorId", type === "EXPENSE" ? vendorId : "");
 
     try {
       let res;
@@ -169,6 +173,27 @@ export function EntryForm({
               </Select>
               <p className="text-xs text-muted-foreground">Tag this entry to a project for per-project profit.</p>
             </div>
+
+            {type === "EXPENSE" && (
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="vendorId">Vendor (Optional)</Label>
+                <Select value={vendorId} onValueChange={(val) => setVendorId(val === "none" ? "" : (val || ""))}>
+                  <SelectTrigger id="vendorId">
+                    {vendorId
+                      ? <span className="flex-1 text-left">{vendors.find(v => v.id === vendorId)?.name || "Unknown"}</span>
+                      : <span className="flex-1 text-left text-muted-foreground">No vendor</span>}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No vendor</SelectItem>
+                    {vendors.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                    ))}
+                    {vendors.length === 0 && <SelectItem value="empty" disabled>No vendors yet</SelectItem>}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Who you paid — for spend-per-vendor tracking.</p>
+              </div>
+            )}
 
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="invoiceNumber">Invoice Number (Optional)</Label>
