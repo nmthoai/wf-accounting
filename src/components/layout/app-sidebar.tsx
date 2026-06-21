@@ -9,7 +9,8 @@ import {
   Settings,
   FileText,
   Briefcase,
-  Users
+  Users,
+  Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ export const navigation = [
   { name: "Invoices", href: "/invoices", icon: FileText },
   { name: "Projects", href: "/projects", icon: Briefcase },
   { name: "Clients & Vendors", href: "/contacts", icon: Users },
+  { name: "Balance", href: "/balance", icon: Wallet },
   { name: "Ledger", href: "/ledger", icon: BookOpen },
   { name: "New Entry", href: "/entry", icon: PlusCircle },
   { name: "Settings", href: "/settings", icon: Settings },

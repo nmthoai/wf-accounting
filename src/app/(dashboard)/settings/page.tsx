@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createCategory, deleteCategory, updateBankBalance, updateExchangeRate, createUnitRate, deleteUnitRate } from "@/app/actions/settings";
+import { createCategory, deleteCategory, updateExchangeRate, createUnitRate, deleteUnitRate } from "@/app/actions/settings";
 import { Trash2 } from "lucide-react";
 import { auth } from "@/auth";
 
-import { EditBalanceDialog } from "@/components/settings/edit-balance-dialog";
 import { UserManagement } from "@/components/settings/user-management";
 
 export default async function SettingsPage() {
@@ -17,7 +16,6 @@ export default async function SettingsPage() {
   const isAdmin = currentUser?.role === "ADMIN";
 
   const categories = await prisma.category.findMany({ orderBy: { createdAt: "desc" } });
-  const bankBalances = await prisma.bankBalance.findMany({ orderBy: { date: "desc" }, take: 5 });
   const unitRates = await prisma.unitRate.findMany({ orderBy: { createdAt: "desc" } });
   const users = isAdmin
     ? await prisma.user.findMany({
@@ -186,46 +184,6 @@ export default async function SettingsPage() {
               </form>
             </CardContent>
           </Card>
-
-          {/* Bank Balance Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Bank Balance</CardTitle>
-              <CardDescription>Update your current cash available</CardDescription>
-            </CardHeader>
-          <CardContent className="space-y-6">
-            <form action={updateBankBalance} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="balance">Current Balance (VND)</Label>
-                <Input id="balance" name="balance" type="number" step="0.01" placeholder="Enter amount..." required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Note (Optional)</Label>
-                <Input id="description" name="description" placeholder="e.g. End of month update" />
-              </div>
-              <Button type="submit" className="w-full">Add New Balance</Button>
-            </form>
-
-            <div>
-              <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recent Updates</h4>
-              <div className="space-y-2">
-                {bankBalances.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md group">
-                    <div className="flex flex-col flex-1">
-                      <span className="text-sm font-medium">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(b.balance)}</span>
-                      <span className="text-xs text-muted-foreground">{b.date.toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground truncate max-w-[150px]">{b.description}</span>
-                      <EditBalanceDialog id={b.id} currentBalance={b.balance} currentDescription={b.description || ""} />
-                    </div>
-                  </div>
-                ))}
-                {bankBalances.length === 0 && <p className="text-xs text-muted-foreground">No balance history.</p>}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         </div>
       </div>
     </div>

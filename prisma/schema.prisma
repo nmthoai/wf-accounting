@@ -135,7 +135,8 @@ model Attachment {
 
 model BankBalance {
   id          String   @id @default(cuid())
-  balance     Float
+  type        String   @default("DEPOSIT") // OPENING, DEPOSIT, WITHDRAWAL
+  amount      Float    @default(0)         // positive; sign is implied by type
   date        DateTime
   description String?
   createdAt   DateTime @default(now())

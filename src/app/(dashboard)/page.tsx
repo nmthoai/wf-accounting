@@ -13,9 +13,7 @@ export default async function DashboardPage() {
     include: { category: true },
   });
 
-  const latestBalance = await prisma.bankBalance.findFirst({
-    orderBy: { date: "desc" },
-  });
+  const bankMovements = await prisma.bankBalance.findMany();
 
   // All-time performance (in VND)
   const income = transactions.filter(t => t.type === "INCOME");
@@ -24,17 +22,13 @@ export default async function DashboardPage() {
   const totalExpense = expense.reduce((acc, t) => acc + toVnd(t), 0);
   const netSurplus = totalIncome - totalExpense; // profit / surplus
 
-  // Cash on Hand is anchored to the most recent bank-balance update, then we
-  // layer on only the movements recorded AFTER that update (the snapshot already
-  // reflects everything up to its own date). No bank update yet → derive from 0.
-  const anchorDate = latestBalance?.date ?? null;
-  const movementsSince = anchorDate
-    ? transactions.filter(t => t.date > anchorDate)
-    : transactions;
-  const incomeSince = movementsSince.filter(t => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
-  const expenseSince = movementsSince.filter(t => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
-  const cashOnHand = (latestBalance?.balance ?? 0) + incomeSince - expenseSince;
-  const sinceCount = anchorDate ? movementsSince.length : transactions.length;
+  // Cash on Hand = bank opening + non-business deposits − withdrawals, plus the
+  // business flows from the ledger (income − expenses auto-track).
+  const opening = bankMovements.filter(m => m.type === "OPENING").reduce((a, m) => a + m.amount, 0);
+  const deposits = bankMovements.filter(m => m.type === "DEPOSIT").reduce((a, m) => a + m.amount, 0);
+  const withdrawals = bankMovements.filter(m => m.type === "WITHDRAWAL").reduce((a, m) => a + m.amount, 0);
+  const cashOnHand = opening + deposits - withdrawals + totalIncome - totalExpense;
+  const hasOpening = bankMovements.some(m => m.type === "OPENING");
 
   const recentTransactions = transactions.slice(0, 5);
 
@@ -60,8 +54,6 @@ export default async function DashboardPage() {
   const formatVnd = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
-  const formatDate = (d: Date) => new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
-
   const formatTransactionAmount = (t: any) => {
     if (t.currency === "USD") {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount);
@@ -69,9 +61,9 @@ export default async function DashboardPage() {
     return formatVnd(t.amount);
   };
 
-  const cashSubtitle = latestBalance
-    ? `Bank update ${formatDate(latestBalance.date)} + ${sinceCount} since`
-    : "Derived from all transactions";
+  const cashSubtitle = hasOpening
+    ? "Opening + deposits − withdrawals + business flows"
+    : "Set an opening balance in the Balance tab";
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
