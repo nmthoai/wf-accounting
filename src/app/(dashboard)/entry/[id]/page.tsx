@@ -8,6 +8,11 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const session = await auth();
   const currentUser = await prisma.user.findUnique({ where: { id: session?.user?.id } });
   const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  const projects = await prisma.project.findMany({
+    where: { status: { not: "ARCHIVED" } },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
 
   const transaction = await prisma.transaction.findUnique({
     where: { id },
@@ -25,10 +30,11 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
         <p className="text-muted-foreground mt-1">Update transaction details</p>
       </div>
 
-      <EntryForm 
-        categories={categories} 
-        defaultUsdRate={currentUser?.defaultUsdRate || 25400} 
-        initialData={transaction} 
+      <EntryForm
+        categories={categories}
+        projects={projects}
+        defaultUsdRate={currentUser?.defaultUsdRate || 25400}
+        initialData={transaction}
       />
     </div>
   );

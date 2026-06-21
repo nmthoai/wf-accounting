@@ -51,7 +51,8 @@ export async function createTransaction(formData: FormData) {
   const description = formData.get("description") as string;
   const invoiceNumber = formData.get("invoiceNumber") as string;
   const categoryId = formData.get("categoryId") as string;
-  
+  const projectId = formData.get("projectId") as string;
+
   if (isNaN(amount) || !type || !dateStr) {
     return { success: false, message: "Invalid fields" };
   }
@@ -73,6 +74,7 @@ export async function createTransaction(formData: FormData) {
       description: description || null,
       invoiceNumber: invoiceNumber || null,
       categoryId: categoryId || null,
+      projectId: projectId || null,
     },
   });
 
@@ -119,7 +121,8 @@ export async function editTransaction(id: string, formData: FormData) {
   const description = formData.get("description") as string;
   const invoiceNumber = formData.get("invoiceNumber") as string;
   const categoryId = formData.get("categoryId") as string;
-  
+  const projectId = formData.get("projectId") as string;
+
   if (isNaN(amount) || !type || !dateStr) {
     return { success: false, message: "Invalid fields" };
   }
@@ -141,6 +144,7 @@ export async function editTransaction(id: string, formData: FormData) {
       description: description || null,
       invoiceNumber: invoiceNumber || null,
       categoryId: categoryId || null,
+      projectId: projectId || null,
     },
   });
 

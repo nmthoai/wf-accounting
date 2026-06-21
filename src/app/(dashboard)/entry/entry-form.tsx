@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createTransaction, editTransaction, deleteAttachment } from "@/app/actions/ledger";
 import { Loader2, UploadCloud, Paperclip, X } from "lucide-react";
 
-export function EntryForm({ 
-  categories, 
+export function EntryForm({
+  categories,
+  projects = [],
   defaultUsdRate,
-  initialData 
-}: { 
+  initialData
+}: {
   categories: any[];
+  projects?: { id: string; name: string }[];
   defaultUsdRate: number;
   initialData?: any;
 }) {
@@ -23,6 +25,7 @@ export function EntryForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [type, setType] = useState<"INCOME" | "EXPENSE">(initialData?.type || "EXPENSE");
   const [currency, setCurrency] = useState<"VND" | "USD">(initialData?.currency || "VND");
+  const [projectId, setProjectId] = useState<string>(initialData?.projectId || "");
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
@@ -56,6 +59,7 @@ export function EntryForm({
     formData.set("type", type);
     formData.set("currency", currency);
     formData.set("categoryId", categoryId);
+    formData.set("projectId", projectId);
 
     try {
       let res;
@@ -145,6 +149,25 @@ export function EntryForm({
                   {filteredCategories.length === 0 && <SelectItem value="none" disabled>No categories available</SelectItem>}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="projectId">Project (Optional)</Label>
+              <Select value={projectId} onValueChange={(val) => setProjectId(val === "none" ? "" : (val || ""))}>
+                <SelectTrigger id="projectId">
+                  {projectId
+                    ? <span className="flex-1 text-left">{projects.find(p => p.id === projectId)?.name || "Unknown"}</span>
+                    : <span className="flex-1 text-left text-muted-foreground">No project</span>}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No project</SelectItem>
+                  {projects.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                  {projects.length === 0 && <SelectItem value="empty" disabled>No projects yet</SelectItem>}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Tag this entry to a project for per-project profit.</p>
             </div>
 
             <div className="space-y-2 md:col-span-2">

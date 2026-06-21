@@ -2,16 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  PlusCircle, 
-  Settings 
+import {
+  LayoutDashboard,
+  BookOpen,
+  PlusCircle,
+  Settings,
+  FileText,
+  Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Invoices", href: "/invoices", icon: FileText },
+  { name: "Projects", href: "/projects", icon: Briefcase },
   { name: "Ledger", href: "/ledger", icon: BookOpen },
   { name: "New Entry", href: "/entry", icon: PlusCircle },
   { name: "Settings", href: "/settings", icon: Settings },

@@ -43,10 +43,61 @@ model Transaction {
   invoiceNumber String?
   categoryId    String?
   category      Category? @relation(fields: [categoryId], references: [id])
+  projectId     String?
+  project       Project?  @relation(fields: [projectId], references: [id])
+  invoiceId     String?   @unique // set when this income row is an invoice payment
+  invoice       Invoice?  @relation(fields: [invoiceId], references: [id])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   attachments   Attachment[]
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects  Project[]
+  invoices  Invoice[]
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  status    String   @default("ACTIVE") // ACTIVE, DONE, ARCHIVED
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+  invoices     Invoice[]
+}
+
+model Invoice {
+  id           String    @id @default(cuid())
+  number       String    @unique
+  clientId     String?
+  client       Client?   @relation(fields: [clientId], references: [id])
+  projectId    String?
+  project      Project?  @relation(fields: [projectId], references: [id])
+  issueDate    DateTime
+  dueDate      DateTime
+  currency     String    @default("VND")
+  exchangeRate Float     @default(1.0)
+  amount       Float
+  status       String    @default("DRAFT") // DRAFT, SENT, PAID, VOID
+  paidDate     DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  transaction  Transaction? // income row created when marked paid
 }
 
 model Attachment {

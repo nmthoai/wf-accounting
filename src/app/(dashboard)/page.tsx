@@ -38,6 +38,24 @@ export default async function DashboardPage() {
 
   const recentTransactions = transactions.slice(0, 5);
 
+  // Accounts receivable (sent, not yet paid) + overdue
+  const openInvoices = await prisma.invoice.findMany({ where: { status: "SENT" } });
+  const now = new Date();
+  const arOutstanding = openInvoices.reduce((a, i) => a + i.amount * i.exchangeRate, 0);
+  const arOverdue = openInvoices.filter((i) => i.dueDate < now).reduce((a, i) => a + i.amount * i.exchangeRate, 0);
+
+  // Top projects by net profit (cash-basis from linked transactions)
+  const projects = await prisma.project.findMany({ include: { transactions: true } });
+  const topProjects = projects
+    .map((p) => {
+      const inc = p.transactions.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
+      const exp = p.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
+      return { id: p.id, name: p.name, net: inc - exp, txns: p.transactions.length };
+    })
+    .filter((p) => p.txns > 0)
+    .sort((a, b) => b.net - a.net)
+    .slice(0, 5);
+
   const formatVnd = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
@@ -105,6 +123,41 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatVnd(totalExpense)}</div>
             <p className="text-xs text-muted-foreground mt-1">{expense.length} entries</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Accounts Receivable</CardTitle>
+            <Link href="/invoices"><Button variant="outline" size="sm">Invoices</Button></Link>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Outstanding</p>
+              <p className="text-xl font-bold text-amber-600">{formatVnd(arOutstanding)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Overdue</p>
+              <p className="text-xl font-bold text-red-600">{formatVnd(arOverdue)}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Top Projects by Profit</CardTitle>
+            <Link href="/projects"><Button variant="outline" size="sm">Projects</Button></Link>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {topProjects.map((p) => (
+              <div key={p.id} className="flex items-center justify-between text-sm">
+                <span className="truncate">{p.name}</span>
+                <span className={`font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{formatVnd(p.net)}</span>
+              </div>
+            ))}
+            {topProjects.length === 0 && <p className="text-sm text-muted-foreground">Tag transactions to a project to see profit here.</p>}
           </CardContent>
         </Card>
       </div>
