@@ -10,7 +10,7 @@ import { Trash2, Loader2, UserPlus, Truck } from "lucide-react";
 import { createClient, deleteClient } from "@/app/actions/clients";
 import { createVendor, deleteVendor } from "@/app/actions/vendors";
 
-type ClientRow = { id: string; name: string; email: string | null; projectCount: number; invoiceCount: number };
+type ClientRow = { id: string; name: string; email: string | null; projectCount: number; invoiceCount: number; revenue: number };
 type VendorRow = { id: string; name: string; email: string | null; spend: number; txnCount: number };
 
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " ₫";
@@ -53,7 +53,7 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
       <Card>
         <CardHeader>
           <CardTitle>Clients</CardTitle>
-          <CardDescription>Who you invoice and run projects for.</CardDescription>
+          <CardDescription>Who you invoice and run projects for. Revenue is total income received from them.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={(e) => handleAdd(e, "client")} className="flex gap-3 items-end flex-wrap">
@@ -76,10 +76,13 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
                   <span className="text-sm font-medium">{c.name}</span>
                   <span className="text-xs text-muted-foreground">{c.email || "—"} · {c.projectCount} projects · {c.invoiceCount} invoices</span>
                 </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === c.id}
-                  onClick={() => { if (confirm(`Delete client ${c.name}?`)) run(c.id, () => deleteClient(c.id)); }}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-green-700" title="Revenue received">{vnd(c.revenue)}</span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === c.id}
+                    onClick={() => { if (confirm(`Delete client ${c.name}?`)) run(c.id, () => deleteClient(c.id)); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
             {clients.length === 0 && <p className="text-sm text-muted-foreground">No clients yet.</p>}
