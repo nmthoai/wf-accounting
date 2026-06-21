@@ -6,7 +6,12 @@ services:
     restart: always
     environment:
       - DATABASE_URL=file:/app/data/dev.db
-      - JWT_SECRET=your_production_secret_here
+      # Auth.js (next-auth v5) — set a strong AUTH_SECRET and your real public URL
+      - AUTH_SECRET=change_me_in_production
+      - AUTH_TRUST_HOST=true
+      - AUTH_URL=https://your-domain.example
+      # Receipt uploads live on the mounted data volume (survive redeploys)
+      - UPLOAD_DIR=/app/data/uploads
       - NODE_ENV=production
     volumes:
       - ./data:/app/data

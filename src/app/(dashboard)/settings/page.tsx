@@ -9,14 +9,22 @@ import { Trash2 } from "lucide-react";
 import { auth } from "@/auth";
 
 import { EditBalanceDialog } from "@/components/settings/edit-balance-dialog";
+import { UserManagement } from "@/components/settings/user-management";
 
 export default async function SettingsPage() {
   const session = await auth();
   const currentUser = await prisma.user.findUnique({ where: { id: session?.user?.id } });
-  
+  const isAdmin = currentUser?.role === "ADMIN";
+
   const categories = await prisma.category.findMany({ orderBy: { createdAt: "desc" } });
   const bankBalances = await prisma.bankBalance.findMany({ orderBy: { date: "desc" }, take: 5 });
   const unitRates = await prisma.unitRate.findMany({ orderBy: { createdAt: "desc" } });
+  const users = isAdmin
+    ? await prisma.user.findMany({
+        orderBy: { createdAt: "asc" },
+        select: { id: true, username: true, role: true, isActive: true, twoFactorEnabled: true, mustChangePassword: true },
+      })
+    : [];
 
   const incomeCategories = categories.filter((c) => c.type === "INCOME");
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");
@@ -27,6 +35,10 @@ export default async function SettingsPage() {
         <h1 className="text-3xl font-serif font-bold text-primary">Settings</h1>
         <p className="text-muted-foreground mt-1">Manage categories and bank balance</p>
       </div>
+
+      {isAdmin && session?.user?.id && (
+        <UserManagement users={users} currentUserId={session.user.id} />
+      )}
 
       <div className="grid gap-8 md:grid-cols-2">
         <div className="space-y-8">

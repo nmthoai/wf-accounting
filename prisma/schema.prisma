@@ -13,6 +13,8 @@ model User {
   passwordHash     String
   twoFactorSecret  String?
   twoFactorEnabled Boolean  @default(false)
+  mustChangePassword Boolean @default(true) // force a password change on first login
+  isActive         Boolean  @default(true)  // admin can deactivate without deleting
   role             String   @default("USER") // ADMIN, USER
   defaultUsdRate   Float    @default(25400)
   createdAt        DateTime @default(now())
