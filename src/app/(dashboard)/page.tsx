@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+
+// Convert a transaction to VND (USD rows carry the exchangeRate used at entry time).
+const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
 
 export default async function DashboardPage() {
   const transactions = await prisma.transaction.findMany({
@@ -14,15 +17,32 @@ export default async function DashboardPage() {
     orderBy: { date: "desc" },
   });
 
-  const totalIncome = transactions.filter(t => t.type === "INCOME").reduce((acc, t) => acc + (t.amount * t.exchangeRate), 0);
-  const totalExpense = transactions.filter(t => t.type === "EXPENSE").reduce((acc, t) => acc + (t.amount * t.exchangeRate), 0);
+  // All-time performance (in VND)
+  const income = transactions.filter(t => t.type === "INCOME");
+  const expense = transactions.filter(t => t.type === "EXPENSE");
+  const totalIncome = income.reduce((acc, t) => acc + toVnd(t), 0);
+  const totalExpense = expense.reduce((acc, t) => acc + toVnd(t), 0);
+  const netSurplus = totalIncome - totalExpense; // profit / surplus
+
+  // Cash on Hand is anchored to the most recent bank-balance update, then we
+  // layer on only the movements recorded AFTER that update (the snapshot already
+  // reflects everything up to its own date). No bank update yet → derive from 0.
+  const anchorDate = latestBalance?.date ?? null;
+  const movementsSince = anchorDate
+    ? transactions.filter(t => t.date > anchorDate)
+    : transactions;
+  const incomeSince = movementsSince.filter(t => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
+  const expenseSince = movementsSince.filter(t => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
+  const cashOnHand = (latestBalance?.balance ?? 0) + incomeSince - expenseSince;
+  const sinceCount = anchorDate ? movementsSince.length : transactions.length;
 
   const recentTransactions = transactions.slice(0, 5);
 
   const formatVnd = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
-  
+  const formatDate = (d: Date) => new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
+
   const formatTransactionAmount = (t: any) => {
     if (t.currency === "USD") {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount);
@@ -30,9 +50,9 @@ export default async function DashboardPage() {
     return formatVnd(t.amount);
   };
 
-  const bankBalance = latestBalance?.balance || 0;
-  const totalCash = bankBalance + totalIncome;
-  const netAmount = totalCash - totalExpense;
+  const cashSubtitle = latestBalance
+    ? `Bank update ${formatDate(latestBalance.date)} + ${sinceCount} since`
+    : "Derived from all transactions";
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -41,28 +61,39 @@ export default async function DashboardPage() {
         <p className="text-muted-foreground mt-1">Financial overview for WorkFactory</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cash</CardTitle>
+            <CardTitle className="text-sm font-medium">Cash on Hand</CardTitle>
             <Wallet className="h-4 w-4 opacity-75" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatVnd(totalCash)}</div>
-            <p className="text-xs opacity-75 mt-1">
-              Bank Balance + Income
-            </p>
+            <div className="text-2xl font-bold">{formatVnd(cashOnHand)}</div>
+            <p className="text-xs opacity-75 mt-1">{cashSubtitle}</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Amount</CardTitle>
+            <CardTitle className="text-sm font-medium">Net Surplus</CardTitle>
+            <TrendingUp className={`h-4 w-4 ${netSurplus >= 0 ? "text-green-500" : "text-red-500"}`} />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${netSurplus >= 0 ? "text-green-600" : "text-red-600"}`}>
+              {formatVnd(netSurplus)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Income − Expenses (all time)</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
             <ArrowUpRight className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatVnd(netAmount)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total Cash - Expenses</p>
+            <div className="text-2xl font-bold text-green-600">{formatVnd(totalIncome)}</div>
+            <p className="text-xs text-muted-foreground mt-1">{income.length} entries</p>
           </CardContent>
         </Card>
 
@@ -73,7 +104,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatVnd(totalExpense)}</div>
-            <p className="text-xs text-muted-foreground mt-1">All time</p>
+            <p className="text-xs text-muted-foreground mt-1">{expense.length} entries</p>
           </CardContent>
         </Card>
       </div>

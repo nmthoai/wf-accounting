@@ -3,9 +3,13 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
+
+// Receipts live on the persistent data volume (survives container redeploys),
+// not under public/. They are served through the auth-protected /api/uploads route.
+const UPLOAD_DIR = process.env.UPLOAD_DIR || join(process.cwd(), "data", "uploads");
 
 export async function createTransaction(formData: FormData) {
   const session = await auth();
@@ -48,11 +52,9 @@ export async function createTransaction(formData: FormData) {
   const files = formData.getAll("files") as File[];
   
   if (files.length > 0) {
-    const uploadsDir = join(process.cwd(), "public", "uploads");
-    
     // Ensure directory exists
     try {
-      await mkdir(uploadsDir, { recursive: true });
+      await mkdir(UPLOAD_DIR, { recursive: true });
     } catch (e) {
       console.error("Failed to create uploads dir", e);
     }
@@ -62,18 +64,18 @@ export async function createTransaction(formData: FormData) {
 
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
-      const ext = file.name.split('.').pop() || 'bin';
+
+      const ext = (file.name.split('.').pop() || 'bin').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
       const safeName = `${randomUUID()}.${ext}`;
-      const path = join(uploadsDir, safeName);
-      
+      const path = join(UPLOAD_DIR, safeName);
+
       await writeFile(path, buffer);
-      
+
       await prisma.attachment.create({
         data: {
           fileName: file.name,
           fileType: file.type,
-          filePath: `/uploads/${safeName}`, // Public URL
+          filePath: safeName, // bare key; served via /api/uploads/<key>
           transactionId: transaction.id,
         }
       });
@@ -89,11 +91,20 @@ export async function deleteTransaction(id: string) {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
-  // Deleting transaction will cascade delete attachments in DB
-  // Ideally, we should also delete the files from disk to save space.
+  // Cascade-delete removes the Attachment rows; also remove the files from disk.
   const attachments = await prisma.attachment.findMany({ where: { transactionId: id } });
-  
+
   await prisma.transaction.delete({ where: { id } });
+
+  for (const a of attachments) {
+    const key = a.filePath.split("/").pop(); // tolerate old "/uploads/x" paths
+    if (!key) continue;
+    try {
+      await unlink(join(UPLOAD_DIR, key));
+    } catch {
+      // file already gone — ignore
+    }
+  }
 
   revalidatePath("/ledger");
   revalidatePath("/");

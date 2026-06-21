@@ -58,7 +58,7 @@ export default async function LedgerPage() {
                     {t.attachments.length > 0 ? (
                       <div className="flex gap-2">
                         {t.attachments.map(a => (
-                          <a key={a.id} href={a.filePath} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700">
+                          <a key={a.id} href={`/api/uploads/${a.filePath.split('/').pop()}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700" title={a.fileName}>
                             <Paperclip className="h-4 w-4" />
                           </a>
                         ))}
