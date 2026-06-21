@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft } from "lucide-react";
+import { ProjectOutstanding } from "@/components/projects/project-outstanding";
 
 const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,6 +23,24 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     },
   });
   if (!project) redirect("/projects");
+
+  const openInvoices = await prisma.invoice.findMany({
+    where: { projectId: id, status: "OPEN" },
+    orderBy: { dueDate: "asc" },
+    include: { client: true, vendor: true },
+  });
+  const now = new Date();
+  const outstanding = openInvoices.map((i) => ({
+    id: i.id,
+    number: i.number,
+    direction: i.direction,
+    party: i.direction === "PAYABLE" ? (i.vendor?.name ?? null) : (i.client?.name ?? null),
+    amount: i.amount,
+    currency: i.currency,
+    amountVnd: i.amount * i.exchangeRate,
+    dueDate: iso(i.dueDate),
+    overdue: i.dueDate < now,
+  }));
 
   const txns = project.transactions;
   const income = txns.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
@@ -59,6 +79,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <CardContent><div className={`text-2xl font-bold ${net >= 0 ? "text-primary" : "text-red-600"}`}>{vnd(net)}</div></CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Outstanding (unpaid)</CardTitle>
+          <CardDescription>Invoices &amp; bills on this project awaiting payment.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProjectOutstanding items={outstanding} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Cost breakdown by category</CardTitle></CardHeader>

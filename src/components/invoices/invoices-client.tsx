@@ -39,8 +39,10 @@ export function InvoicesClient({
   const [categoryId, setCategoryId] = useState("");
   const [currency, setCurrency] = useState("VND");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [openOnly, setOpenOnly] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const parties = direction === "PAYABLE" ? vendors : clients;
+  const shown = openOnly ? invoices.filter((i) => i.status === "OPEN") : invoices;
   // Receivables become income; payables become an expense — show the matching categories.
   const cats = categories.filter((c) => c.type === (direction === "PAYABLE" ? "EXPENSE" : "INCOME"));
 
@@ -105,7 +107,13 @@ export function InvoicesClient({
         </Card>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
+        <div className="flex bg-muted p-1 rounded-lg text-sm">
+          <button type="button" onClick={() => setOpenOnly(false)}
+            className={`px-3 py-1 rounded-md font-medium transition-all ${!openOnly ? "bg-white shadow-sm" : "text-muted-foreground"}`}>All</button>
+          <button type="button" onClick={() => setOpenOnly(true)}
+            className={`px-3 py-1 rounded-md font-medium transition-all ${openOnly ? "bg-white shadow-sm" : "text-muted-foreground"}`}>Open only</button>
+        </div>
         <Button onClick={() => setShowForm((s) => !s)} className="gap-2"><Plus className="h-4 w-4" />{showForm ? "Close" : "New invoice / bill"}</Button>
       </div>
 
@@ -198,7 +206,7 @@ export function InvoicesClient({
 
       <Card>
         <CardContent className="p-0 divide-y">
-          {invoices.map((i) => (
+          {shown.map((i) => (
             <div key={i.id} className="flex items-center justify-between gap-3 p-4 flex-wrap">
               <div className="flex flex-col min-w-[180px]">
                 <span className="text-sm font-medium flex items-center gap-2">
@@ -264,7 +272,7 @@ export function InvoicesClient({
               </div>
             </div>
           ))}
-          {invoices.length === 0 && <div className="p-8 text-center text-muted-foreground text-sm">Nothing yet. Add a receivable (client owes you) or a payable (you owe a vendor).</div>}
+          {shown.length === 0 && <div className="p-8 text-center text-muted-foreground text-sm">{openOnly ? "Nothing outstanding — all settled." : "Nothing yet. Add a receivable (client owes you) or a payable (you owe a vendor)."}</div>}
         </CardContent>
       </Card>
     </div>

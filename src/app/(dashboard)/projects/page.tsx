@@ -9,13 +9,20 @@ export default async function ProjectsPage() {
     include: { client: true, transactions: true },
   });
   const clients = await prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
+  const openInvoices = await prisma.invoice.findMany({
+    where: { status: "OPEN" },
+    select: { projectId: true, amount: true, exchangeRate: true },
+  });
 
   const projectRows = projects.map((p) => {
     const income = p.transactions.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
     const expense = p.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
+    const open = openInvoices.filter((i) => i.projectId === p.id);
     return {
       id: p.id, name: p.name, status: p.status, clientId: p.clientId, clientName: p.client?.name ?? null,
       income, expense, net: income - expense, txnCount: p.transactions.length,
+      openCount: open.length,
+      openAmount: open.reduce((a, i) => a + i.amount * i.exchangeRate, 0),
     };
   });
 
