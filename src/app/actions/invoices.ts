@@ -27,6 +27,7 @@ export async function createInvoice(formData: FormData) {
   const clientId = (formData.get("clientId") as string) || null;
   const vendorId = (formData.get("vendorId") as string) || null;
   const projectId = (formData.get("projectId") as string) || null;
+  const categoryId = (formData.get("categoryId") as string) || null;
   const issueStr = formData.get("issueDate") as string;
   const dueStr = formData.get("dueDate") as string;
   const currency = (formData.get("currency") as string) || "VND";
@@ -49,6 +50,7 @@ export async function createInvoice(formData: FormData) {
       clientId: direction === "RECEIVABLE" ? clientId : null,
       vendorId: direction === "PAYABLE" ? vendorId : null,
       projectId: projectId || null,
+      categoryId: categoryId || null,
       issueDate: new Date(issueStr),
       dueDate: new Date(dueStr),
       currency,
@@ -91,6 +93,7 @@ export async function markInvoicePaid(id: string, formData?: FormData) {
         : `Vendor payment${inv.number ? ` — Bill ${inv.number}` : ""}`,
       invoiceNumber: inv.number,
       projectId: inv.projectId,
+      categoryId: inv.categoryId,
       vendorId: isReceivable ? null : inv.vendorId,
       invoiceId: inv.id,
     },

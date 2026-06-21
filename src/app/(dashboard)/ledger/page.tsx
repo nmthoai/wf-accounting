@@ -12,6 +12,8 @@ export default async function LedgerPage() {
     include: {
       category: true,
       attachments: true,
+      invoice: true,
+      project: true,
     },
   });
 
@@ -51,8 +53,22 @@ export default async function LedgerPage() {
                       {t.type}
                     </span>
                   </TableCell>
-                  <TableCell>{t.category?.name || "Uncategorized"}</TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={t.description || ""}>{t.description}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <span>{t.category?.name || "Uncategorized"}</span>
+                      {t.project && <span className="text-xs text-muted-foreground">{t.project.name}</span>}
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-[200px]">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate" title={t.description || ""}>{t.description}</span>
+                      {t.invoiceId && (
+                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700" title="Created from an invoice/bill — don't add a manual duplicate">
+                          from invoice
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{t.invoiceNumber || "-"}</TableCell>
                   <TableCell>
                     {t.attachments.length > 0 ? (

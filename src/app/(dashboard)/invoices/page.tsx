@@ -10,7 +10,7 @@ export default async function InvoicesPage() {
 
   const invoices = await prisma.invoice.findMany({
     orderBy: [{ status: "asc" }, { dueDate: "asc" }],
-    include: { client: true, vendor: true, project: true, attachments: true },
+    include: { client: true, vendor: true, project: true, category: true, attachments: true },
   });
   const clients = await prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
   const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
@@ -19,6 +19,7 @@ export default async function InvoicesPage() {
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
+  const categories = await prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, type: true } });
 
   const now = new Date();
   const rows = invoices.map((i) => ({
@@ -27,6 +28,7 @@ export default async function InvoicesPage() {
     direction: i.direction,
     party: i.direction === "PAYABLE" ? (i.vendor?.name ?? null) : (i.client?.name ?? null),
     projectName: i.project?.name ?? null,
+    categoryName: i.category?.name ?? null,
     issueDate: iso(i.issueDate)!,
     dueDate: iso(i.dueDate)!,
     paidDate: iso(i.paidDate),
@@ -58,6 +60,7 @@ export default async function InvoicesPage() {
         clients={clients}
         vendors={vendors}
         projects={projects}
+        categories={categories}
         defaultUsdRate={user?.defaultUsdRate || 25400}
         summary={summary}
       />

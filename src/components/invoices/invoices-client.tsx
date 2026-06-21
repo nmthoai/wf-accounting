@@ -7,24 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Loader2, CheckCircle2, Ban, Trash2, AlertTriangle, Paperclip, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { createInvoice, markInvoicePaid, voidInvoice, deleteInvoice } from "@/app/actions/invoices";
 
 type Invoice = {
-  id: string; number: string | null; direction: string; party: string | null; projectName: string | null;
+  id: string; number: string | null; direction: string; party: string | null; projectName: string | null; categoryName: string | null;
   issueDate: string; dueDate: string; paidDate: string | null;
   currency: string; amount: number; amountVnd: number; status: string; overdue: boolean; attachment: string | null;
 };
 type Opt = { id: string; name: string };
+type Cat = { id: string; name: string; type: string };
 
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " ₫";
 const money = (i: { currency: string; amount: number }) =>
   i.currency === "USD" ? "$" + new Intl.NumberFormat("en-US").format(i.amount) : vnd(i.amount);
 
 export function InvoicesClient({
-  invoices, clients, vendors, projects, defaultUsdRate, summary,
+  invoices, clients, vendors, projects, categories, defaultUsdRate, summary,
 }: {
-  invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; defaultUsdRate: number;
+  invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; categories: Cat[]; defaultUsdRate: number;
   summary: { arOutstanding: number; apOutstanding: number; arOverdue: number; apOverdue: number };
 }) {
   const router = useRouter();
@@ -34,10 +36,13 @@ export function InvoicesClient({
   const [direction, setDirection] = useState<"RECEIVABLE" | "PAYABLE">("RECEIVABLE");
   const [partyId, setPartyId] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [currency, setCurrency] = useState("VND");
   const [busyId, setBusyId] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
   const parties = direction === "PAYABLE" ? vendors : clients;
+  // Receivables become income; payables become an expense — show the matching categories.
+  const cats = categories.filter((c) => c.type === (direction === "PAYABLE" ? "EXPENSE" : "INCOME"));
 
   async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>) {
     setBusyId(id);
@@ -60,12 +65,13 @@ export function InvoicesClient({
     fd.set("clientId", direction === "RECEIVABLE" ? partyId : "");
     fd.set("vendorId", direction === "PAYABLE" ? partyId : "");
     fd.set("projectId", projectId);
+    fd.set("categoryId", categoryId);
     fd.set("currency", currency);
     try {
       const res = await createInvoice(fd);
       if (!res.success) { setErr(res.message || "Could not save."); return; }
       form.reset();
-      setPartyId(""); setProjectId(""); setCurrency("VND"); setShowForm(false);
+      setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setShowForm(false);
       router.refresh();
     } finally {
       setCreating(false);
@@ -108,11 +114,11 @@ export function InvoicesClient({
           <CardContent className="pt-6">
             <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2 flex bg-muted p-1 rounded-lg">
-                <button type="button" onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); }}
+                <button type="button" onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); setCategoryId(""); }}
                   className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${direction === "RECEIVABLE" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>
                   Receivable — a client owes me
                 </button>
-                <button type="button" onClick={() => { setDirection("PAYABLE"); setPartyId(""); }}
+                <button type="button" onClick={() => { setDirection("PAYABLE"); setPartyId(""); setCategoryId(""); }}
                   className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${direction === "PAYABLE" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>
                   Payable — I owe a vendor
                 </button>
@@ -136,6 +142,17 @@ export function InvoicesClient({
                   <SelectContent>
                     <SelectItem value="none">No project</SelectItem>
                     {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={categoryId} onValueChange={(v) => setCategoryId(v === "none" ? "" : v || "")}>
+                  <SelectTrigger>{categoryId ? <span>{cats.find(c => c.id === categoryId)?.name}</span> : <span className="text-muted-foreground">No category</span>}</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No category</SelectItem>
+                    {cats.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {cats.length === 0 && <SelectItem value="empty" disabled>Add {direction === "PAYABLE" ? "expense" : "income"} categories in Settings</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
@@ -192,7 +209,7 @@ export function InvoicesClient({
                   {i.attachment && <a href={`/api/uploads/${i.attachment.split('/').pop()}`} target="_blank" rel="noreferrer" className="text-blue-500" title="View PDF"><Paperclip className="h-3.5 w-3.5" /></a>}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {[i.party, i.projectName].filter(Boolean).join(" · ") || "—"} · due {i.dueDate}
+                  {[i.party, i.projectName, i.categoryName].filter(Boolean).join(" · ") || "—"} · due {i.dueDate}
                   {i.paidDate && ` · paid ${i.paidDate}`}
                 </span>
               </div>
@@ -203,10 +220,33 @@ export function InvoicesClient({
                 </div>
                 <div className="flex items-center gap-1">
                   {i.status === "OPEN" && (
-                    <Button variant="outline" size="sm" className="h-8 gap-1 text-green-700" disabled={busyId === i.id}
-                      onClick={() => { if (confirm(`Mark as paid? Records the ${i.direction === "PAYABLE" ? "expense" : "income"} transaction.`)) run(i.id, () => markInvoicePaid(i.id)); }}>
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Mark paid
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1 text-green-700" disabled={busyId === i.id} />}>
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Mark paid
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Mark {i.number || (i.direction === "PAYABLE" ? "bill" : "invoice")} paid</DialogTitle>
+                        </DialogHeader>
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            const fd = new FormData(e.currentTarget);
+                            await run(i.id, () => markInvoicePaid(i.id, fd));
+                          }}
+                          className="space-y-4 pt-2"
+                        >
+                          <p className="text-sm text-muted-foreground">
+                            Records the {i.direction === "PAYABLE" ? "expense" : "income"} transaction in the ledger, dated below.
+                          </p>
+                          <div className="space-y-2">
+                            <Label htmlFor={`pd-${i.id}`}>Payment date</Label>
+                            <Input id={`pd-${i.id}`} name="paidDate" type="date" defaultValue={today} required />
+                          </div>
+                          <Button type="submit" className="w-full">Confirm payment</Button>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
                   )}
                   {i.status === "OPEN" && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Void" disabled={busyId === i.id}

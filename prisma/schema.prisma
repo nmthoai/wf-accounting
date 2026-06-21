@@ -30,6 +30,7 @@ model Category {
   updatedAt   DateTime @updatedAt
 
   transactions Transaction[]
+  invoices     Invoice[]
 }
 
 model Transaction {
@@ -103,6 +104,8 @@ model Invoice {
   vendor       Vendor?   @relation(fields: [vendorId], references: [id])
   projectId    String?
   project      Project?  @relation(fields: [projectId], references: [id])
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id])
   issueDate    DateTime
   dueDate      DateTime
   currency     String    @default("VND")
