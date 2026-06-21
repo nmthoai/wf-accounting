@@ -4,15 +4,11 @@ import { ProjectsClient } from "@/components/projects/projects-client";
 const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
 
 export default async function ProjectsPage() {
-  const projects = await prisma.project.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { client: true, transactions: true },
-  });
-  const clients = await prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
-  const openInvoices = await prisma.invoice.findMany({
-    where: { status: "OPEN" },
-    select: { projectId: true, amount: true, exchangeRate: true },
-  });
+  const [projects, clients, openInvoices] = await Promise.all([
+    prisma.project.findMany({ orderBy: { createdAt: "desc" }, include: { client: true, transactions: true } }),
+    prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.invoice.findMany({ where: { status: "OPEN" }, select: { projectId: true, amount: true, exchangeRate: true } }),
+  ]);
 
   const projectRows = projects.map((p) => {
     const income = p.transactions.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);

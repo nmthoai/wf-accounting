@@ -12,17 +12,17 @@ import { UserManagement } from "@/components/settings/user-management";
 
 export default async function SettingsPage() {
   const session = await auth();
-  const currentUser = await prisma.user.findUnique({ where: { id: session?.user?.id } });
+  const [currentUser, categories, unitRates, allUsers] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session?.user?.id } }),
+    prisma.category.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.unitRate.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.user.findMany({
+      orderBy: { createdAt: "asc" },
+      select: { id: true, username: true, role: true, isActive: true, twoFactorEnabled: true, mustChangePassword: true },
+    }),
+  ]);
   const isAdmin = currentUser?.role === "ADMIN";
-
-  const categories = await prisma.category.findMany({ orderBy: { createdAt: "desc" } });
-  const unitRates = await prisma.unitRate.findMany({ orderBy: { createdAt: "desc" } });
-  const users = isAdmin
-    ? await prisma.user.findMany({
-        orderBy: { createdAt: "asc" },
-        select: { id: true, username: true, role: true, isActive: true, twoFactorEnabled: true, mustChangePassword: true },
-      })
-    : [];
+  const users = isAdmin ? allUsers : [];
 
   const incomeCategories = categories.filter((c) => c.type === "INCOME");
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");

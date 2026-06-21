@@ -4,8 +4,10 @@ import { BalanceClient } from "@/components/balance/balance-client";
 const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
 
 export default async function BalancePage() {
-  const movements = await prisma.bankBalance.findMany({ orderBy: { date: "desc" } });
-  const txns = await prisma.transaction.findMany({ select: { type: true, amount: true, exchangeRate: true } });
+  const [movements, txns] = await Promise.all([
+    prisma.bankBalance.findMany({ orderBy: { date: "desc" } }),
+    prisma.transaction.findMany({ select: { type: true, amount: true, exchangeRate: true } }),
+  ]);
 
   const income = txns.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
   const expense = txns.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);

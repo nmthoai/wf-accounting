@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -8,12 +8,16 @@ import { Button } from "@/components/ui/button";
 const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
 
 export default async function DashboardPage() {
-  const transactions = await prisma.transaction.findMany({
-    orderBy: { date: "desc" },
-    include: { category: true },
-  });
-
-  const bankMovements = await prisma.bankBalance.findMany();
+  const [transactions, bankMovements, openInvoices, projectList] = await Promise.all([
+    prisma.transaction.findMany({ orderBy: { date: "desc" }, include: { category: true } }),
+    prisma.bankBalance.findMany(),
+    prisma.invoice.findMany({
+      where: { status: "OPEN" },
+      orderBy: { dueDate: "asc" },
+      include: { client: true, vendor: true, project: true },
+    }),
+    prisma.project.findMany({ select: { id: true, name: true } }),
+  ]);
 
   // All-time performance (in VND)
   const income = transactions.filter(t => t.type === "INCOME");
@@ -32,12 +36,7 @@ export default async function DashboardPage() {
 
   const recentTransactions = transactions.slice(0, 5);
 
-  // Open invoices/bills → coming payments (unpaid). AR = clients owe me, AP = I owe vendors.
-  const openInvoices = await prisma.invoice.findMany({
-    where: { status: "OPEN" },
-    orderBy: { dueDate: "asc" },
-    include: { client: true, vendor: true, project: true },
-  });
+  // Coming payments (unpaid). AR = clients owe me, AP = I owe vendors.
   const now = new Date();
   const vndOf = (i: { amount: number; exchangeRate: number }) => i.amount * i.exchangeRate;
   const arOutstanding = openInvoices.filter((i) => i.direction === "RECEIVABLE").reduce((a, i) => a + vndOf(i), 0);
@@ -53,16 +52,19 @@ export default async function DashboardPage() {
   const comingOut = openInvoices.filter((i) => i.direction === "PAYABLE").map(comingItem);
   const comingIn = openInvoices.filter((i) => i.direction === "RECEIVABLE").map(comingItem);
 
-  // Top projects by net profit (cash-basis from linked transactions)
-  const projects = await prisma.project.findMany({ include: { transactions: true } });
-  const topProjects = projects
-    .map((p) => {
-      const inc = p.transactions.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
-      const exp = p.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
-      return { id: p.id, name: p.name, net: inc - exp, txns: p.transactions.length };
-    })
-    .filter((p) => p.txns > 0)
-    .sort((a, b) => b.net - a.net)
+  // Top projects by net profit — grouped from the transactions already fetched (no extra query).
+  const projName = new Map(projectList.map((p) => [p.id, p.name]));
+  const projAgg = new Map<string, { inc: number; exp: number; n: number }>();
+  for (const t of transactions) {
+    if (!t.projectId) continue;
+    const a = projAgg.get(t.projectId) ?? { inc: 0, exp: 0, n: 0 };
+    if (t.type === "INCOME") a.inc += toVnd(t); else a.exp += toVnd(t);
+    a.n++;
+    projAgg.set(t.projectId, a);
+  }
+  const topProjects = [...projAgg.entries()]
+    .map(([id, a]) => ({ id, name: projName.get(id) ?? "—", net: a.inc - a.exp, txns: a.n }))
+    .sort((x, y) => y.net - x.net)
     .slice(0, 5);
 
   const formatVnd = (amount: number) => {
@@ -81,9 +83,14 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Financial overview for WorkFactory</p>
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-serif font-bold text-primary">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Financial overview for WorkFactory</p>
+        </div>
+        <Link href="/entry">
+          <Button className="gap-2"><Plus className="h-4 w-4" />New Entry</Button>
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

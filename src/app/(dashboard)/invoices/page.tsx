@@ -6,20 +6,17 @@ const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 export default async function InvoicesPage() {
   const session = await auth();
-  const user = await prisma.user.findUnique({ where: { id: session?.user?.id } });
-
-  const invoices = await prisma.invoice.findMany({
-    orderBy: [{ status: "asc" }, { dueDate: "asc" }],
-    include: { client: true, vendor: true, project: true, category: true, attachments: true },
-  });
-  const clients = await prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
-  const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
-  const projects = await prisma.project.findMany({
-    where: { status: { not: "ARCHIVED" } },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  });
-  const categories = await prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, type: true } });
+  const [user, invoices, clients, vendors, projects, categories] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session?.user?.id } }),
+    prisma.invoice.findMany({
+      orderBy: [{ status: "asc" }, { dueDate: "asc" }],
+      include: { client: true, vendor: true, project: true, category: true, attachments: true },
+    }),
+    prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, type: true } }),
+  ]);
 
   const now = new Date();
   const rows = invoices.map((i) => ({

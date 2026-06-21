@@ -4,14 +4,10 @@ import { ContactsClient } from "@/components/contacts/contacts-client";
 const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
 
 export default async function ContactsPage() {
-  const clients = await prisma.client.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { projects: true, invoices: true } } },
-  });
-  const vendors = await prisma.vendor.findMany({
-    orderBy: { name: "asc" },
-    include: { transactions: true },
-  });
+  const [clients, vendors] = await Promise.all([
+    prisma.client.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { projects: true, invoices: true } } } }),
+    prisma.vendor.findMany({ orderBy: { name: "asc" }, include: { transactions: true } }),
+  ]);
 
   const clientRows = clients.map((c) => ({
     id: c.id, name: c.name, email: c.email,

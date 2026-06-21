@@ -12,23 +12,21 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      client: true,
-      transactions: {
-        orderBy: { date: "desc" },
-        include: { category: true, vendor: true, invoice: true },
+  const [project, openInvoices] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        transactions: { orderBy: { date: "desc" }, include: { category: true, vendor: true, invoice: true } },
       },
-    },
-  });
+    }),
+    prisma.invoice.findMany({
+      where: { projectId: id, status: "OPEN" },
+      orderBy: { dueDate: "asc" },
+      include: { client: true, vendor: true },
+    }),
+  ]);
   if (!project) redirect("/projects");
-
-  const openInvoices = await prisma.invoice.findMany({
-    where: { projectId: id, status: "OPEN" },
-    orderBy: { dueDate: "asc" },
-    include: { client: true, vendor: true },
-  });
   const now = new Date();
   const outstanding = openInvoices.map((i) => ({
     id: i.id,

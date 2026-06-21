@@ -4,14 +4,12 @@ import { auth } from "@/auth";
 
 export default async function NewEntryPage() {
   const session = await auth();
-  const currentUser = await prisma.user.findUnique({ where: { id: session?.user?.id } });
-  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
-  const projects = await prisma.project.findMany({
-    where: { status: { not: "ARCHIVED" } },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  });
-  const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
+  const [currentUser, categories, projects, vendors] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session?.user?.id } }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
+    prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  ]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

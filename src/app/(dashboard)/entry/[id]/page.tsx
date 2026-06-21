@@ -6,19 +6,13 @@ import { auth } from "@/auth";
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
-  const currentUser = await prisma.user.findUnique({ where: { id: session?.user?.id } });
-  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
-  const projects = await prisma.project.findMany({
-    where: { status: { not: "ARCHIVED" } },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  });
-  const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
-
-  const transaction = await prisma.transaction.findUnique({
-    where: { id },
-    include: { attachments: true },
-  });
+  const [currentUser, categories, projects, vendors, transaction] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session?.user?.id } }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
+    prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.transaction.findUnique({ where: { id }, include: { attachments: true } }),
+  ]);
 
   if (!transaction) {
     redirect("/ledger");
