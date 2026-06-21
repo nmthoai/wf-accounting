@@ -21,6 +21,9 @@ internal staff).
 - Daily backup of the database + uploaded receipts (14-day retention).
 - **Session security** — HttpOnly/Secure/SameSite cookies, **12h hard session cap**,
   and **30-min idle auto-logout** (so an unattended browser signs itself out).
+- **Brute-force lockout** — 5 failed logins → account locked for 15 min (auto-unlocks,
+  so admin can't be permanently locked out). Admins can unlock staff from Settings →
+  Users; a server-side `reset-lock.sh` clears an admin's own lock. Clean confirmed sign-out.
 
 ### Phase 0 — Trustworthy foundation
 - **Fixed the cash math** (previously double-counted the bank balance).

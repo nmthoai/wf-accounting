@@ -18,11 +18,18 @@ export default async function SettingsPage() {
     prisma.unitRate.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.user.findMany({
       orderBy: { createdAt: "asc" },
-      select: { id: true, username: true, role: true, isActive: true, twoFactorEnabled: true, mustChangePassword: true },
+      select: { id: true, username: true, role: true, isActive: true, twoFactorEnabled: true, mustChangePassword: true, lockedUntil: true },
     }),
   ]);
   const isAdmin = currentUser?.role === "ADMIN";
-  const users = isAdmin ? allUsers : [];
+  const now = new Date();
+  const users = isAdmin
+    ? allUsers.map((u) => ({
+        id: u.id, username: u.username, role: u.role, isActive: u.isActive,
+        twoFactorEnabled: u.twoFactorEnabled, mustChangePassword: u.mustChangePassword,
+        locked: !!u.lockedUntil && u.lockedUntil > now,
+      }))
+    : [];
 
   const incomeCategories = categories.filter((c) => c.type === "INCOME");
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");

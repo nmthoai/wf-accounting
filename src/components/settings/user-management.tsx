@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, KeyRound, ShieldOff, UserPlus, Loader2 } from "lucide-react";
-import { createUser, deleteUser, setUserActive, resetUserPassword, resetUser2FA } from "@/app/actions/users";
+import { Trash2, KeyRound, ShieldOff, UserPlus, Loader2, LockOpen } from "lucide-react";
+import { createUser, deleteUser, setUserActive, resetUserPassword, resetUser2FA, unlockUser } from "@/app/actions/users";
 
 type ManagedUser = {
   id: string;
@@ -18,6 +18,7 @@ type ManagedUser = {
   isActive: boolean;
   twoFactorEnabled: boolean;
   mustChangePassword: boolean;
+  locked: boolean;
 };
 
 export function UserManagement({ users, currentUserId }: { users: ManagedUser[]; currentUserId: string }) {
@@ -56,6 +57,8 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
   }
 
   function statusBadge(u: ManagedUser) {
+    if (u.locked)
+      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Locked</span>;
     if (!u.isActive)
       return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">Deactivated</span>;
     if (u.mustChangePassword || !u.twoFactorEnabled)
@@ -110,6 +113,14 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
               </div>
               <div className="flex items-center gap-2">
                 {statusBadge(u)}
+
+                {/* Unlock (only when locked out) */}
+                {u.locked && (
+                  <Button variant="outline" size="sm" className="h-8 gap-1 text-amber-700" disabled={busyId === u.id}
+                    onClick={() => run(u.id, () => unlockUser(u.id))}>
+                    <LockOpen className="h-3.5 w-3.5" /> Unlock
+                  </Button>
+                )}
 
                 {/* Reset password */}
                 <Dialog>

@@ -1,18 +1,19 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
+import { useState } from "react";
+import { LogOut, Menu, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navigation } from "./app-sidebar";
+import { signOutAction } from "@/app/actions/auth";
 
 export function TopNav() {
   const pathname = usePathname();
-  const handleSignOut = () => {
-    window.location.href = "/api/auth/signout";
-  };
+  const [signingOut, setSigningOut] = useState(false);
 
   return (
     <header className="sticky top-0 z-10 flex min-h-[4rem] py-4 shrink-0 items-center justify-between border-b bg-card/80 backdrop-blur-md px-4 sm:px-6 shadow-sm">
@@ -66,10 +67,28 @@ export function TopNav() {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2">
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
+        <Dialog>
+          <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2" />}>
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Sign out?</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              You&apos;ll need your password and 2FA code to sign back in.
+            </p>
+            <Button
+              className="w-full gap-2"
+              disabled={signingOut}
+              onClick={async () => { setSigningOut(true); await signOutAction(); }}
+            >
+              {signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+              Yes, sign out
+            </Button>
+          </DialogContent>
+        </Dialog>
       </div>
     </header>
   );

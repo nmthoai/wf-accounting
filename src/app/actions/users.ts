@@ -110,3 +110,13 @@ export async function resetUser2FA(id: string) {
   revalidatePath("/settings");
   return { success: true };
 }
+
+export async function unlockUser(id: string) {
+  await requireAdmin();
+  await prisma.user.update({
+    where: { id },
+    data: { failedLoginAttempts: 0, lockedUntil: null },
+  });
+  revalidatePath("/settings");
+  return { success: true };
+}

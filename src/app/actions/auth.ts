@@ -11,12 +11,19 @@ export async function authenticate(prevState: any, formData: FormData) {
     await signIn("credentials", formData);
   } catch (error) {
     if (error instanceof AuthError) {
-      switch (error.type) {
-        case "CredentialsSignin":
-          return "Invalid credentials or missing 2FA token.";
-        default:
-          return "Something went wrong.";
+      if (error.type === "CredentialsSignin") {
+        // Give a clearer message if the account is locked out.
+        const username = formData.get("username") as string;
+        if (username) {
+          const u = await prisma.user.findUnique({ where: { username }, select: { lockedUntil: true } });
+          if (u?.lockedUntil && u.lockedUntil > new Date()) {
+            const mins = Math.max(1, Math.ceil((u.lockedUntil.getTime() - Date.now()) / 60000));
+            return `Account locked after too many attempts. Try again in ${mins} minute${mins > 1 ? "s" : ""}.`;
+          }
+        }
+        return "Invalid username, password, or 2FA code.";
       }
+      return "Something went wrong.";
     }
     throw error;
   }
@@ -119,4 +126,9 @@ export async function finishOnboarding() {
 // Triggered by the idle-logout timer after inactivity.
 export async function signOutIdle() {
   await signOut({ redirectTo: "/login?timeout=1" });
+}
+
+// Clean, confirmed sign-out from the top nav.
+export async function signOutAction() {
+  await signOut({ redirectTo: "/login" });
 }
