@@ -9,7 +9,8 @@ import {
   FileText,
   Briefcase,
   Users,
-  Wallet
+  Wallet,
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ export const navigation = [
   { name: "Projects", href: "/projects", icon: Briefcase },
   { name: "Clients & Vendors", href: "/contacts", icon: Users },
   { name: "Balance", href: "/balance", icon: Wallet },
+  { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

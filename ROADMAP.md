@@ -42,13 +42,14 @@ internal staff).
 - **Balance tab** — bank cash via an opening balance + deposits/withdrawals,
   with business income/expenses auto-tracked from the ledger.
 - **Chart of accounts** — clean income/expense categories.
+- **Monthly P&L report** — income & expenses by category for any month, with a
+  prior-month comparison (Reports tab).
 
 ---
 
 ## 🛣️ Roadmap
 
 ### Near-term
-- **Monthly P&L report** — income & expenses by category for a chosen period.
 - **Revert invoice → Open** automatically when its ledger entry is deleted.
 - **Off-server backup** (push the nightly archive to another host / object store).
 - **Edit invoice** — reclassify direction/party/category in place (vs delete+recreate).
