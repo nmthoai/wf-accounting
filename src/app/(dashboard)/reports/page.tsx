@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MonthPicker } from "@/components/reports/month-picker";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
@@ -33,9 +34,19 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const { start, end, prevStart } = monthBounds(month);
 
   const [txns, prevTxns] = await Promise.all([
-    prisma.transaction.findMany({ where: { date: { gte: start, lt: end } }, include: { category: true } }),
+    prisma.transaction.findMany({ where: { date: { gte: start, lt: end } }, include: { category: true, project: true } }),
     prisma.transaction.findMany({ where: { date: { gte: prevStart, lt: start } }, select: { type: true, amount: true, exchangeRate: true } }),
   ]);
+
+  // Per-project breakdown for the month
+  const projMap = new Map<string, { name: string; inc: number; exp: number }>();
+  for (const t of txns) {
+    const key = t.projectId ?? "__none__";
+    const row = projMap.get(key) ?? { name: t.project?.name ?? "(No project)", inc: 0, exp: 0 };
+    if (t.type === "INCOME") row.inc += toVnd(t); else row.exp += toVnd(t);
+    projMap.set(key, row);
+  }
+  const projectRows = [...projMap.values()].map((p) => ({ ...p, net: p.inc - p.exp })).sort((a, b) => b.net - a.net);
 
   const income = byCategory(txns, "INCOME");
   const expense = byCategory(txns, "EXPENSE");
@@ -117,6 +128,35 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <CardContent><Lines rows={expense} total={totalExpense} color="text-red-600" /></CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader><CardTitle>Profit by project</CardTitle></CardHeader>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead>Project</TableHead>
+                <TableHead className="text-right">Income</TableHead>
+                <TableHead className="text-right">Expenses</TableHead>
+                <TableHead className="text-right">Net</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {projectRows.map((p) => (
+                <TableRow key={p.name}>
+                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell className="text-right text-green-600">{fmt(p.inc)}</TableCell>
+                  <TableCell className="text-right text-red-600">{fmt(p.exp)}</TableCell>
+                  <TableCell className={`text-right font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{fmt(p.net)}</TableCell>
+                </TableRow>
+              ))}
+              {projectRows.length === 0 && (
+                <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">No entries this month.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
