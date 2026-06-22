@@ -1,25 +1,52 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { authenticate } from "@/app/actions/auth";
+import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
-  const [errorMessage, dispatch, isPending] = useActionState(
-    authenticate,
-    undefined
-  );
   const t = useTranslations("Auth");
   const params = useSearchParams();
   const justOnboarded = params.get("onboarded") === "1";
   const timedOut = params.get("timeout") === "1";
 
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const fd = new FormData(e.currentTarget);
+    try {
+      // Posts straight to Auth.js's stable callback endpoint (no server action),
+      // so a single attempt works reliably even right after sign-out / a deploy.
+      const res = await signIn("credentials", {
+        username: (fd.get("username") as string) ?? "",
+        password: (fd.get("password") as string) ?? "",
+        token: (fd.get("token") as string) ?? "",
+        redirect: false,
+        callbackUrl: "/",
+      });
+      if (!res || res.error) {
+        setError("Invalid username, password, or 2FA code. (5 failed tries locks the account for 15 minutes.)");
+        setLoading(false);
+        return;
+      }
+      // Full navigation = clean dashboard load, no stale client state.
+      window.location.href = res.url || "/";
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
+    }
+  }
+
   return (
-    <form action={dispatch} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       {justOnboarded && (
         <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700 text-center">
           Setup complete — sign in with your new password and 2FA code.
@@ -41,15 +68,15 @@ export function LoginForm() {
         </div>
         <div className="space-y-2 text-left">
           <Label htmlFor="token">{t("token")} <span className="text-muted-foreground font-normal">{t("tokenHint")}</span></Label>
-          <Input id="token" name="token" type="text" placeholder="123456" className="bg-background/50 tracking-widest text-lg" />
+          <Input id="token" name="token" type="text" inputMode="numeric" placeholder="123456" className="bg-background/50 tracking-widest text-lg" />
         </div>
       </div>
-      <Button className="w-full py-6 text-md shadow-md" type="submit" disabled={isPending}>
-        {isPending ? "..." : t("login")}
+      <Button className="w-full py-6 text-md shadow-md" type="submit" disabled={loading}>
+        {loading ? "..." : t("login")}
       </Button>
-      {errorMessage && (
+      {error && (
         <div className="text-sm text-destructive text-center font-medium">
-          {errorMessage}
+          {error}
         </div>
       )}
     </form>
