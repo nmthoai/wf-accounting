@@ -70,7 +70,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </Link>
           <h1 className="text-3xl font-serif font-bold text-primary">{project.name}</h1>
           <p className="text-muted-foreground mt-1">
-            {project.client?.name || "No client"} · {project.status}
+            {project.client?.name || "No client"} · {({ NOT_STARTED: "Not Started", ACTIVE: "Active", PENDING: "Pending", DONE: "Done", ARCHIVED: "Archived" } as Record<string, string>)[project.status] || project.status}
             {dateRange && <> · {dateRange}</>}
           </p>
           {project.description && <p className="text-sm text-muted-foreground mt-2 max-w-2xl whitespace-pre-wrap">{project.description}</p>}

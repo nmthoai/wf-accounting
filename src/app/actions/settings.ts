@@ -26,6 +26,23 @@ export async function createCategory(formData: FormData) {
   return;
 }
 
+export async function updateCategory(id: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+
+  const name = (formData.get("name") as string)?.trim();
+  const type = formData.get("type") as string; // "INCOME" or "EXPENSE"
+  const description = (formData.get("description") as string)?.trim() || null;
+
+  if (!name || !type) return { success: false, message: "Name and type are required." };
+
+  await prisma.category.update({ where: { id }, data: { name, type, description } });
+
+  revalidatePath("/settings");
+  revalidatePath("/entry");
+  return { success: true };
+}
+
 export async function deleteCategory(id: string) {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
@@ -74,6 +91,24 @@ export async function createUnitRate(formData: FormData) {
 
   revalidatePath("/settings");
   return;
+}
+
+export async function updateUnitRate(id: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+
+  const description = (formData.get("description") as string)?.trim();
+  const rate = parseFloat(formData.get("rate") as string);
+  const unit = formData.get("unit") as string;
+
+  if (!description || isNaN(rate) || !unit) {
+    return { success: false, message: "All fields are required." };
+  }
+
+  await prisma.unitRate.update({ where: { id }, data: { description, rate, unit } });
+
+  revalidatePath("/settings");
+  return { success: true };
 }
 
 export async function deleteUnitRate(id: string) {

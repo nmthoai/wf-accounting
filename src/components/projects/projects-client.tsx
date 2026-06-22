@@ -58,11 +58,16 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
 
   const statusBadge = (s: string) => {
     const map: Record<string, string> = {
+      NOT_STARTED: "bg-slate-100 text-slate-600",
       ACTIVE: "bg-green-100 text-green-700",
+      PENDING: "bg-amber-100 text-amber-700",
       DONE: "bg-blue-100 text-blue-700",
       ARCHIVED: "bg-gray-200 text-gray-600",
     };
-    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[s] || ""}`}>{s}</span>;
+    const label: Record<string, string> = {
+      NOT_STARTED: "Not Started", ACTIVE: "Active", PENDING: "Pending", DONE: "Done", ARCHIVED: "Archived",
+    };
+    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[s] || ""}`}>{label[s] || s}</span>;
   };
 
   return (

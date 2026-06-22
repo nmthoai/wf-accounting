@@ -40,7 +40,7 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
     }
   }
 
-  const statusLabel: Record<string, string> = { ACTIVE: "Active", DONE: "Done", ARCHIVED: "Archived" };
+  const statusLabel: Record<string, string> = { NOT_STARTED: "Not Started", ACTIVE: "Active", PENDING: "Pending", DONE: "Done", ARCHIVED: "Archived" };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -70,7 +70,9 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
               <Select value={status} onValueChange={(v) => setStatus(v || "ACTIVE")}>
                 <SelectTrigger><span>{statusLabel[status] || status}</span></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="NOT_STARTED">Not Started</SelectItem>
                   <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
                   <SelectItem value="DONE">Done</SelectItem>
                   <SelectItem value="ARCHIVED">Archived</SelectItem>
                 </SelectContent>

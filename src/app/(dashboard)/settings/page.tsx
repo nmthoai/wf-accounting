@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createCategory, deleteCategory, updateExchangeRate, createUnitRate, deleteUnitRate } from "@/app/actions/settings";
+import { createCategory, updateCategory, deleteCategory, updateExchangeRate, createUnitRate, updateUnitRate, deleteUnitRate } from "@/app/actions/settings";
 import { Trash2 } from "lucide-react";
 import { auth } from "@/auth";
 
 import { UserManagement } from "@/components/settings/user-management";
+import { EditCategoryDialog } from "@/components/settings/edit-category-dialog";
+import { EditUnitRateDialog } from "@/components/settings/edit-unit-rate-dialog";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -81,9 +83,12 @@ export default async function SettingsPage() {
                     {incomeCategories.map((c) => (
                       <div key={c.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
                         <span className="text-sm">{c.name}</span>
-                        <form action={deleteCategory.bind(null, c.id)}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                        </form>
+                        <div className="flex items-center gap-1">
+                          <EditCategoryDialog category={c} action={updateCategory} />
+                          <form action={deleteCategory.bind(null, c.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                          </form>
+                        </div>
                       </div>
                     ))}
                     {incomeCategories.length === 0 && <p className="text-xs text-muted-foreground">No income categories.</p>}
@@ -96,9 +101,12 @@ export default async function SettingsPage() {
                     {expenseCategories.map((c) => (
                       <div key={c.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
                         <span className="text-sm">{c.name}</span>
-                        <form action={deleteCategory.bind(null, c.id)}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                        </form>
+                        <div className="flex items-center gap-1">
+                          <EditCategoryDialog category={c} action={updateCategory} />
+                          <form action={deleteCategory.bind(null, c.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                          </form>
+                        </div>
                       </div>
                     ))}
                     {expenseCategories.length === 0 && <p className="text-xs text-muted-foreground">No expense categories.</p>}
@@ -147,9 +155,12 @@ export default async function SettingsPage() {
                       <span className="text-sm font-medium">{r.description}</span>
                       <span className="text-xs text-muted-foreground">${r.rate} / {r.unit}</span>
                     </div>
-                    <form action={deleteUnitRate.bind(null, r.id)}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                    </form>
+                    <div className="flex items-center gap-1">
+                      <EditUnitRateDialog unitRate={r} action={updateUnitRate} />
+                      <form action={deleteUnitRate.bind(null, r.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                      </form>
+                    </div>
                   </div>
                 ))}
                 {unitRates.length === 0 && <p className="text-xs text-muted-foreground">No unit rates defined.</p>}
