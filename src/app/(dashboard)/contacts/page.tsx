@@ -21,12 +21,12 @@ export default async function ContactsPage() {
   }
 
   const clientRows = clients.map((c) => ({
-    id: c.id, name: c.name, email: c.email,
+    id: c.id, name: c.name, email: c.email, phone: c.phone,
     projectCount: c._count.projects, invoiceCount: c._count.invoices,
     revenue: revByClient.get(c.id) ?? 0,
   }));
   const vendorRows = vendors.map((v) => ({
-    id: v.id, name: v.name, email: v.email,
+    id: v.id, name: v.name, email: v.email, phone: v.phone,
     spend: v.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0),
     txnCount: v.transactions.length,
   }));

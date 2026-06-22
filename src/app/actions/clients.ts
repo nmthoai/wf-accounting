@@ -14,10 +14,11 @@ export async function createClient(formData: FormData) {
   await requireUser();
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
+  const phone = (formData.get("phone") as string)?.trim() || null;
   const notes = (formData.get("notes") as string)?.trim() || null;
   if (!name) return { success: false, message: "Client name is required." };
 
-  await prisma.client.create({ data: { name, email, notes } });
+  await prisma.client.create({ data: { name, email, phone, notes } });
   revalidatePath("/clients");
   revalidatePath("/invoices");
   return { success: true };
@@ -27,10 +28,11 @@ export async function updateClient(id: string, formData: FormData) {
   await requireUser();
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
+  const phone = (formData.get("phone") as string)?.trim() || null;
   const notes = (formData.get("notes") as string)?.trim() || null;
   if (!name) return { success: false, message: "Client name is required." };
 
-  await prisma.client.update({ where: { id }, data: { name, email, notes } });
+  await prisma.client.update({ where: { id }, data: { name, email, phone, notes } });
   revalidatePath("/clients");
   return { success: true };
 }

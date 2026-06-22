@@ -14,10 +14,11 @@ export async function createVendor(formData: FormData) {
   await requireUser();
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
+  const phone = (formData.get("phone") as string)?.trim() || null;
   const notes = (formData.get("notes") as string)?.trim() || null;
   if (!name) return { success: false, message: "Vendor name is required." };
 
-  await prisma.vendor.create({ data: { name, email, notes } });
+  await prisma.vendor.create({ data: { name, email, phone, notes } });
   revalidatePath("/projects");
   revalidatePath("/invoices");
   revalidatePath("/entry");
@@ -28,10 +29,11 @@ export async function updateVendor(id: string, formData: FormData) {
   await requireUser();
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
+  const phone = (formData.get("phone") as string)?.trim() || null;
   const notes = (formData.get("notes") as string)?.trim() || null;
   if (!name) return { success: false, message: "Vendor name is required." };
 
-  await prisma.vendor.update({ where: { id }, data: { name, email, notes } });
+  await prisma.vendor.update({ where: { id }, data: { name, email, phone, notes } });
   revalidatePath("/projects");
   return { success: true };
 }

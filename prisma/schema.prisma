@@ -62,6 +62,7 @@ model Vendor {
   id        String   @id @default(cuid())
   name      String
   email     String?
+  phone     String?
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,6 +75,7 @@ model Client {
   id        String   @id @default(cuid())
   name      String
   email     String?
+  phone     String?
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
