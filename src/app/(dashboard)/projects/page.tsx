@@ -5,7 +5,7 @@ const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exch
 
 export default async function ProjectsPage() {
   const [projects, clients, openInvoices] = await Promise.all([
-    prisma.project.findMany({ orderBy: { createdAt: "desc" }, include: { client: true, transactions: true } }),
+    prisma.project.findMany({ orderBy: { createdAt: "desc" }, include: { client: true, transactions: true, _count: { select: { attachments: true } } } }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.invoice.findMany({ where: { status: "OPEN" }, select: { projectId: true, amount: true, exchangeRate: true } }),
   ]);
@@ -19,6 +19,7 @@ export default async function ProjectsPage() {
       income, expense, net: income - expense, txnCount: p.transactions.length,
       openCount: open.length,
       openAmount: open.reduce((a, i) => a + i.amount * i.exchangeRate, 0),
+      attachmentCount: p._count.attachments,
     };
   });
 

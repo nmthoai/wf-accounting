@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Trash2, Loader2, FolderPlus } from "lucide-react";
+import { Trash2, Loader2, FolderPlus, Paperclip } from "lucide-react";
 import { createProject, deleteProject, setProjectStatus } from "@/app/actions/projects";
 
 type ProjectRow = {
   id: string; name: string; status: string; clientId: string | null; clientName: string | null;
   income: number; expense: number; net: number; txnCount: number;
-  openCount: number; openAmount: number;
+  openCount: number; openAmount: number; attachmentCount: number;
 };
 type ClientOpt = { id: string; name: string };
 
@@ -109,6 +109,11 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                   {p.openCount > 0 && (
                     <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700" title={`${p.openCount} unpaid invoice/bill · ${vnd(p.openAmount)}`}>
                       {p.openCount} unpaid
+                    </span>
+                  )}
+                  {p.attachmentCount > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600" title={`${p.attachmentCount} attached document${p.attachmentCount > 1 ? "s" : ""}`}>
+                      <Paperclip className="h-3 w-3" /> {p.attachmentCount}
                     </span>
                   )}
                 </Link>
