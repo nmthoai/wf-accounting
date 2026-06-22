@@ -10,7 +10,7 @@ export const UPLOAD_DIR = process.env.UPLOAD_DIR || join(process.cwd(), "data", 
 // Persist uploaded files and create Attachment rows linked to a transaction or an invoice.
 export async function persistUploads(
   files: File[],
-  link: { transactionId?: string; invoiceId?: string }
+  link: { transactionId?: string; invoiceId?: string; projectId?: string }
 ) {
   const real = files.filter((f) => f && f.size > 0);
   if (real.length === 0) return;
@@ -34,6 +34,7 @@ export async function persistUploads(
         filePath: safeName, // bare key; served via /api/uploads/<key>
         transactionId: link.transactionId ?? null,
         invoiceId: link.invoiceId ?? null,
+        projectId: link.projectId ?? null,
       },
     });
   }

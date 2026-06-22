@@ -37,6 +37,8 @@ internal staff).
   auto-creates the matching ledger entry (so AR/AP and cash never double-count).
   Each carries a **category**, **project**, due date, and the real **PDF**.
 - **Per-project profitability** + **cost breakdown by category** + transaction log.
+- **Project details & documents** — description, start/end dates, and attached
+  contracts/files (same secure pipeline as receipts). Editable from the project detail page.
 - **Coming Payments** on the dashboard (what you'll pay vs receive) and a
   **per-project "unpaid" badge / Outstanding list**.
 - **Balance tab** — bank cash via an opening balance + deposits/withdrawals,

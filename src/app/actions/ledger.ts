@@ -131,4 +131,5 @@ export async function deleteAttachment(id: string) {
   revalidatePath("/ledger");
   revalidatePath("/invoices");
   if (att.transactionId) revalidatePath(`/entry/${att.transactionId}`);
+  if (att.projectId) revalidatePath(`/projects/${att.projectId}`);
 }

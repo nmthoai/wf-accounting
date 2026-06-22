@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Trash2, Loader2, FolderPlus } from "lucide-react";
-import { createProject, deleteProject, updateProject } from "@/app/actions/projects";
+import { createProject, deleteProject, setProjectStatus } from "@/app/actions/projects";
 
 type ProjectRow = {
   id: string; name: string; status: string; clientId: string | null; clientName: string | null;
@@ -115,12 +115,12 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                 <span className={`font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{vnd(p.net)}</span>
                 {p.status !== "ARCHIVED" ? (
                   <Button variant="outline" size="sm" className="h-8" disabled={busyId === p.id}
-                    onClick={() => { const fd = new FormData(); fd.set("name", p.name); fd.set("clientId", p.clientId || ""); fd.set("status", "ARCHIVED"); run(p.id, () => updateProject(p.id, fd)); }}>
+                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ARCHIVED"))}>
                     Archive
                   </Button>
                 ) : (
                   <Button variant="outline" size="sm" className="h-8" disabled={busyId === p.id}
-                    onClick={() => { const fd = new FormData(); fd.set("name", p.name); fd.set("clientId", p.clientId || ""); fd.set("status", "ACTIVE"); run(p.id, () => updateProject(p.id, fd)); }}>
+                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ACTIVE"))}>
                     Reactivate
                   </Button>
                 )}

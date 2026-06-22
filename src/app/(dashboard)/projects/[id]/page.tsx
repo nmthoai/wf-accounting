@@ -5,19 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft } from "lucide-react";
 import { ProjectOutstanding } from "@/components/projects/project-outstanding";
+import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
+import { ProjectDocuments } from "@/components/projects/project-documents";
 
 const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 const iso = (d: Date) => d.toISOString().slice(0, 10);
+const fmtDate = (d: Date | null) => (d ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : null);
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [project, openInvoices] = await Promise.all([
+  const [project, openInvoices, clients] = await Promise.all([
     prisma.project.findUnique({
       where: { id },
       include: {
         client: true,
         transactions: { orderBy: { date: "desc" }, include: { category: true, vendor: true, invoice: true } },
+        attachments: { orderBy: { createdAt: "desc" } },
       },
     }),
     prisma.invoice.findMany({
@@ -25,8 +29,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       orderBy: { dueDate: "asc" },
       include: { client: true, vendor: true },
     }),
+    prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   if (!project) redirect("/projects");
+
+  const documents = project.attachments.map((a) => ({ id: a.id, fileName: a.fileName, filePath: a.filePath, createdAt: iso(a.createdAt) }));
+  const dateRange = [fmtDate(project.startDate), fmtDate(project.endDate)].filter(Boolean).join(" → ");
   const now = new Date();
   const outstanding = openInvoices.map((i) => ({
     id: i.id,
@@ -55,12 +63,26 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <Link href="/projects" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-2">
-          <ArrowLeft className="h-4 w-4" /> Projects
-        </Link>
-        <h1 className="text-3xl font-serif font-bold text-primary">{project.name}</h1>
-        <p className="text-muted-foreground mt-1">{project.client?.name || "No client"} · {project.status}</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <Link href="/projects" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-2">
+            <ArrowLeft className="h-4 w-4" /> Projects
+          </Link>
+          <h1 className="text-3xl font-serif font-bold text-primary">{project.name}</h1>
+          <p className="text-muted-foreground mt-1">
+            {project.client?.name || "No client"} · {project.status}
+            {dateRange && <> · {dateRange}</>}
+          </p>
+          {project.description && <p className="text-sm text-muted-foreground mt-2 max-w-2xl whitespace-pre-wrap">{project.description}</p>}
+        </div>
+        <EditProjectDialog
+          project={{
+            id: project.id, name: project.name, clientId: project.clientId, status: project.status,
+            description: project.description, startDate: project.startDate ? iso(project.startDate) : null,
+            endDate: project.endDate ? iso(project.endDate) : null,
+          }}
+          clients={clients}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -85,6 +107,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </CardHeader>
         <CardContent>
           <ProjectOutstanding items={outstanding} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Documents</CardTitle>
+          <CardDescription>Contracts &amp; reference files — stored privately, only viewable while signed in.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProjectDocuments projectId={project.id} documents={documents} />
         </CardContent>
       </Card>
 
