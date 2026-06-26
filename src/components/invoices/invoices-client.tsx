@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Loader2, CheckCircle2, Ban, Trash2, AlertTriangle, Paperclip, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { createInvoice, markInvoicePaid, voidInvoice, deleteInvoice } from "@/app/actions/invoices";
+import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
 
 type Invoice = {
   id: string; number: string | null; direction: string; party: string | null; projectName: string | null; categoryName: string | null;
+  clientId: string | null; vendorId: string | null; projectId: string | null; categoryId: string | null; notes: string | null;
   issueDate: string; dueDate: string; paidDate: string | null;
   currency: string; amount: number; amountVnd: number; status: string; overdue: boolean; attachment: string | null;
 };
@@ -227,6 +229,9 @@ export function InvoicesClient({
                   {i.currency === "USD" && <div className="text-xs text-muted-foreground">{vnd(i.amountVnd)}</div>}
                 </div>
                 <div className="flex items-center gap-1">
+                  {i.status !== "VOID" && (
+                    <EditInvoiceDialog invoice={i} clients={clients} vendors={vendors} projects={projects} categories={categories} defaultUsdRate={defaultUsdRate} />
+                  )}
                   {i.status === "OPEN" && (
                     <Dialog>
                       <DialogTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1 text-green-700" disabled={busyId === i.id} />}>

@@ -68,6 +68,82 @@ export async function createInvoice(formData: FormData) {
   return { success: true };
 }
 
+// Edit an existing invoice/bill. Direction is fixed (receivable vs payable);
+// everything else is editable. If it's already PAID, the linked cash
+// transaction is kept in sync so the ledger and reports stay correct.
+export async function updateInvoice(id: string, formData: FormData) {
+  const session = await requireUser();
+  const inv = await prisma.invoice.findUnique({ where: { id }, include: { transaction: true } });
+  if (!inv) return { success: false, message: "Not found." };
+  if (inv.status === "VOID") return { success: false, message: "This invoice is voided." };
+
+  const number = (formData.get("number") as string)?.trim() || null;
+  const clientId = (formData.get("clientId") as string) || null;
+  const vendorId = (formData.get("vendorId") as string) || null;
+  const projectId = (formData.get("projectId") as string) || null;
+  const categoryId = (formData.get("categoryId") as string) || null;
+  const issueStr = formData.get("issueDate") as string;
+  const dueStr = formData.get("dueDate") as string;
+  const currency = (formData.get("currency") as string) || inv.currency;
+  const amount = parseFloat(formData.get("amount") as string);
+  const notes = (formData.get("notes") as string)?.trim() || null;
+
+  if (isNaN(amount) || amount <= 0) return { success: false, message: "Enter a valid amount." };
+  if (!issueStr || !dueStr) return { success: false, message: "Issue and due dates are required." };
+
+  const isReceivable = inv.direction === "RECEIVABLE";
+
+  // Recompute the rate only if the currency changed.
+  let exchangeRate = inv.exchangeRate;
+  if (currency !== inv.currency) {
+    if (currency === "USD") {
+      const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+      exchangeRate = user?.defaultUsdRate || 25400;
+    } else {
+      exchangeRate = 1.0;
+    }
+  }
+
+  await prisma.invoice.update({
+    where: { id },
+    data: {
+      number,
+      clientId: isReceivable ? (clientId || null) : null,
+      vendorId: isReceivable ? null : (vendorId || null),
+      projectId: projectId || null,
+      categoryId: categoryId || null,
+      issueDate: new Date(issueStr),
+      dueDate: new Date(dueStr),
+      currency,
+      exchangeRate,
+      amount,
+      notes,
+    },
+  });
+
+  // Keep the settled cash movement consistent with the edited invoice.
+  if (inv.status === "PAID" && inv.transaction) {
+    await prisma.transaction.update({
+      where: { id: inv.transaction.id },
+      data: {
+        amount,
+        currency,
+        exchangeRate,
+        invoiceNumber: number,
+        projectId: projectId || null,
+        categoryId: categoryId || null,
+        vendorId: isReceivable ? null : (vendorId || null),
+        description: isReceivable
+          ? `Payment received${number ? ` — Invoice ${number}` : ""}`
+          : `Vendor payment${number ? ` — Bill ${number}` : ""}`,
+      },
+    });
+  }
+
+  revalidateAll();
+  return { success: true };
+}
+
 export async function markInvoicePaid(id: string, formData?: FormData) {
   await requireUser();
   const inv = await prisma.invoice.findUnique({ where: { id } });
