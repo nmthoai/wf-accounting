@@ -247,11 +247,11 @@ export function EntryForm({
                       className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:text-primary/80"
                     >
                       <span>{isEdit ? "Add more files" : "Upload files"}</span>
-                      <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf" />
+                      <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf,.zip,application/zip,application/x-zip-compressed" />
                     </label>
                     <p className="pl-1">or take a photo</p>
                   </div>
-                  <p className="text-xs leading-5 text-muted-foreground mt-2">PNG, JPG, PDF up to 10MB</p>
+                  <p className="text-xs leading-5 text-muted-foreground mt-2">PNG, JPG, PDF, ZIP (e.g. original e-invoice) up to 10MB</p>
                 </div>
               </div>
             </div>

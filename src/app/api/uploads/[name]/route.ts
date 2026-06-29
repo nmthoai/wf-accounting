@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
 import { join, basename } from "path";
 
@@ -11,6 +12,7 @@ const CONTENT_TYPES: Record<string, string> = {
   gif: "image/gif",
   webp: "image/webp",
   pdf: "application/pdf",
+  zip: "application/zip",
 };
 
 // Receipts are financial documents — only signed-in users may view them.
@@ -34,12 +36,19 @@ export async function GET(
     const file = await readFile(join(UPLOAD_DIR, safe));
     const ext = safe.split(".").pop()?.toLowerCase() || "";
     const contentType = CONTENT_TYPES[ext] || "application/octet-stream";
-    return new Response(new Uint8Array(file), {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "private, max-age=0, no-store",
-      },
-    });
+
+    // Serve with the original filename so downloads (e.g. an e-invoice ZIP)
+    // are recognizable instead of a random UUID. "inline" lets viewable types
+    // (PDF/images) still open in the browser; others download.
+    const att = await prisma.attachment.findFirst({ where: { filePath: safe }, select: { fileName: true } });
+    const headers: Record<string, string> = {
+      "Content-Type": contentType,
+      "Cache-Control": "private, max-age=0, no-store",
+    };
+    if (att?.fileName) {
+      headers["Content-Disposition"] = `inline; filename*=UTF-8''${encodeURIComponent(att.fileName)}`;
+    }
+    return new Response(new Uint8Array(file), { headers });
   } catch {
     return new Response("Not found", { status: 404 });
   }
