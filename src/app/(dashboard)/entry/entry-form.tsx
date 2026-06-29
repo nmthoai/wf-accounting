@@ -42,6 +42,19 @@ export function EntryForm({
 
   const [attachments, setAttachments] = useState<any[]>(initialData?.attachments || []);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  // Files chosen but not yet saved. We own this list (the native input only
+  // keeps its last selection), so picking "Add more files" twice accumulates.
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+  function handleFilesChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const chosen = Array.from(e.target.files ?? []);
+    if (chosen.length) setPendingFiles((prev) => [...prev, ...chosen]);
+    e.target.value = ""; // let the same file be re-picked; state is the source of truth
+  }
+
+  function removePendingFile(idx: number) {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== idx));
+  }
 
   async function handleRemoveAttachment(id: string) {
     if (!confirm("Remove this receipt? This deletes the file.")) return;
@@ -64,6 +77,9 @@ export function EntryForm({
     formData.set("categoryId", categoryId);
     formData.set("projectId", projectId);
     formData.set("vendorId", type === "EXPENSE" ? vendorId : "");
+    // Submit exactly the files shown in the UI (state owns the list).
+    formData.delete("files");
+    for (const f of pendingFiles) formData.append("files", f);
 
     try {
       let res;
@@ -238,6 +254,30 @@ export function EntryForm({
                 </div>
               )}
 
+              {pendingFiles.length > 0 && (
+                <div className="space-y-2">
+                  {pendingFiles.map((f, idx) => (
+                    <div key={`${f.name}-${idx}`} className="flex items-center justify-between gap-2 bg-primary/5 border border-primary/20 p-2 rounded-md">
+                      <span className="flex items-center gap-2 text-sm text-foreground truncate" title={f.name}>
+                        <Paperclip className="h-4 w-4 shrink-0 text-primary" />
+                        <span className="truncate">{f.name}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">· to upload</span>
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+                        onClick={() => removePendingFile(idx)}
+                        title="Remove"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-2 flex justify-center rounded-lg border border-dashed border-border px-6 py-10 hover:bg-muted/50 transition-colors">
                 <div className="text-center">
                   <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden="true" />
@@ -247,7 +287,7 @@ export function EntryForm({
                       className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:text-primary/80"
                     >
                       <span>{isEdit ? "Add more files" : "Upload files"}</span>
-                      <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf,.zip,application/zip,application/x-zip-compressed" />
+                      <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf,.zip,application/zip,application/x-zip-compressed" onChange={handleFilesChosen} />
                     </label>
                     <p className="pl-1">or take a photo</p>
                   </div>
