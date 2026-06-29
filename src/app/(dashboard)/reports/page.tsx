@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MonthPicker } from "@/components/reports/month-picker";
+import { ReportDownloads } from "@/components/reports/report-downloads";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
@@ -60,6 +61,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const delta = net - prevNet;
 
   const label = new Date(start).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+
+  // Defaults for the Excel export range: year-to-date.
+  const exportFrom = `${now.getFullYear()}-01-01`;
+  const exportTo = now.toISOString().slice(0, 10);
 
   const Lines = ({ rows, total, color }: { rows: [string, number][]; total: number; color: string }) => (
     <div className="space-y-2">
@@ -157,6 +162,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           </Table>
         </CardContent>
       </Card>
+
+      <ReportDownloads defaultFrom={exportFrom} defaultTo={exportTo} />
     </div>
   );
 }
