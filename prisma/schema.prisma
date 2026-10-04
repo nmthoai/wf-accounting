@@ -91,6 +91,14 @@ model Transaction {
   invoiceId     String?   @unique // legacy one-to-one link; payments now go through PaymentAllocation
   invoice       Invoice?  @relation(fields: [invoiceId], references: [id])
   allocations   PaymentAllocation[]
+  // Evidence and tax review (income/expense) — separate from bookkeeping.
+  // Recording an expense never makes it deductible or its VAT claimable.
+  docStatus     String    @default("PENDING") // PENDING, INVOICE, RECEIPT, PAYMENT_ONLY, MISSING
+  purposeStatus String    @default("PENDING") // PENDING, CONFIRMED, PERSONAL (expenses)
+  citStatus     String    @default("PENDING") // PENDING, DEDUCTIBLE, NON_DEDUCTIBLE (expenses)
+  vatStatus     String    @default("PENDING") // PENDING, CLAIMABLE, NOT_CLAIMABLE, NO_VAT (expenses)
+  vatAmount     Float?                        // input VAT as printed on the invoice, in `currency`
+  reviewNote    String?                       // purpose evidence, the accountant's basis, open questions
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

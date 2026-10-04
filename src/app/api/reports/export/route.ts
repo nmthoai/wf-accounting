@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import * as xlsx from "xlsx";
 import { TYPE_LABEL, RATE_SOURCE_LABEL, EPS, isPnl, settlement, toVnd } from "@/lib/money";
+import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 
@@ -38,7 +39,9 @@ export async function GET(req: Request) {
       include: { category: true, project: true, vendor: true, account: true, _count: { select: { attachments: true } } },
     });
 
-    const headers = ["Date", "Type", "Account", "Description", "Category", "Project", "Vendor", "Invoice #", "Currency", "Amount", "Rate", "Rate source", "Amount (VND)", "Attachments"];
+    const headers = ["Date", "Type", "Account", "Description", "Category", "Project", "Vendor", "Invoice #", "Currency", "Amount", "Rate", "Rate source", "Amount (VND)", "Attachments",
+      "Document", "Business purpose", "CIT", "Input VAT", "VAT amount", "Review note"];
+    const expense = (t: { type: string }) => t.type === "EXPENSE";
     const rows: Record<string, unknown>[] = txns.map((t) => ({
       "Date": iso(t.date),
       "Type": TYPE_LABEL[t.type] ?? t.type,
@@ -54,6 +57,13 @@ export async function GET(req: Request) {
       "Rate source": t.rateSource ? RATE_SOURCE_LABEL[t.rateSource] ?? t.rateSource : "",
       "Amount (VND)": Math.round(toVnd(t)),
       "Attachments": t._count.attachments,
+      // Review status sits beside the bookkeeping, never folded into it.
+      "Document": isPnl(t.type) ? DOC_STATUS[t.docStatus] ?? t.docStatus : "",
+      "Business purpose": expense(t) ? PURPOSE_STATUS[t.purposeStatus] ?? t.purposeStatus : "",
+      "CIT": expense(t) ? CIT_STATUS[t.citStatus] ?? t.citStatus : "",
+      "Input VAT": expense(t) ? VAT_STATUS[t.vatStatus] ?? t.vatStatus : "",
+      "VAT amount": expense(t) && t.vatAmount != null ? t.vatAmount : "",
+      "Review note": t.reviewNote ?? "",
     }));
 
     // Totals are profit & loss only — transfers, capital and loans are listed but not summed.

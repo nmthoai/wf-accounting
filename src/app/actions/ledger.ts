@@ -7,10 +7,13 @@ import { persistUploads, removeUploadFile } from "@/lib/uploads";
 import { resolveFx } from "@/lib/fx";
 import { CURRENCIES } from "@/lib/money";
 import { refreshInvoiceStatus, invoicesOf } from "@/lib/invoice-status";
+import { reviewProblem } from "@/lib/review";
+
+type Decisions = { purposeStatus: string; citStatus: string; vatStatus: string };
 
 // Shared parsing for the income/expense form. Other movement kinds (transfers,
 // capital, loans) are recorded on the Accounts page.
-async function parseEntry(formData: FormData) {
+async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions) {
   const type = formData.get("type") as string;
   const amount = parseFloat(formData.get("amount") as string);
   const currency = (formData.get("currency") as string) || "VND";
@@ -36,6 +39,22 @@ async function parseEntry(formData: FormData) {
   const projectId = formData.get("projectId") as string;
   const vendorId = formData.get("vendorId") as string;
 
+  // Evidence anyone may record. Business use, CIT and VAT are decisions the
+  // owner records (from the accountant's review); other roles keep what is set.
+  const str = (k: string) => ((formData.get(k) as string) || "").trim();
+  const expense = type === "EXPENSE";
+  const decide = (k: keyof Decisions) => (!expense ? "PENDING" : isAdmin ? str(k) || "PENDING" : prev?.[k] ?? "PENDING");
+  const review = {
+    docStatus: str("docStatus") || "PENDING",
+    purposeStatus: decide("purposeStatus"),
+    citStatus: decide("citStatus"),
+    vatStatus: decide("vatStatus"),
+    vatAmount: expense && str("vatAmount") ? parseFloat(str("vatAmount")) : null,
+    reviewNote: str("reviewNote") || null,
+  };
+  const problem = reviewProblem({ type, amount, ...review });
+  if (problem) return { error: problem };
+
   return {
     data: {
       type,
@@ -51,6 +70,7 @@ async function parseEntry(formData: FormData) {
       categoryId: categoryId || null,
       projectId: projectId || null,
       vendorId: vendorId || null,
+      ...review,
     },
   };
 }
@@ -59,7 +79,7 @@ export async function createTransaction(formData: FormData) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
 
-  const parsed = await parseEntry(formData);
+  const parsed = await parseEntry(formData, session.user.role === "ADMIN");
   if ("error" in parsed) return { success: false, message: parsed.error };
 
   const transaction = await prisma.transaction.create({ data: parsed.data });
@@ -109,7 +129,7 @@ export async function editTransaction(id: string, formData: FormData) {
     return { success: false, message: "Edit transfers, capital and loans on the Accounts page." };
   }
 
-  const parsed = await parseEntry(formData);
+  const parsed = await parseEntry(formData, session.user.role === "ADMIN", existing);
   if ("error" in parsed) return { success: false, message: parsed.error };
 
   await prisma.transaction.update({ where: { id }, data: parsed.data });

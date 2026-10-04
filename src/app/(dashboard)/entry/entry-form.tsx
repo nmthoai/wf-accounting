@@ -11,6 +11,24 @@ import { createTransaction, editTransaction, deleteAttachment } from "@/app/acti
 import { Loader2, UploadCloud, Paperclip, X } from "lucide-react";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { CURRENCIES } from "@/lib/money";
+import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
+
+// One of the evidence/tax review statuses, as a dropdown.
+function StatusSelect({ id, label, options, value, onChange, disabled }: {
+  id: string; label: string; options: Record<string, string>; value: string; onChange: (v: string) => void; disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select value={value} onValueChange={(v) => onChange(v || "PENDING")} disabled={disabled}>
+        <SelectTrigger id={id}><span>{options[value] ?? value}</span></SelectTrigger>
+        <SelectContent>
+          {Object.entries(options).map(([k, text]) => <SelectItem key={k} value={k}>{text}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function EntryForm({
   categories,
@@ -18,6 +36,7 @@ export function EntryForm({
   vendors = [],
   accounts,
   defaultUsdRate,
+  isAdmin,
   initialData
 }: {
   categories: any[];
@@ -25,6 +44,7 @@ export function EntryForm({
   vendors?: { id: string; name: string }[];
   accounts: AccountOpt[];
   defaultUsdRate: number;
+  isAdmin: boolean;
   initialData?: any;
 }) {
   const router = useRouter();
@@ -40,6 +60,11 @@ export function EntryForm({
   );
   const account = accounts.find((a) => a.id === accountId);
   const usdAccount = account?.currency === "USD";
+  // Evidence and tax review — everything starts pending.
+  const [docStatus, setDocStatus] = useState<string>(initialData?.docStatus || "PENDING");
+  const [purposeStatus, setPurposeStatus] = useState<string>(initialData?.purposeStatus || "PENDING");
+  const [citStatus, setCitStatus] = useState<string>(initialData?.citStatus || "PENDING");
+  const [vatStatus, setVatStatus] = useState<string>(initialData?.vatStatus || "PENDING");
 
   function chooseAccount(id: string) {
     setAccountId(id);
@@ -103,6 +128,10 @@ export function EntryForm({
     formData.set("vendorId", type === "EXPENSE" ? vendorId : "");
     formData.set("accountId", accountId);
     formData.set("rateMode", rateMode);
+    formData.set("docStatus", docStatus);
+    formData.set("purposeStatus", purposeStatus);
+    formData.set("citStatus", citStatus);
+    formData.set("vatStatus", vatStatus);
     // Submit exactly the files shown in the UI (state owns the list).
     formData.delete("files");
     for (const f of pendingFiles) formData.append("files", f);
@@ -358,6 +387,38 @@ export function EntryForm({
                   <p className="text-xs leading-5 text-muted-foreground mt-2">PNG, JPG, PDF, ZIP (e.g. original e-invoice) up to 10MB</p>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4 md:col-span-2 rounded-md border p-3 bg-muted/30">
+              <div>
+                <Label>Evidence &amp; tax review</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {type === "EXPENSE"
+                    ? "Kept apart from the books: recording an expense never makes it deductible or its VAT claimable — each stays pending until reviewed."
+                    : "Kept apart from the books: a payment received doesn't establish its invoice."}
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <StatusSelect id="docStatus" label="Document" options={DOC_STATUS} value={docStatus} onChange={setDocStatus} />
+                {type === "EXPENSE" && (
+                  <>
+                    <StatusSelect id="purposeStatus" label="Business purpose" options={PURPOSE_STATUS} value={purposeStatus} onChange={setPurposeStatus} disabled={!isAdmin} />
+                    <StatusSelect id="citStatus" label="CIT deductibility" options={CIT_STATUS} value={citStatus} onChange={setCitStatus} disabled={!isAdmin} />
+                    <StatusSelect id="vatStatus" label="Input VAT" options={VAT_STATUS} value={vatStatus} onChange={setVatStatus} disabled={!isAdmin} />
+                    <div className="space-y-2">
+                      <Label htmlFor="vatAmount">VAT on the invoice ({currency})</Label>
+                      <Input id="vatAmount" name="vatAmount" type="number" step="any" min="0" placeholder="As printed — blank if none" defaultValue={initialData?.vatAmount ?? ""} />
+                    </div>
+                  </>
+                )}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="reviewNote">Review notes</Label>
+                  <Input id="reviewNote" name="reviewNote" placeholder="Purpose evidence, the accountant's basis, open questions" defaultValue={initialData?.reviewNote || ""} />
+                </div>
+              </div>
+              {type === "EXPENSE" && !isAdmin && (
+                <p className="text-xs text-muted-foreground">Business purpose, CIT and VAT are recorded by the owner after the accountant&apos;s review.</p>
+              )}
             </div>
           </div>
 

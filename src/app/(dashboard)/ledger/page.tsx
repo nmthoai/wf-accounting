@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Trash2, Paperclip } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { TYPE_LABEL, RATE_SOURCE_LABEL, isPnl, isInflow, toVnd, fmtMoney, fmtVnd } from "@/lib/money";
+import { DOC_STATUS, DOC_BADGE, DOC_OPEN, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 
 const badge: Record<string, string> = {
   INCOME: "bg-green-100 text-green-700",
@@ -18,10 +20,26 @@ const badge: Record<string, string> = {
   OTHER_OUT: "bg-amber-100 text-amber-700",
 };
 
-export default async function LedgerPage() {
+// Review views: entries whose invoice/receipt is still to be found, and
+// expenses whose CIT or VAT treatment has not been decided.
+const VIEWS: Record<"docs" | "tax", Prisma.TransactionWhereInput> = {
+  docs: { type: { in: ["INCOME", "EXPENSE"] }, docStatus: { in: DOC_OPEN } },
+  tax: { type: "EXPENSE", OR: [{ citStatus: "PENDING" }, { vatStatus: "PENDING" }] },
+};
+
+const taxTone = (s: string, good: string) => (s === "PENDING" ? "text-amber-700" : s === good ? "text-green-700" : "text-muted-foreground");
+
+export default async function LedgerPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const sp = await searchParams;
+  const view = sp.view === "docs" || sp.view === "tax" ? sp.view : null;
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN";
+  const [docsCount, taxCount] = await Promise.all([
+    prisma.transaction.count({ where: VIEWS.docs }),
+    prisma.transaction.count({ where: VIEWS.tax }),
+  ]);
   const transactions = await prisma.transaction.findMany({
+    where: view ? VIEWS[view] : undefined,
     orderBy: { date: "desc" },
     include: {
       category: true,
@@ -45,6 +63,13 @@ export default async function LedgerPage() {
         </Link>
       </div>
 
+      <div className="flex bg-muted p-1 rounded-lg text-sm w-fit">
+        {([[null, "All"], ["docs", `Documents to find (${docsCount})`], ["tax", `Tax review pending (${taxCount})`]] as const).map(([v, text]) => (
+          <Link key={text} href={v ? `/ledger?view=${v}` : "/ledger"}
+            className={`px-3 py-1 rounded-md font-medium transition-all ${view === v ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</Link>
+        ))}
+      </div>
+
       <Card>
         <CardContent className="p-0 overflow-x-auto">
           <Table>
@@ -56,7 +81,7 @@ export default async function LedgerPage() {
                 <TableHead>Category</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Invoice #</TableHead>
-                <TableHead>Attachments</TableHead>
+                <TableHead>Evidence</TableHead>
                 <TableHead className="text-right">Amount (VND)</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -95,17 +120,33 @@ export default async function LedgerPage() {
                   </TableCell>
                   <TableCell>{t.invoiceNumber || "-"}</TableCell>
                   <TableCell>
-                    {t.attachments.length > 0 ? (
-                      <div className="flex gap-2">
-                        {t.attachments.map(a => (
-                          <a key={a.id} href={`/api/uploads/${a.filePath.split('/').pop()}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700" title={a.fileName}>
-                            <Paperclip className="h-4 w-4" />
-                          </a>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
+                    <div className="flex flex-col gap-1 items-start">
+                      {t.attachments.length > 0 ? (
+                        <div className="flex gap-2">
+                          {t.attachments.map(a => (
+                            <a key={a.id} href={`/api/uploads/${a.filePath.split('/').pop()}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700" title={a.fileName}>
+                              <Paperclip className="h-4 w-4" />
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                      {isPnl(t.type) && (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${DOC_BADGE[t.docStatus] ?? ""}`} title={t.reviewNote ?? undefined}>
+                          {DOC_STATUS[t.docStatus] ?? t.docStatus}
+                        </span>
+                      )}
+                      {t.type === "EXPENSE" && (
+                        <span className="text-[10px] whitespace-nowrap">
+                          <span className={taxTone(t.citStatus, "DEDUCTIBLE")} title="CIT deductibility">CIT: {CIT_STATUS[t.citStatus] ?? t.citStatus}</span>
+                          <span className="text-muted-foreground"> · </span>
+                          <span className={taxTone(t.vatStatus, "CLAIMABLE")} title="Input VAT">
+                            VAT: {VAT_STATUS[t.vatStatus] ?? t.vatStatus}{t.vatStatus === "CLAIMABLE" && t.vatAmount ? ` ${fmtMoney(t.vatAmount, t.currency)}` : ""}
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-semibold">
                     <div className="flex flex-col items-end">
@@ -142,7 +183,7 @@ export default async function LedgerPage() {
               {transactions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No transactions found. Click "New Entry" to add one.
+                    {view ? "Nothing here — all reviewed." : 'No transactions found. Click "New Entry" to add one.'}
                   </TableCell>
                 </TableRow>
               )}

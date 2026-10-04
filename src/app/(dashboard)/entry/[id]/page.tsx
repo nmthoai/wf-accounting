@@ -2,10 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { EntryForm } from "../entry-form";
 import { redirect } from "next/navigation";
 import { defaultUsdRate } from "@/lib/fx";
+import { auth } from "@/auth";
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [usdRate, accounts, categories, projects, vendors, transaction] = await Promise.all([
+  const [session, usdRate, accounts, categories, projects, vendors, transaction] = await Promise.all([
+    auth(),
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
@@ -35,6 +37,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
         vendors={vendors}
         accounts={accounts}
         defaultUsdRate={usdRate}
+        isAdmin={session?.user?.role === "ADMIN"}
         initialData={transaction}
       />
     </div>

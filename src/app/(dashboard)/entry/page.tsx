@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { EntryForm } from "./entry-form";
 import { defaultUsdRate } from "@/lib/fx";
+import { auth } from "@/auth";
 
 export default async function NewEntryPage() {
-  const [usdRate, accounts, categories, projects, vendors] = await Promise.all([
+  const [session, usdRate, accounts, categories, projects, vendors] = await Promise.all([
+    auth(),
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
@@ -24,6 +26,7 @@ export default async function NewEntryPage() {
         vendors={vendors}
         accounts={accounts}
         defaultUsdRate={usdRate}
+        isAdmin={session?.user?.role === "ADMIN"}
       />
     </div>
   );

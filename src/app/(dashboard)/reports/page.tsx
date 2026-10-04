@@ -4,7 +4,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MonthPicker } from "@/components/reports/month-picker";
 import { ReportDownloads } from "@/components/reports/report-downloads";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { toVnd } from "@/lib/money";
+import Link from "next/link";
+import { toVnd, fmtMoney, totalsList, type Totals } from "@/lib/money";
+import { DOC_STATUS, DOC_OPEN, CIT_STATUS } from "@/lib/review";
 
 // P&L counts income and expenses only — transfers, capital and loans are not profit.
 const PNL = { type: { in: ["INCOME", "EXPENSE"] } };
@@ -56,6 +58,18 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const totalIncome = income.reduce((a, [, v]) => a + v, 0);
   const totalExpense = expense.reduce((a, [, v]) => a + v, 0);
   const net = totalIncome - totalExpense;
+
+  // Tax review — kept apart from the P&L: an expense is in the books once
+  // recorded, but deductible or VAT-claimable only once reviewed.
+  const expenses = txns.filter((t) => t.type === "EXPENSE");
+  const cit = Object.keys(CIT_STATUS).map((k) => [CIT_STATUS[k], expenses.filter((t) => t.citStatus === k).reduce((a, t) => a + toVnd(t), 0)] as [string, number]);
+  const vatClaimable: Totals = {};
+  for (const t of expenses) if (t.vatStatus === "CLAIMABLE" && t.vatAmount) vatClaimable[t.currency] = (vatClaimable[t.currency] ?? 0) + t.vatAmount;
+  const vatPending = expenses.filter((t) => t.vatStatus === "PENDING").length;
+  const docsOpen = DOC_OPEN.map((k) => {
+    const rows = txns.filter((t) => t.docStatus === k);
+    return { label: DOC_STATUS[k], count: rows.length, vnd: rows.reduce((a, t) => a + toVnd(t), 0) };
+  }).filter((d) => d.count > 0);
 
   const prevNet =
     prevTxns.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0) -
@@ -162,6 +176,43 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               )}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tax review</CardTitle>
+          <p className="text-sm text-muted-foreground">Kept apart from the P&amp;L: recording an expense doesn&apos;t make it deductible or its VAT claimable. These are the decisions recorded so far.</p>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">CIT deductibility of this month&apos;s expenses</p>
+            <Lines rows={cit} total={totalExpense} color="text-foreground" />
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Input VAT</p>
+              <div className="flex items-center justify-between text-sm">
+                <span>Claimable (invoice on file)</span>
+                <span className="font-medium">{totalsList(vatClaimable).map(([c, v]) => fmtMoney(v, c)).join(" + ") || fmt(0)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Expenses with VAT not yet reviewed</span>
+                <span className={`font-medium ${vatPending ? "text-amber-700" : ""}`}>{vatPending}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Documents still to find</p>
+              {docsOpen.map((d) => (
+                <div key={d.label} className="flex items-center justify-between text-sm">
+                  <span>{d.label} <span className="text-xs text-muted-foreground">· {d.count} {d.count === 1 ? "entry" : "entries"}</span></span>
+                  <span className={`font-medium ${d.label === DOC_STATUS.MISSING ? "text-red-600" : "text-amber-700"}`}>{fmt(d.vnd)}</span>
+                </div>
+              ))}
+              {docsOpen.length === 0 && <p className="text-sm text-muted-foreground">Every entry this month has its invoice or receipt.</p>}
+              {docsOpen.length > 0 && <Link href="/ledger?view=docs" className="text-xs text-primary hover:underline">Open in the ledger →</Link>}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
