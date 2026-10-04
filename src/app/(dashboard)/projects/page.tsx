@@ -1,23 +1,26 @@
 import { prisma } from "@/lib/prisma";
 import { ProjectsClient } from "@/components/projects/projects-client";
-import { toVnd } from "@/lib/money";
+import { toVnd, settlement, totalsList, fmtMoney, type Totals } from "@/lib/money";
 
 export default async function ProjectsPage() {
   const [projects, clients, openInvoices] = await Promise.all([
     prisma.project.findMany({ orderBy: { createdAt: "desc" }, include: { client: true, transactions: true, _count: { select: { attachments: true } } } }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.invoice.findMany({ where: { status: "OPEN" }, select: { projectId: true, amount: true, exchangeRate: true } }),
+    prisma.invoice.findMany({ where: { status: { in: ["OPEN", "PARTIAL"] } }, select: { projectId: true, amount: true, currency: true, allocations: true } }),
   ]);
 
   const projectRows = projects.map((p) => {
     const income = p.transactions.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
     const expense = p.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
     const open = openInvoices.filter((i) => i.projectId === p.id);
+    // Still open per currency (never converted).
+    const openTotals: Totals = {};
+    for (const i of open) openTotals[i.currency] = (openTotals[i.currency] ?? 0) + settlement(i.amount, i.allocations).difference;
     return {
       id: p.id, name: p.name, status: p.status, clientId: p.clientId, clientName: p.client?.name ?? null,
       income, expense, net: income - expense, txnCount: p.transactions.length,
       openCount: open.length,
-      openAmount: open.reduce((a, i) => a + i.amount * i.exchangeRate, 0),
+      openLabel: totalsList(openTotals).map(([c, v]) => fmtMoney(v, c)).join(" · "),
       attachmentCount: p._count.attachments,
     };
   });

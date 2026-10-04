@@ -7,30 +7,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Plus, Loader2, Ban, Trash2, AlertTriangle, Paperclip, ArrowDownLeft, ArrowUpRight } from "lucide-react";
-import { createInvoice, voidInvoice, deleteInvoice } from "@/app/actions/invoices";
+import { Plus, Loader2, Ban, Trash2, AlertTriangle, Paperclip, ArrowDownLeft, ArrowUpRight, X } from "lucide-react";
+import { createInvoice, voidInvoice, deleteInvoice, unlinkAllocation } from "@/app/actions/invoices";
 import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
-import { MarkPaidDialog } from "@/components/invoices/mark-paid-dialog";
+import { RecordPaymentDialog, LinkEntryDialog, type Candidate } from "@/components/invoices/payment-dialogs";
 import type { AccountOpt } from "@/components/accounts/account-select";
+import { EPS, fmtMoney, fmtVnd, totalsList, type Totals } from "@/lib/money";
 
 type Invoice = {
   id: string; number: string | null; direction: string; party: string | null; projectName: string | null; categoryName: string | null;
   clientId: string | null; vendorId: string | null; projectId: string | null; categoryId: string | null; notes: string | null;
   issueDate: string; dueDate: string; paidDate: string | null;
-  currency: string; amount: number; amountVnd: number; status: string; overdue: boolean; attachment: string | null;
+  currency: string; amount: number; status: string; overdue: boolean; attachment: string | null;
+  received: number; fees: number; difference: number;
+  allocations: { id: string; kind: string; amount: number; date: string; accountName: string; description: string | null }[];
 };
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
 
-const vnd = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " ₫";
-const money = (i: { currency: string; amount: number }) =>
-  i.currency === "USD" ? "$" + new Intl.NumberFormat("en-US").format(i.amount) : vnd(i.amount);
+// One line per currency — currencies are never added together.
+const Totals = ({ t, className }: { t: Totals; className: string }) => {
+  const lines = totalsList(t);
+  if (lines.length === 0) return <div className={className}>{fmtVnd(0)}</div>;
+  return <>{lines.map(([c, v]) => <div key={c} className={className}>{fmtMoney(v, c)}</div>)}</>;
+};
+const totalsText = (t: Totals) => totalsList(t).map(([c, v]) => fmtMoney(v, c)).join(" · ");
 
 export function InvoicesClient({
-  invoices, clients, vendors, projects, categories, accounts, defaultUsdRate, summary,
+  invoices, clients, vendors, projects, categories, accounts, candidates, defaultUsdRate, summary,
 }: {
-  invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; categories: Cat[]; accounts: AccountOpt[]; defaultUsdRate: number;
-  summary: { arOutstanding: number; apOutstanding: number; arOverdue: number; apOverdue: number };
+  invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; categories: Cat[]; accounts: AccountOpt[];
+  candidates: Candidate[]; defaultUsdRate: number;
+  summary: { ar: Totals; ap: Totals; arOverdue: Totals; apOverdue: Totals };
 }) {
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
@@ -45,7 +53,8 @@ export function InvoicesClient({
   const [openOnly, setOpenOnly] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const parties = direction === "PAYABLE" ? vendors : clients;
-  const shown = openOnly ? invoices.filter((i) => i.status === "OPEN") : invoices;
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const shown = openOnly ? invoices.filter((i) => i.status === "OPEN" || i.status === "PARTIAL") : invoices;
   // Receivables become income; payables become an expense — show the matching categories.
   const cats = categories.filter((c) => c.type === (direction === "PAYABLE" ? "EXPENSE" : "INCOME"));
 
@@ -86,9 +95,11 @@ export function InvoicesClient({
   function statusBadge(i: Invoice) {
     if (i.overdue) return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Overdue</span>;
     const map: Record<string, string> = {
-      OPEN: "bg-amber-100 text-amber-700", PAID: "bg-green-100 text-green-700", VOID: "bg-gray-100 text-gray-400 line-through",
+      OPEN: "bg-amber-100 text-amber-700", PARTIAL: "bg-orange-100 text-orange-700",
+      PAID: "bg-green-100 text-green-700", VOID: "bg-gray-100 text-gray-400 line-through",
     };
-    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[i.status] || ""}`}>{i.status}</span>;
+    const text: Record<string, string> = { OPEN: "Open", PARTIAL: "Part paid", PAID: "Paid", VOID: "Void" };
+    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[i.status] || ""}`}>{text[i.status] ?? i.status}</span>;
   }
 
   return (
@@ -97,15 +108,15 @@ export function InvoicesClient({
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium inline-flex items-center gap-2"><ArrowDownLeft className="h-4 w-4 text-green-600" />Owed to you (AR)</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{vnd(summary.arOutstanding)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{summary.arOverdue > 0 ? <span className="text-red-600">{vnd(summary.arOverdue)} overdue</span> : "Nothing overdue"}</p>
+            <Totals t={summary.ar} className="text-2xl font-bold text-green-600" />
+            <p className="text-xs text-muted-foreground mt-1">{totalsList(summary.arOverdue).length > 0 ? <span className="text-red-600">{totalsText(summary.arOverdue)} overdue</span> : "Nothing overdue"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium inline-flex items-center gap-2"><ArrowUpRight className="h-4 w-4 text-red-600" />You owe (AP)</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{vnd(summary.apOutstanding)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{summary.apOverdue > 0 ? <span className="text-red-600">{vnd(summary.apOverdue)} overdue</span> : "Nothing overdue"}</p>
+            <Totals t={summary.ap} className="text-2xl font-bold text-red-600" />
+            <p className="text-xs text-muted-foreground mt-1">{totalsList(summary.apOverdue).length > 0 ? <span className="text-red-600">{totalsText(summary.apOverdue)} overdue</span> : "Nothing overdue"}</p>
           </CardContent>
         </Card>
       </div>
@@ -210,7 +221,8 @@ export function InvoicesClient({
       <Card>
         <CardContent className="p-0 divide-y">
           {shown.map((i) => (
-            <div key={i.id} className="flex items-center justify-between gap-3 p-4 flex-wrap">
+            <div key={i.id} className="p-4 space-y-2">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex flex-col min-w-[180px]">
                 <span className="text-sm font-medium flex items-center gap-2">
                   {i.direction === "PAYABLE"
@@ -226,21 +238,33 @@ export function InvoicesClient({
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <div className={`text-sm font-semibold ${i.direction === "PAYABLE" ? "text-red-600" : "text-green-700"}`}>{money(i)}</div>
-                  {i.currency === "USD" && <div className="text-xs text-muted-foreground">{vnd(i.amountVnd)}</div>}
+                  <div className={`text-sm font-semibold ${i.direction === "PAYABLE" ? "text-red-600" : "text-green-700"}`}>{fmtMoney(i.amount, i.currency)}</div>
+                  {i.allocations.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      {i.direction === "PAYABLE" ? "paid" : "received"} {fmtMoney(i.received, i.currency)}
+                      {i.fees > EPS && ` · fees ${fmtMoney(i.fees, i.currency)}`}
+                    </div>
+                  )}
+                  {i.allocations.length > 0 && i.difference > EPS && i.status !== "VOID" && (
+                    <div className="text-xs font-medium text-amber-700" title="Gross minus payments and evidenced fees. Not assumed to be a fee.">
+                      unmatched difference {fmtMoney(i.difference, i.currency)}
+                    </div>
+                  )}
+                  {i.difference < -EPS && <div className="text-xs font-medium text-red-600">overpaid by {fmtMoney(-i.difference, i.currency)}</div>}
                 </div>
                 <div className="flex items-center gap-1">
                   {i.status !== "VOID" && (
                     <EditInvoiceDialog invoice={i} clients={clients} vendors={vendors} projects={projects} categories={categories} defaultUsdRate={defaultUsdRate} />
                   )}
-                  {i.status === "OPEN" && <MarkPaidDialog invoice={i} accounts={accounts} />}
-                  {i.status === "OPEN" && (
+                  {(i.status === "OPEN" || i.status === "PARTIAL") && <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} />}
+                  {i.status !== "VOID" && <LinkEntryDialog invoice={i} candidates={candidates} />}
+                  {i.allocations.length === 0 && i.status === "OPEN" && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Void" disabled={busyId === i.id}
                       onClick={() => { if (confirm("Void this?")) run(i.id, () => voidInvoice(i.id)); }}>
                       <Ban className="h-4 w-4" />
                     </Button>
                   )}
-                  {i.status !== "PAID" && (
+                  {i.allocations.length === 0 && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="Delete" disabled={busyId === i.id}
                       onClick={() => { if (confirm("Delete this?")) run(i.id, () => deleteInvoice(i.id)); }}>
                       <Trash2 className="h-4 w-4" />
@@ -248,6 +272,37 @@ export function InvoicesClient({
                   )}
                 </div>
               </div>
+            </div>
+            {i.allocations.length > 0 && (
+              <div>
+                <button type="button" className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  onClick={() => setExpanded(expanded === i.id ? null : i.id)}>
+                  {expanded === i.id ? "Hide" : "Show"} {i.allocations.length} linked {i.allocations.length === 1 ? "entry" : "entries"}
+                </button>
+                {expanded === i.id && (
+                  <div className="mt-2 space-y-1">
+                    {i.allocations.map((a) => (
+                      <div key={a.id} className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-3 py-1.5 text-xs">
+                        <span>
+                          <span className={`mr-2 px-1.5 py-0.5 rounded font-medium ${a.kind === "FEE" ? "bg-slate-200 text-slate-700" : "bg-green-100 text-green-700"}`}>
+                            {a.kind === "FEE" ? "Evidenced fee" : "Payment"}
+                          </span>
+                          {a.date} · {a.accountName}{a.description ? ` · ${a.description}` : ""}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="font-medium">{fmtMoney(a.amount, i.currency)}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" title="Unlink (the ledger entry stays)"
+                            disabled={busyId === a.id}
+                            onClick={() => { if (confirm("Unlink this entry from the invoice? The ledger entry itself stays.")) run(a.id, () => unlinkAllocation(a.id)); }}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             </div>
           ))}
           {shown.length === 0 && <div className="p-8 text-center text-muted-foreground text-sm">{openOnly ? "Nothing outstanding — all settled." : "Nothing yet. Add a receivable (client owes you) or a payable (you owe a vendor)."}</div>}

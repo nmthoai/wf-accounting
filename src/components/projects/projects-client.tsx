@@ -14,7 +14,7 @@ import { createProject, deleteProject, setProjectStatus } from "@/app/actions/pr
 type ProjectRow = {
   id: string; name: string; status: string; clientId: string | null; clientName: string | null;
   income: number; expense: number; net: number; txnCount: number;
-  openCount: number; openAmount: number; attachmentCount: number;
+  openCount: number; openLabel: string; attachmentCount: number;
 };
 type ClientOpt = { id: string; name: string };
 
@@ -107,7 +107,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                 <Link href={`/projects/${p.id}`} className="text-sm font-medium flex items-center gap-2 hover:text-primary hover:underline">
                   {p.name} {statusBadge(p.status)}
                   {p.openCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700" title={`${p.openCount} unpaid invoice/bill · ${vnd(p.openAmount)}`}>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700" title={`${p.openCount} unpaid invoice/bill · ${p.openLabel}`}>
                       {p.openCount} unpaid
                     </span>
                   )}

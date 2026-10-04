@@ -3,16 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { computeBalances, cashPosition, totalsList, isInflow, isPnl, toVnd, fmtMoney, TYPE_LABEL } from "@/lib/money";
+import { computeBalances, cashPosition, totalsList, settlement, isInflow, isPnl, toVnd, fmtMoney, TYPE_LABEL, type Totals } from "@/lib/money";
 
 export default async function DashboardPage() {
   const [transactions, accounts, openInvoices, projectList] = await Promise.all([
     prisma.transaction.findMany({ orderBy: { date: "desc" }, include: { category: true } }),
     prisma.account.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.invoice.findMany({
-      where: { status: "OPEN" },
+      where: { status: { in: ["OPEN", "PARTIAL"] } },
       orderBy: { dueDate: "asc" },
-      include: { client: true, vendor: true, project: true },
+      include: { client: true, vendor: true, project: true, allocations: true },
     }),
     prisma.project.findMany({ select: { id: true, name: true } }),
   ]);
@@ -36,21 +36,27 @@ export default async function DashboardPage() {
 
   const recentTransactions = transactions.slice(0, 5);
 
-  // Coming payments (unpaid). AR = clients owe me, AP = I owe vendors.
+  // Coming payments: what's still open on each invoice (gross − payments − evidenced
+  // fees), totalled per currency. AR = clients owe me, AP = I owe vendors.
   const now = new Date();
-  const vndOf = (i: { amount: number; exchangeRate: number }) => i.amount * i.exchangeRate;
-  const arOutstanding = openInvoices.filter((i) => i.direction === "RECEIVABLE").reduce((a, i) => a + vndOf(i), 0);
-  const apOutstanding = openInvoices.filter((i) => i.direction === "PAYABLE").reduce((a, i) => a + vndOf(i), 0);
   const comingItem = (i: typeof openInvoices[number]) => ({
     id: i.id,
     label: i.direction === "PAYABLE" ? (i.vendor?.name ?? "Vendor") : (i.client?.name ?? "Client"),
-    sub: [i.number, i.project?.name].filter(Boolean).join(" · "),
-    amount: vndOf(i),
+    sub: [i.number, i.project?.name, i.status === "PARTIAL" ? "part paid" : null].filter(Boolean).join(" · "),
+    amount: settlement(i.amount, i.allocations).difference,
+    currency: i.currency,
     due: i.dueDate.toLocaleDateString(),
     overdue: i.dueDate < now,
   });
+  const totalOf = (items: ReturnType<typeof comingItem>[]) => {
+    const t: Totals = {};
+    for (const i of items) t[i.currency] = (t[i.currency] ?? 0) + i.amount;
+    return totalsList(t).map(([c, v]) => fmtMoney(v, c)).join(" · ") || fmtMoney(0, "VND");
+  };
   const comingOut = openInvoices.filter((i) => i.direction === "PAYABLE").map(comingItem);
   const comingIn = openInvoices.filter((i) => i.direction === "RECEIVABLE").map(comingItem);
+  const apOutstanding = totalOf(comingOut);
+  const arOutstanding = totalOf(comingIn);
 
   // Top projects by net profit — grouped from the transactions already fetched (no extra query).
   const projName = new Map(projectList.map((p) => [p.id, p.name]));
@@ -176,7 +182,7 @@ export default async function DashboardPage() {
             <div>
               <div className="flex items-center justify-between text-sm mb-1">
                 <span className="font-medium text-red-600">Going out — you pay</span>
-                <span className="font-semibold text-red-600">{formatVnd(apOutstanding)}</span>
+                <span className="font-semibold text-red-600">{apOutstanding}</span>
               </div>
               <div className="space-y-1">
                 {comingOut.slice(0, 4).map((i) => (
@@ -185,7 +191,7 @@ export default async function DashboardPage() {
                     <span className="flex items-center gap-2 shrink-0">
                       {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">overdue</span>}
                       <span className="text-muted-foreground text-xs">due {i.due}</span>
-                      <span className="font-medium">{formatVnd(i.amount)}</span>
+                      <span className="font-medium">{fmtMoney(i.amount, i.currency)}</span>
                     </span>
                   </div>
                 ))}
@@ -195,7 +201,7 @@ export default async function DashboardPage() {
             <div className="border-t pt-3">
               <div className="flex items-center justify-between text-sm mb-1">
                 <span className="font-medium text-green-700">Coming in — you receive</span>
-                <span className="font-semibold text-green-700">{formatVnd(arOutstanding)}</span>
+                <span className="font-semibold text-green-700">{arOutstanding}</span>
               </div>
               <div className="space-y-1">
                 {comingIn.slice(0, 4).map((i) => (
@@ -204,7 +210,7 @@ export default async function DashboardPage() {
                     <span className="flex items-center gap-2 shrink-0">
                       {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">overdue</span>}
                       <span className="text-muted-foreground text-xs">due {i.due}</span>
-                      <span className="font-medium">{formatVnd(i.amount)}</span>
+                      <span className="font-medium">{fmtMoney(i.amount, i.currency)}</span>
                     </span>
                   </div>
                 ))}

@@ -125,8 +125,8 @@ export function EditInvoiceDialog({
             <Label htmlFor={`notes-${invoice.id}`}>Notes (optional)</Label>
             <Input id={`notes-${invoice.id}`} name="notes" defaultValue={invoice.notes ?? ""} placeholder="Work / terms…" />
           </div>
-          {invoice.status === "PAID" && (
-            <p className="text-xs text-amber-700 md:col-span-2">This is already paid — saving will also update the matching ledger transaction.</p>
+          {(invoice.status === "PAID" || invoice.status === "PARTIAL") && (
+            <p className="text-xs text-amber-700 md:col-span-2">Payments already recorded keep their amounts; the paid status is recalculated against the new total.</p>
           )}
           {err && <p className="text-sm text-destructive md:col-span-2">{err}</p>}
           <Button type="submit" disabled={saving} className="md:col-span-2">

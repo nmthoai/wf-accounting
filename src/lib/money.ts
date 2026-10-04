@@ -82,6 +82,17 @@ export const fmtVnd = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.
 export const fmtMoney = (n: number, currency: string) =>
   currency === "VND" ? fmtVnd(n) : new Intl.NumberFormat("en-US", { style: "currency", currency }).format(n);
 
+// Amounts within half a cent/dong are treated as equal.
+export const EPS = 0.005;
+
+// How far an invoice is settled: payments received, separately evidenced fees,
+// and the unmatched difference (> 0 still open or unexplained, < 0 overpaid).
+export function settlement(gross: number, allocations: { kind: string; amount: number }[]) {
+  const received = allocations.filter((a) => a.kind === "PAYMENT").reduce((s, a) => s + a.amount, 0);
+  const fees = allocations.filter((a) => a.kind === "FEE").reduce((s, a) => s + a.amount, 0);
+  return { received, fees, difference: gross - received - fees };
+}
+
 // Non-zero totals in a fixed currency order, e.g. [["VND", 53636145], ["USD", 435.75]].
 export const totalsList = (t: Totals): [string, number][] =>
   Object.entries(t)

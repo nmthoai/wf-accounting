@@ -88,8 +88,9 @@ model Transaction {
   project       Project?  @relation(fields: [projectId], references: [id])
   vendorId      String?
   vendor        Vendor?   @relation(fields: [vendorId], references: [id])
-  invoiceId     String?   @unique // set when this row settles an invoice/bill
+  invoiceId     String?   @unique // legacy one-to-one link; payments now go through PaymentAllocation
   invoice       Invoice?  @relation(fields: [invoiceId], references: [id])
+  allocations   PaymentAllocation[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -157,14 +158,32 @@ model Invoice {
   currency     String    @default("VND")
   exchangeRate Float     @default(1.0)
   amount       Float
-  status       String    @default("OPEN") // OPEN, PAID, VOID
+  status       String    @default("OPEN") // OPEN, PARTIAL, PAID (derived from allocations), VOID
   paidDate     DateTime?
   notes        String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  transaction  Transaction? // income/expense row created when marked paid
+  transaction  Transaction? // legacy one-to-one payment link
+  allocations  PaymentAllocation[]
   attachments  Attachment[] // the real invoice/bill PDF
+}
+
+// Links a payment — or a separately evidenced fee — to an invoice/bill. One
+// invoice can have many payments; one payment can settle many invoices.
+// gross − payments − evidenced fees = the unmatched difference, which is shown,
+// never silently treated as a fee.
+model PaymentAllocation {
+  id            String      @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  kind          String      @default("PAYMENT") // PAYMENT, FEE
+  amount        Float       // in the invoice's currency
+  createdAt     DateTime    @default(now())
+
+  @@unique([invoiceId, transactionId])
 }
 
 model Attachment {

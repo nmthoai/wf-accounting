@@ -7,7 +7,8 @@ import { ArrowLeft } from "lucide-react";
 import { ProjectOutstanding } from "@/components/projects/project-outstanding";
 import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
 import { ProjectDocuments } from "@/components/projects/project-documents";
-import { toVnd } from "@/lib/money";
+import { toVnd, settlement } from "@/lib/money";
+import { defaultUsdRate } from "@/lib/fx";
 
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -15,7 +16,7 @@ const fmtDate = (d: Date | null) => (d ? d.toLocaleDateString("en-GB", { day: "2
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [project, openInvoices, clients] = await Promise.all([
+  const [project, openInvoices, clients, accounts, usdRate] = await Promise.all([
     prisma.project.findUnique({
       where: { id },
       include: {
@@ -25,11 +26,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       },
     }),
     prisma.invoice.findMany({
-      where: { projectId: id, status: "OPEN" },
+      where: { projectId: id, status: { in: ["OPEN", "PARTIAL"] } },
       orderBy: { dueDate: "asc" },
-      include: { client: true, vendor: true },
+      include: { client: true, vendor: true, allocations: true },
     }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
+    defaultUsdRate(),
   ]);
   if (!project) redirect("/projects");
 
@@ -41,10 +44,11 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     number: i.number,
     direction: i.direction,
     party: i.direction === "PAYABLE" ? (i.vendor?.name ?? null) : (i.client?.name ?? null),
+    status: i.status,
     amount: i.amount,
+    difference: settlement(i.amount, i.allocations).difference,
     currency: i.currency,
-    amountVnd: i.amount * i.exchangeRate,
-    dueDate: iso(i.dueDate),
+    dueDate: iso(i.dueDate)!,
     overdue: i.dueDate < now,
   }));
 
@@ -106,7 +110,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <CardDescription>Invoices &amp; bills on this project awaiting payment.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ProjectOutstanding items={outstanding} />
+          <ProjectOutstanding items={outstanding} accounts={accounts} defaultUsdRate={usdRate} />
         </CardContent>
       </Card>
 

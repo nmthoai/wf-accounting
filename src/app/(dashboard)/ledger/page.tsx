@@ -29,6 +29,7 @@ export default async function LedgerPage() {
       invoice: true,
       project: true,
       account: true,
+      allocations: { include: { invoice: { select: { number: true, direction: true } } } },
     },
   });
 
@@ -79,9 +80,15 @@ export default async function LedgerPage() {
                   <TableCell className="max-w-[200px]">
                     <div className="flex items-center gap-2">
                       <span className="truncate" title={t.description || ""}>{t.description}</span>
-                      {t.invoiceId && (
-                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700" title="Created from an invoice/bill — don't add a manual duplicate">
-                          from invoice
+                      {t.allocations.map((a) => (
+                        <span key={a.id} className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700"
+                          title={a.kind === "FEE" ? "Evidenced fee linked to this invoice/bill" : "Settles this invoice/bill — don't add a manual duplicate"}>
+                          {a.kind === "FEE" ? "fee → " : "→ "}{a.invoice.number || (a.invoice.direction === "PAYABLE" ? "bill" : "invoice")}
+                        </span>
+                      ))}
+                      {t.type === "INCOME" && t.allocations.length === 0 && (
+                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700" title="Not matched to any invoice yet — link it from the Invoices page">
+                          not matched
                         </span>
                       )}
                     </div>

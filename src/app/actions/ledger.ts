@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { persistUploads, removeUploadFile } from "@/lib/uploads";
 import { resolveFx } from "@/lib/fx";
 import { CURRENCIES } from "@/lib/money";
+import { refreshInvoiceStatus, invoicesOf } from "@/lib/invoice-status";
 
 // Shared parsing for the income/expense form. Other movement kinds (transfers,
 // capital, loans) are recorded on the Accounts page.
@@ -84,10 +85,13 @@ export async function deleteTransaction(id: string) {
 
   // Cascade-delete removes the Attachment rows; also remove the files from disk.
   const attachments = await prisma.attachment.findMany({ where: { transactionId: { in: ids } } });
+  const invoices = await invoicesOf(ids); // payments being removed — their invoices reopen
 
   await prisma.transaction.deleteMany({ where: { id: { in: ids } } });
 
   for (const a of attachments) await removeUploadFile(a.filePath);
+  await refreshInvoiceStatus(invoices);
+  revalidatePath("/invoices");
 
   revalidatePath("/ledger");
   revalidatePath("/accounts");
@@ -109,6 +113,7 @@ export async function editTransaction(id: string, formData: FormData) {
   if ("error" in parsed) return { success: false, message: parsed.error };
 
   await prisma.transaction.update({ where: { id }, data: parsed.data });
+  await refreshInvoiceStatus(await invoicesOf([id]));
 
   // Append any newly attached receipts
   await persistUploads(formData.getAll("files") as File[], { transactionId: id });
