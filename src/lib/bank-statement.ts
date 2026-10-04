@@ -24,6 +24,8 @@ export type ParsedStatement = {
   lines: StatementLine[]; // oldest first
   opening: number | null; // as stated, else derived from the running balance
   closing: number | null;
+  periodFrom: Date | null; // the statement period as printed, when it holds every line
+  periodTo: Date | null;
   currency: string | null; // when the file names exactly one currency
   warnings: string[];
 };
@@ -127,15 +129,29 @@ function findHeader(rows: unknown[][]) {
   return best;
 }
 
-// "Số dư đầu kỳ: 1.000" in one cell, or the label with the amount to its right.
+// "Số dư cuối kỳ/ Closing Balance: 53,636,145 VND (Bằng chữ: …)" — the first
+// amount after the colon — or "Số dư đầu kỳ 0", or the label with the amount to its right.
 function labelled(rows: unknown[][], keys: string[]) {
   for (const row of rows) {
     for (let c = 0; c < row.length; c++) {
       if (!keys.some((k) => norm(row[c]).includes(k))) continue;
-      const own = String(row[c]).match(/[:\s](-?\(?[\d.,]*\d\)?)\s*(VND|USD|EUR|đ|₫)?\s*$/i);
-      if (own) { const n = toNum(own[1]); if (n !== null) return n; }
+      const cell = String(row[c]);
+      const own = cell.split(":").slice(1).join(":").match(/-?\(?\d[\d.,]*\)?/)
+        ?? cell.match(/\s(-?\(?[\d.,]*\d\)?)\s*(VND|USD|EUR|đ|₫)?\s*$/i)?.slice(1);
+      if (own) { const n = toNum(own[0]); if (n !== null) return n; }
       for (let k = c + 1; k < row.length; k++) { const n = toNum(row[k]); if (n !== null) return n; }
     }
+  }
+  return null;
+}
+
+// "Từ ngày/From: 01/05/2026 Đến ngày/To: 04/10/2026" above the table.
+function statedPeriod(rows: unknown[][]) {
+  for (const row of rows) for (const v of row) {
+    const s = String(v);
+    if (!/\b(tu ngay|from)\b/.test(norm(s))) continue;
+    const [from, to] = [...s.matchAll(/\d{1,2}\/\d{1,2}\/\d{4}/g)].map((m) => toDate(m[0]));
+    if (from && to && from <= to) return { from, to };
   }
   return null;
 }
@@ -190,6 +206,9 @@ function readSheet(name: string, rows: unknown[][]): ParsedStatement | null {
   if (statedOpening !== null && derivedOpening !== null && Math.abs(statedOpening - derivedOpening) > EPS) warnings.push("The stated opening balance differs from the running balance.");
   if (statedClosing !== null && derivedClosing !== null && Math.abs(statedClosing - derivedClosing) > EPS) warnings.push("The stated closing balance differs from the running balance.");
 
+  const stated = statedPeriod(rows.slice(0, head.start));
+  const inPeriod = stated && lines.every((l) => l.txnDate >= stated.from && l.txnDate <= stated.to);
+
   const found = new Set<string>();
   for (const row of rows.slice(0, head.start)) for (const v of row) for (const c of ["VND", "USD", "EUR"]) if (new RegExp(`\\b${c}\\b`).test(String(v))) found.add(c);
 
@@ -202,6 +221,8 @@ function readSheet(name: string, rows: unknown[][]): ParsedStatement | null {
     lines,
     opening: statedOpening ?? derivedOpening,
     closing: statedClosing ?? derivedClosing,
+    periodFrom: inPeriod ? stated.from : null,
+    periodTo: inPeriod ? stated.to : null,
     currency: found.size === 1 ? [...found][0] : null,
     warnings,
   };
