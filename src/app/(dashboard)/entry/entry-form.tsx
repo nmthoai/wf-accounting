@@ -12,6 +12,7 @@ import { Loader2, UploadCloud, Paperclip, X } from "lucide-react";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { CURRENCIES } from "@/lib/money";
 import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
+import { uploadProblem } from "@/lib/upload-limit";
 
 // One of the evidence/tax review statuses, as a dropdown.
 function StatusSelect({ id, label, options, value, onChange, disabled }: {
@@ -108,7 +109,9 @@ export function EntryForm({
 
   function handleFilesChosen(e: React.ChangeEvent<HTMLInputElement>) {
     const chosen = Array.from(e.target.files ?? []);
-    if (chosen.length) setPendingFiles((prev) => [...prev, ...chosen]);
+    const problem = uploadProblem([...pendingFiles, ...chosen]);
+    if (problem) alert(problem);
+    else if (chosen.length) setPendingFiles((prev) => [...prev, ...chosen]);
     e.target.value = ""; // let the same file be re-picked; state is the source of truth
   }
 
@@ -420,7 +423,7 @@ export function EntryForm({
                     </label>
                     <p className="pl-1">or take a photo</p>
                   </div>
-                  <p className="text-xs leading-5 text-muted-foreground mt-2">PNG, JPG, PDF, ZIP (e.g. original e-invoice) up to 10MB</p>
+                  <p className="text-xs leading-5 text-muted-foreground mt-2">PNG, JPG, PDF, ZIP (e.g. original e-invoice) — up to 10 MB per save</p>
                 </div>
               </div>
             </div>

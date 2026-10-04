@@ -14,6 +14,7 @@ import { saveCostItem, dismissCostItem, reopenCostItem, deleteCostItem } from "@
 import { CURRENCIES, fmtMoney, totalsList, type Totals } from "@/lib/money";
 import { DOC_STATUS, DOC_BADGE } from "@/lib/review";
 import { PAYER, REIMBURSEMENT, COST_STATUS } from "@/lib/costs";
+import { uploadProblem } from "@/lib/upload-limit";
 
 export type CostRow = {
   id: string; ref: string | null; provider: string; receiptDate: string; amount: number; currency: string;
@@ -54,8 +55,10 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setBusy(true); setErr("");
     const fd = new FormData(e.currentTarget);
+    const tooBig = uploadProblem(fd.getAll("files") as File[]);
+    if (tooBig) { setErr(tooBig); return; }
+    setBusy(true); setErr("");
     fd.set("currency", currency); fd.set("payer", payer); fd.set("reimbursement", reimbursement); fd.set("docStatus", docStatus);
     try {
       const res = await saveCostItem(item?.id ?? null, fd);

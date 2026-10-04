@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Plus, Loader2, Ban, Trash2, AlertTriangle, Paperclip, ArrowDownLeft, ArrowUpRight, X } from "lucide-react";
 import { createInvoice, voidInvoice, deleteInvoice, unlinkAllocation } from "@/app/actions/invoices";
+import { uploadProblem } from "@/lib/upload-limit";
 import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
 import { RecordPaymentDialog, LinkEntryDialog, type Candidate } from "@/components/invoices/payment-dialogs";
 import type { AccountOpt } from "@/components/accounts/account-select";
@@ -71,10 +72,12 @@ export function InvoicesClient({
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setCreating(true);
-    setErr("");
     const form = e.currentTarget;
     const fd = new FormData(form);
+    const tooBig = uploadProblem(fd.getAll("files") as File[]);
+    if (tooBig) { setErr(tooBig); return; }
+    setCreating(true);
+    setErr("");
     fd.set("direction", direction);
     fd.set("clientId", direction === "RECEIVABLE" ? partyId : "");
     fd.set("vendorId", direction === "PAYABLE" ? partyId : "");

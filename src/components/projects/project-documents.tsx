@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { FileText, Loader2, Trash2, UploadCloud } from "lucide-react";
 import { addProjectDocument } from "@/app/actions/projects";
 import { deleteAttachment } from "@/app/actions/ledger";
+import { uploadProblem } from "@/lib/upload-limit";
 
 type Doc = { id: string; fileName: string; filePath: string; createdAt: string };
 
@@ -21,6 +22,8 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
     const form = e.currentTarget;
     const fd = new FormData(form);
     if (!(fd.getAll("files") as File[]).some((f) => f && f.size > 0)) return;
+    const tooBig = uploadProblem(fd.getAll("files") as File[]);
+    if (tooBig) { alert(tooBig); return; }
     setUploading(true);
     try {
       await addProjectDocument(projectId, fd);
