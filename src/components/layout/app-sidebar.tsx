@@ -10,6 +10,7 @@ import {
   Briefcase,
   Users,
   Wallet,
+  Landmark,
   BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ export const navigation = [
   { name: "Projects", href: "/projects", icon: Briefcase },
   { name: "Clients & Vendors", href: "/contacts", icon: Users },
   { name: "Accounts", href: "/accounts", icon: Wallet },
+  { name: "Bank", href: "/bank", icon: Landmark },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

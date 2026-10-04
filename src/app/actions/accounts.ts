@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { defaultUsdRate } from "@/lib/fx";
+import { bankLinkProblem } from "@/lib/bank-match";
 
 async function requireUser() {
   const session = await auth();
@@ -19,7 +20,15 @@ async function requireAdmin() {
 function revalidateAll() {
   revalidatePath("/accounts");
   revalidatePath("/ledger");
+  revalidatePath("/bank");
   revalidatePath("/");
+}
+
+// A movement matched to a bank statement line must still fit that line.
+async function stillFits(leg: { id: string; bankLineId: string | null }, data: Parameters<typeof bankLinkProblem>[1][number]) {
+  if (!leg.bankLineId) return null;
+  const problem = await bankLinkProblem(leg.bankLineId, [data], [leg.id]);
+  return problem ? `This is matched to a bank statement line. ${problem} Unmatch it on the Bank page first.` : null;
 }
 
 const ACCOUNT_TYPES = ["BANK", "CASH", "OWNER", "TERM_DEPOSIT"];
@@ -127,6 +136,8 @@ export async function updateMovement(id: string, formData: FormData) {
   if (!existing || !MOVEMENT_TYPES.includes(existing.type)) return { success: false, message: "Not found." };
   const parsed = await parseMovement(formData);
   if ("error" in parsed) return { success: false, message: parsed.error };
+  const problem = await stillFits(existing, parsed.data);
+  if (problem) return { success: false, message: problem };
   await prisma.transaction.update({ where: { id }, data: parsed.data });
   revalidateAll();
   return { success: true };
@@ -202,6 +213,8 @@ export async function updateTransfer(transferId: string, formData: FormData) {
 
   const parsed = await parseTransfer(formData);
   if ("error" in parsed) return { success: false, message: parsed.error };
+  const problem = (await stillFits(outLeg, parsed.out)) ?? (await stillFits(inLeg, parsed.in));
+  if (problem) return { success: false, message: problem };
   await prisma.$transaction([
     prisma.transaction.update({ where: { id: outLeg.id }, data: parsed.out }),
     prisma.transaction.update({ where: { id: inLeg.id }, data: parsed.in }),

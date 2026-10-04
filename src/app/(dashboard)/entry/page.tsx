@@ -2,16 +2,43 @@ import { prisma } from "@/lib/prisma";
 import { EntryForm } from "./entry-form";
 import { defaultUsdRate } from "@/lib/fx";
 import { auth } from "@/auth";
+import { accountDelta, fmtMoney } from "@/lib/money";
 
-export default async function NewEntryPage() {
-  const [session, usdRate, accounts, categories, projects, vendors] = await Promise.all([
+export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ bankLine?: string }> }) {
+  const { bankLine: lineId } = await searchParams;
+  const [session, usdRate, accounts, categories, projects, vendors, line] = await Promise.all([
     auth(),
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    lineId ? prisma.bankLine.findUnique({ where: { id: lineId }, include: { account: true, entries: true } }) : null,
   ]);
+
+  // Started from a bank statement line: the part of it not yet in the ledger.
+  let prefill;
+  let bankLine;
+  if (line) {
+    const cur = line.account.currency;
+    const matched = line.entries.reduce((s, t) => s + Math.abs(accountDelta(t, cur)), 0);
+    const open = Math.round((Math.abs(line.amount) - matched) * 100) / 100;
+    prefill = {
+      type: line.amount > 0 ? "INCOME" : "EXPENSE",
+      accountId: line.accountId,
+      currency: cur,
+      date: line.txnDate,
+      amount: open,
+      // A foreign-currency purchase paid from a VND account settles at the bank's VND figure.
+      vndAmount: cur === "VND" ? open : null,
+      rateSource: cur === "VND" ? "BANK" : null,
+      description: line.counterparty ?? line.description ?? "",
+    };
+    bankLine = {
+      id: line.id,
+      label: `${line.txnDate.toISOString().slice(0, 10)} · ${line.amount < 0 ? "−" : "+"}${fmtMoney(open, cur)}${line.reference ? ` · ${line.reference}` : ""}`,
+    };
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -27,6 +54,8 @@ export default async function NewEntryPage() {
         accounts={accounts}
         defaultUsdRate={usdRate}
         isAdmin={session?.user?.role === "ADMIN"}
+        prefill={prefill}
+        bankLine={bankLine}
       />
     </div>
   );

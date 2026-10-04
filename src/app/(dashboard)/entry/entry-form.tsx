@@ -37,7 +37,9 @@ export function EntryForm({
   accounts,
   defaultUsdRate,
   isAdmin,
-  initialData
+  initialData,
+  prefill,
+  bankLine
 }: {
   categories: any[];
   projects?: { id: string; name: string }[];
@@ -46,25 +48,28 @@ export function EntryForm({
   defaultUsdRate: number;
   isAdmin: boolean;
   initialData?: any;
+  prefill?: any; // a new entry started from a bank statement line
+  bankLine?: { id: string; label: string };
 }) {
   const router = useRouter();
+  const init = initialData ?? prefill;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [type, setType] = useState<"INCOME" | "EXPENSE">(initialData?.type || "EXPENSE");
-  const [currency, setCurrency] = useState<string>(initialData?.currency || "VND");
-  const [projectId, setProjectId] = useState<string>(initialData?.projectId || "");
-  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || "");
-  const [accountId, setAccountId] = useState<string>(initialData?.accountId || "");
+  const [type, setType] = useState<"INCOME" | "EXPENSE">(init?.type || "EXPENSE");
+  const [currency, setCurrency] = useState<string>(init?.currency || "VND");
+  const [projectId, setProjectId] = useState<string>(init?.projectId || "");
+  const [vendorId, setVendorId] = useState<string>(init?.vendorId || "");
+  const [accountId, setAccountId] = useState<string>(init?.accountId || "");
   // How a USD amount converts: bank-settled VND (exact), a manual rate, or the default.
   const [rateMode, setRateMode] = useState<"BANK" | "MANUAL" | "DEFAULT">(
-    initialData?.rateSource === "BANK" ? "BANK" : initialData?.rateSource === "MANUAL" ? "MANUAL" : "DEFAULT"
+    init?.rateSource === "BANK" ? "BANK" : init?.rateSource === "MANUAL" ? "MANUAL" : "DEFAULT"
   );
   const account = accounts.find((a) => a.id === accountId);
   const usdAccount = account?.currency === "USD";
   // Evidence and tax review — everything starts pending.
-  const [docStatus, setDocStatus] = useState<string>(initialData?.docStatus || "PENDING");
-  const [purposeStatus, setPurposeStatus] = useState<string>(initialData?.purposeStatus || "PENDING");
-  const [citStatus, setCitStatus] = useState<string>(initialData?.citStatus || "PENDING");
-  const [vatStatus, setVatStatus] = useState<string>(initialData?.vatStatus || "PENDING");
+  const [docStatus, setDocStatus] = useState<string>(init?.docStatus || "PENDING");
+  const [purposeStatus, setPurposeStatus] = useState<string>(init?.purposeStatus || "PENDING");
+  const [citStatus, setCitStatus] = useState<string>(init?.citStatus || "PENDING");
+  const [vatStatus, setVatStatus] = useState<string>(init?.vatStatus || "PENDING");
 
   function chooseAccount(id: string) {
     setAccountId(id);
@@ -84,12 +89,12 @@ export function EntryForm({
   const isEdit = !!initialData;
   
   const [categoryId, setCategoryId] = useState<string>(
-    initialData?.type === type ? (initialData?.categoryId || "") : ""
+    init?.type === type ? (init?.categoryId || "") : ""
   );
 
   const selectedCategory = categories.find(c => c.id === categoryId);
 
-  const [attachments, setAttachments] = useState<any[]>(initialData?.attachments || []);
+  const [attachments, setAttachments] = useState<any[]>(init?.attachments || []);
   const [removingId, setRemovingId] = useState<string | null>(null);
   // Files chosen but not yet saved. We own this list (the native input only
   // keeps its last selection), so picking "Add more files" twice accumulates.
@@ -132,6 +137,7 @@ export function EntryForm({
     formData.set("purposeStatus", purposeStatus);
     formData.set("citStatus", citStatus);
     formData.set("vatStatus", vatStatus);
+    if (bankLine) formData.set("bankLineId", bankLine.id);
     // Submit exactly the files shown in the UI (state owns the list).
     formData.delete("files");
     for (const f of pendingFiles) formData.append("files", f);
@@ -145,7 +151,7 @@ export function EntryForm({
       }
 
       if (res.success) {
-        router.push("/ledger");
+        router.push(bankLine ? "/bank" : "/ledger");
       } else {
         alert(res.message);
       }
@@ -156,14 +162,19 @@ export function EntryForm({
     }
   }
 
-  const defaultDate = initialData?.date 
-    ? new Date(initialData.date).toISOString().split('T')[0]
+  const defaultDate = init?.date 
+    ? new Date(init.date).toISOString().split('T')[0]
     : new Date().toISOString().split('T')[0];
 
   return (
     <Card>
       <CardContent className="pt-6">
         <form onSubmit={onSubmit} className="space-y-6">
+          {bankLine && (
+            <p className="text-sm rounded-md border p-3 bg-muted/30">
+              From bank line <span className="font-medium">{bankLine.label}</span> — saving matches this entry to it.
+            </p>
+          )}
           {/* Type Toggle */}
           <div className="flex bg-muted p-1 rounded-lg">
             <button
@@ -171,7 +182,7 @@ export function EntryForm({
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${type === "EXPENSE" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => {
                 setType("EXPENSE");
-                if (initialData?.type === "EXPENSE") setCategoryId(initialData?.categoryId || "");
+                if (init?.type === "EXPENSE") setCategoryId(init?.categoryId || "");
                 else setCategoryId("");
               }}
             >
@@ -182,7 +193,7 @@ export function EntryForm({
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${type === "INCOME" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => {
                 setType("INCOME");
-                if (initialData?.type === "INCOME") setCategoryId(initialData?.categoryId || "");
+                if (init?.type === "INCOME") setCategoryId(init?.categoryId || "");
                 else setCategoryId("");
               }}
             >
@@ -217,7 +228,7 @@ export function EntryForm({
                   ))}
                 </div>
               </div>
-              <Input id="amount" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" defaultValue={initialData?.amount} />
+              <Input id="amount" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" defaultValue={init?.amount} />
             </div>
 
             {currency !== "VND" && (
@@ -231,11 +242,11 @@ export function EntryForm({
                 </div>
                 {rateMode === "BANK" && (
                   <Input name="vndAmount" type="number" step="1" min="0" required placeholder="VND exactly as on the bank statement"
-                    defaultValue={initialData?.vndAmount ?? ""} />
+                    defaultValue={init?.vndAmount ?? ""} />
                 )}
                 {rateMode === "MANUAL" && (
                   <Input name="rate" type="number" step="any" min="0" required placeholder={`VND per ${currency}`}
-                    defaultValue={initialData?.rateSource === "MANUAL" ? initialData.exchangeRate : ""} />
+                    defaultValue={init?.rateSource === "MANUAL" ? init.exchangeRate : ""} />
                 )}
                 <p className="text-xs text-muted-foreground">
                   {rateMode === "BANK" ? "Most accurate — the rate is worked out from what the bank actually settled."
@@ -306,12 +317,12 @@ export function EntryForm({
 
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="invoiceNumber">Invoice Number (Optional)</Label>
-              <Input id="invoiceNumber" name="invoiceNumber" placeholder="e.g. INV-2026-001" defaultValue={initialData?.invoiceNumber || ""} />
+              <Input id="invoiceNumber" name="invoiceNumber" placeholder="e.g. INV-2026-001" defaultValue={init?.invoiceNumber || ""} />
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="description">Description</Label>
-              <Input id="description" name="description" placeholder="What was this for?" required defaultValue={initialData?.description || ""} />
+              <Input id="description" name="description" placeholder="What was this for?" required defaultValue={init?.description || ""} />
             </div>
 
             <div className="space-y-2 md:col-span-2">
@@ -407,13 +418,13 @@ export function EntryForm({
                     <StatusSelect id="vatStatus" label="Input VAT" options={VAT_STATUS} value={vatStatus} onChange={setVatStatus} disabled={!isAdmin} />
                     <div className="space-y-2">
                       <Label htmlFor="vatAmount">VAT on the invoice ({currency})</Label>
-                      <Input id="vatAmount" name="vatAmount" type="number" step="any" min="0" placeholder="As printed — blank if none" defaultValue={initialData?.vatAmount ?? ""} />
+                      <Input id="vatAmount" name="vatAmount" type="number" step="any" min="0" placeholder="As printed — blank if none" defaultValue={init?.vatAmount ?? ""} />
                     </div>
                   </>
                 )}
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="reviewNote">Review notes</Label>
-                  <Input id="reviewNote" name="reviewNote" placeholder="Purpose evidence, the accountant's basis, open questions" defaultValue={initialData?.reviewNote || ""} />
+                  <Input id="reviewNote" name="reviewNote" placeholder="Purpose evidence, the accountant's basis, open questions" defaultValue={init?.reviewNote || ""} />
                 </div>
               </div>
               {type === "EXPENSE" && !isAdmin && (

@@ -50,6 +50,49 @@ model Account {
   updatedAt      DateTime  @updatedAt
 
   transactions   Transaction[]
+  statements     BankStatement[]
+  bankLines      BankLine[]
+}
+
+// An imported bank statement file. New lines are appended only after
+// de-duplication, and only if the file adds up: opening + in − out = closing.
+model BankStatement {
+  id             String     @id @default(cuid())
+  accountId      String
+  account        Account    @relation(fields: [accountId], references: [id])
+  fileName       String
+  periodFrom     DateTime
+  periodTo       DateTime
+  openingBalance Float      // as stated, in the account's currency
+  closingBalance Float
+  inflows        Float
+  outflows       Float
+  lineCount      Int        // lines in the file (duplicates included)
+  importedBy     String?
+  createdAt      DateTime   @default(now())
+  lines          BankLine[]
+}
+
+// One line of a bank statement, kept exactly as the bank reported it.
+model BankLine {
+  id           String        @id @default(cuid())
+  accountId    String
+  account      Account       @relation(fields: [accountId], references: [id])
+  statementId  String
+  statement    BankStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  txnDate      DateTime      // transaction date
+  postingDate  DateTime?     // posting date — kept separately
+  reference    String?       // bank transaction reference
+  amount       Float         // + money in, − money out, in the account's currency
+  balance      Float?        // running balance as printed
+  counterparty String?
+  description  String?
+  locator      String        // file · sheet · row
+  dedupeKey    String        // reference | date | amount (+ repeat number within the file)
+  entries      Transaction[] // ledger entries this line is reconciled to
+  createdAt    DateTime      @default(now())
+
+  @@unique([accountId, dedupeKey])
 }
 
 // A loan to the company (e.g. from the owner). Outstanding = received − repaid.
@@ -99,6 +142,8 @@ model Transaction {
   vatStatus     String    @default("PENDING") // PENDING, CLAIMABLE, NOT_CLAIMABLE, NO_VAT (expenses)
   vatAmount     Float?                        // input VAT as printed on the invoice, in `currency`
   reviewNote    String?                       // purpose evidence, the accountant's basis, open questions
+  bankLineId    String?                       // the bank statement line this entry is reconciled to
+  bankLine      BankLine? @relation(fields: [bankLineId], references: [id], onDelete: SetNull)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

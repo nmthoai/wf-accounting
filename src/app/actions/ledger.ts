@@ -8,6 +8,7 @@ import { resolveFx } from "@/lib/fx";
 import { CURRENCIES } from "@/lib/money";
 import { refreshInvoiceStatus, invoicesOf } from "@/lib/invoice-status";
 import { reviewProblem } from "@/lib/review";
+import { bankLinkProblem } from "@/lib/bank-match";
 
 type Decisions = { purposeStatus: string; citStatus: string; vatStatus: string };
 
@@ -82,12 +83,20 @@ export async function createTransaction(formData: FormData) {
   const parsed = await parseEntry(formData, session.user.role === "ADMIN");
   if ("error" in parsed) return { success: false, message: parsed.error };
 
-  const transaction = await prisma.transaction.create({ data: parsed.data });
+  // Created from a bank statement line: it must fit that line.
+  const bankLineId = (formData.get("bankLineId") as string) || null;
+  if (bankLineId) {
+    const problem = await bankLinkProblem(bankLineId, [parsed.data]);
+    if (problem) return { success: false, message: problem };
+  }
+
+  const transaction = await prisma.transaction.create({ data: { ...parsed.data, bankLineId } });
 
   await persistUploads(formData.getAll("files") as File[], { transactionId: transaction.id });
 
   revalidatePath("/ledger");
   revalidatePath("/accounts");
+  revalidatePath("/bank");
   revalidatePath("/");
   return { success: true };
 }
@@ -112,6 +121,7 @@ export async function deleteTransaction(id: string) {
   for (const a of attachments) await removeUploadFile(a.filePath);
   await refreshInvoiceStatus(invoices);
   revalidatePath("/invoices");
+  revalidatePath("/bank"); // its bank line, if any, is open again
 
   revalidatePath("/ledger");
   revalidatePath("/accounts");
@@ -131,6 +141,10 @@ export async function editTransaction(id: string, formData: FormData) {
 
   const parsed = await parseEntry(formData, session.user.role === "ADMIN", existing);
   if ("error" in parsed) return { success: false, message: parsed.error };
+  if (existing.bankLineId) {
+    const problem = await bankLinkProblem(existing.bankLineId, [parsed.data], [id]);
+    if (problem) return { success: false, message: `This entry is matched to a bank statement line. ${problem} Unmatch it on the Bank page first.` };
+  }
 
   await prisma.transaction.update({ where: { id }, data: parsed.data });
   await refreshInvoiceStatus(await invoicesOf([id]));
@@ -140,6 +154,7 @@ export async function editTransaction(id: string, formData: FormData) {
 
   revalidatePath("/ledger");
   revalidatePath("/accounts");
+  revalidatePath("/bank");
   revalidatePath("/");
   revalidatePath(`/entry/${id}`);
   return { success: true };

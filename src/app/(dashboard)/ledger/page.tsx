@@ -132,6 +132,11 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
+                      {t.bankLineId && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap bg-green-50 text-green-700 border border-green-200" title="Matched to a bank statement line">
+                          on statement
+                        </span>
+                      )}
                       {isPnl(t.type) && (
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${DOC_BADGE[t.docStatus] ?? ""}`} title={t.reviewNote ?? undefined}>
                           {DOC_STATUS[t.docStatus] ?? t.docStatus}
