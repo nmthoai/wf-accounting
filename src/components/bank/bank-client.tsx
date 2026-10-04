@@ -25,7 +25,7 @@ export type LineRow = {
 export type AccountSummary = {
   id: string; name: string; currency: string;
   bankClosing: number | null; asOf: string | null; appBalance: number | null;
-  lines: number; open: number; notOnStatement: Linked[];
+  lines: number; open: number; drafts: number; notOnStatement: Linked[];
 };
 export type StatementRow = {
   id: string; accountName: string; currency: string; fileName: string; periodFrom: string; periodTo: string;
@@ -275,6 +275,7 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                       {s.open} of {s.lines} bank lines to reconcile
                       {s.notOnStatement.length > 0 && ` · ${s.notOnStatement.length} app ${s.notOnStatement.length === 1 ? "entry" : "entries"} not on the statement`}
                     </p>
+                    {s.drafts > 0 && <p className="text-xs text-amber-700">{s.drafts} draft {s.drafts === 1 ? "entry" : "entries"} not counted in the app balance until reviewed</p>}
                   </>
                 )}
               </CardContent>

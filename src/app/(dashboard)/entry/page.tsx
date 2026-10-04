@@ -4,9 +4,9 @@ import { defaultUsdRate } from "@/lib/fx";
 import { auth } from "@/auth";
 import { accountDelta, fmtMoney } from "@/lib/money";
 
-export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ bankLine?: string }> }) {
-  const { bankLine: lineId } = await searchParams;
-  const [session, usdRate, accounts, categories, projects, vendors, line] = await Promise.all([
+export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ bankLine?: string; reenter?: string }> }) {
+  const { bankLine: lineId, reenter } = await searchParams;
+  const [session, usdRate, accounts, categories, projects, vendors, line, reversed] = await Promise.all([
     auth(),
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
@@ -14,11 +14,24 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
     prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     lineId ? prisma.bankLine.findUnique({ where: { id: lineId }, include: { account: true, entries: true } }) : null,
+    reenter ? prisma.transaction.findUnique({ where: { id: reenter }, include: { reversedBy: true } }) : null,
   ]);
 
   // Started from a bank statement line: the part of it not yet in the ledger.
   let prefill;
   let bankLine;
+  let correction;
+  // Re-entering a reversed posted entry: start from its values, to be corrected.
+  if (reversed?.reversedBy && (reversed.type === "INCOME" || reversed.type === "EXPENSE")) {
+    const r = reversed;
+    prefill = {
+      type: r.type, accountId: r.accountId, date: r.date, amount: r.amount, currency: r.currency,
+      exchangeRate: r.exchangeRate, vndAmount: r.vndAmount, rateSource: r.rateSource,
+      categoryId: r.categoryId, projectId: r.projectId, vendorId: r.vendorId, invoiceNumber: r.invoiceNumber, description: r.description,
+      docStatus: r.docStatus, purposeStatus: r.purposeStatus, citStatus: r.citStatus, vatStatus: r.vatStatus, vatAmount: r.vatAmount, reviewNote: r.reviewNote,
+    };
+    correction = { id: reversed.id, label: `${reversed.date.toISOString().slice(0, 10)} · ${fmtMoney(reversed.amount, reversed.currency)}${reversed.description ? ` · ${reversed.description}` : ""}` };
+  }
   if (line) {
     const cur = line.account.currency;
     const matched = line.entries.reduce((s, t) => s + Math.abs(accountDelta(t, cur)), 0);
@@ -56,6 +69,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
         isAdmin={session?.user?.role === "ADMIN"}
         prefill={prefill}
         bankLine={bankLine}
+        correction={correction}
       />
     </div>
   );

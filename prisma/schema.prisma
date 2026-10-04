@@ -95,6 +95,23 @@ model BankLine {
   @@unique([accountId, dedupeKey])
 }
 
+// Change history: who changed what, when and why — one row per changed field.
+// Not linked by foreign key, so the history of a deleted entry is kept.
+model ChangeLog {
+  id        String   @id @default(cuid())
+  entity    String   @default("Transaction")
+  entityId  String
+  action    String   // CREATE, UPDATE, REVIEW, POST, REVERSE, DELETE, MATCH, UNMATCH, LINK, UNLINK
+  field     String?
+  oldValue  String?
+  newValue  String?
+  reason    String?
+  user      String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}
+
 // A loan to the company (e.g. from the owner). Outstanding = received − repaid.
 model Loan {
   id        String   @id @default(cuid())
@@ -144,6 +161,14 @@ model Transaction {
   reviewNote    String?                       // purpose evidence, the accountant's basis, open questions
   bankLineId    String?                       // the bank statement line this entry is reconciled to
   bankLine      BankLine? @relation(fields: [bankLineId], references: [id], onDelete: SetNull)
+  // Workflow: staff entries start as drafts; an admin reviews, then posts.
+  // Posted entries are locked — corrected by a reversal, never edited away.
+  status         String       @default("REVIEWED") // DRAFT, REVIEWED, POSTED
+  createdBy      String?                           // who entered it
+  reversalOfId   String?      @unique              // this entry cancels that posted entry in full
+  reversalOf     Transaction? @relation("Reversal", fields: [reversalOfId], references: [id])
+  reversedBy     Transaction? @relation("Reversal")
+  correctionOfId String?                           // re-entered in place of that reversed entry
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

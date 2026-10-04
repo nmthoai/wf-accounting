@@ -6,11 +6,20 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { defaultUsdRate } from "@/lib/fx";
 import { bankLinkProblem } from "@/lib/bank-match";
+import { diff, record, snapshot } from "@/lib/history";
 
 async function requireUser() {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
+  return { name: session.user.name ?? null, isAdmin: session.user.role === "ADMIN" };
 }
+
+// The owner's entries count as reviewed; anyone else's wait for review.
+const startStatus = (me: { isAdmin: boolean }) => (me.isAdmin ? "REVIEWED" : "DRAFT");
+// A reviewed entry changed by anyone but the owner goes back to draft.
+const nextStatus = (me: { isAdmin: boolean }, status: string) => (!me.isAdmin && status === "REVIEWED" ? "DRAFT" : status);
+const LOCKED = "This is posted — reverse it from the ledger entry instead of editing.";
+const reasonOf = (fd: FormData) => ((fd.get("reason") as string) || "").trim() || null;
 
 async function requireAdmin() {
   const session = await auth();
@@ -122,23 +131,27 @@ async function parseMovement(formData: FormData) {
 }
 
 export async function recordMovement(formData: FormData) {
-  await requireUser();
+  const me = await requireUser();
   const parsed = await parseMovement(formData);
   if ("error" in parsed) return { success: false, message: parsed.error };
-  await prisma.transaction.create({ data: parsed.data });
+  const t = await prisma.transaction.create({ data: { ...parsed.data, status: startStatus(me), createdBy: me.name } });
+  await record([{ entityId: t.id, action: "CREATE", newValue: snapshot(t) }], me.name);
   revalidateAll();
   return { success: true };
 }
 
 export async function updateMovement(id: string, formData: FormData) {
-  await requireUser();
+  const me = await requireUser();
   const existing = await prisma.transaction.findUnique({ where: { id } });
   if (!existing || !MOVEMENT_TYPES.includes(existing.type)) return { success: false, message: "Not found." };
+  if (existing.status === "POSTED") return { success: false, message: LOCKED };
   const parsed = await parseMovement(formData);
   if ("error" in parsed) return { success: false, message: parsed.error };
   const problem = await stillFits(existing, parsed.data);
   if (problem) return { success: false, message: problem };
-  await prisma.transaction.update({ where: { id }, data: parsed.data });
+  const data = { ...parsed.data, status: nextStatus(me, existing.status) };
+  await prisma.transaction.update({ where: { id }, data });
+  await record(diff(id, existing, data, reasonOf(formData)), me.name);
   revalidateAll();
   return { success: true };
 }
@@ -192,33 +205,39 @@ async function parseTransfer(formData: FormData) {
 }
 
 export async function createTransfer(formData: FormData) {
-  await requireUser();
+  const me = await requireUser();
   const parsed = await parseTransfer(formData);
   if ("error" in parsed) return { success: false, message: parsed.error };
   const transferId = randomUUID();
-  await prisma.$transaction([
-    prisma.transaction.create({ data: { ...parsed.out, transferId } }),
-    prisma.transaction.create({ data: { ...parsed.in, transferId } }),
+  const extra = { transferId, status: startStatus(me), createdBy: me.name };
+  const legs = await prisma.$transaction([
+    prisma.transaction.create({ data: { ...parsed.out, ...extra } }),
+    prisma.transaction.create({ data: { ...parsed.in, ...extra } }),
   ]);
+  await record(legs.map((t) => ({ entityId: t.id, action: "CREATE", newValue: snapshot(t) })), me.name);
   revalidateAll();
   return { success: true };
 }
 
 export async function updateTransfer(transferId: string, formData: FormData) {
-  await requireUser();
+  const me = await requireUser();
   const legs = await prisma.transaction.findMany({ where: { transferId } });
   const outLeg = legs.find((l) => l.type === "TRANSFER_OUT");
   const inLeg = legs.find((l) => l.type === "TRANSFER_IN");
   if (!outLeg || !inLeg) return { success: false, message: "Transfer not found." };
+  if (outLeg.status === "POSTED" || inLeg.status === "POSTED") return { success: false, message: LOCKED };
 
   const parsed = await parseTransfer(formData);
   if ("error" in parsed) return { success: false, message: parsed.error };
   const problem = (await stillFits(outLeg, parsed.out)) ?? (await stillFits(inLeg, parsed.in));
   if (problem) return { success: false, message: problem };
+  const out = { ...parsed.out, status: nextStatus(me, outLeg.status) };
+  const inn = { ...parsed.in, status: nextStatus(me, inLeg.status) };
   await prisma.$transaction([
-    prisma.transaction.update({ where: { id: outLeg.id }, data: parsed.out }),
-    prisma.transaction.update({ where: { id: inLeg.id }, data: parsed.in }),
+    prisma.transaction.update({ where: { id: outLeg.id }, data: out }),
+    prisma.transaction.update({ where: { id: inLeg.id }, data: inn }),
   ]);
+  await record([...diff(outLeg.id, outLeg, out, reasonOf(formData)), ...diff(inLeg.id, inLeg, inn, reasonOf(formData))], me.name);
   revalidateAll();
   return { success: true };
 }

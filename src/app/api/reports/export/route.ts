@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import * as xlsx from "xlsx";
-import { TYPE_LABEL, RATE_SOURCE_LABEL, EPS, isPnl, settlement, toVnd } from "@/lib/money";
+import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, EPS, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
 import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
@@ -39,11 +39,12 @@ export async function GET(req: Request) {
       include: { category: true, project: true, vendor: true, account: true, _count: { select: { attachments: true } } },
     });
 
-    const headers = ["Date", "Type", "Account", "Description", "Category", "Project", "Vendor", "Invoice #", "Currency", "Amount", "Rate", "Rate source", "Amount (VND)", "Attachments",
+    const headers = ["Date", "Status", "Type", "Account", "Description", "Category", "Project", "Vendor", "Invoice #", "Currency", "Amount", "Rate", "Rate source", "Amount (VND)", "Attachments",
       "Document", "Business purpose", "CIT", "Input VAT", "VAT amount", "Review note"];
     const expense = (t: { type: string }) => t.type === "EXPENSE";
     const rows: Record<string, unknown>[] = txns.map((t) => ({
       "Date": iso(t.date),
+      "Status": `${STATUS_LABEL[t.status] ?? t.status}${t.reversalOfId ? " (reversal)" : ""}`,
       "Type": TYPE_LABEL[t.type] ?? t.type,
       "Account": t.account?.name ?? "",
       "Description": t.description ?? "",
@@ -66,9 +67,10 @@ export async function GET(req: Request) {
       "Review note": t.reviewNote ?? "",
     }));
 
-    // Totals are profit & loss only — transfers, capital and loans are listed but not summed.
-    const totalIncome = txns.filter((t) => t.type === "INCOME").reduce((a, t) => a + Math.round(toVnd(t)), 0);
-    const totalExpense = txns.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + Math.round(toVnd(t)), 0);
+    // Totals are profit & loss only — transfers, capital and loans are listed but
+    // not summed — and count reviewed and posted entries; drafts are listed only.
+    const totalIncome = txns.filter((t) => t.type === "INCOME" && isBooked(t)).reduce((a, t) => a + Math.round(toVnd(t)), 0);
+    const totalExpense = txns.filter((t) => t.type === "EXPENSE" && isBooked(t)).reduce((a, t) => a + Math.round(toVnd(t)), 0);
     const blank = Object.fromEntries(headers.map((h) => [h, ""]));
     rows.push({ ...blank });
     rows.push({ ...blank, "Type": "TOTAL Income", "Amount (VND)": totalIncome });

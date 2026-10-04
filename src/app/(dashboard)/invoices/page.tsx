@@ -19,9 +19,10 @@ export default async function InvoicesPage() {
     prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, type: true } }),
-    // Ledger entries that could settle an invoice: income/expense with money not yet allocated.
+    // Ledger entries that could settle an invoice: income/expense with money not
+    // yet allocated — not a reversal, nor an entry a reversal cancelled.
     prisma.transaction.findMany({
-      where: { type: { in: ["INCOME", "EXPENSE"] } },
+      where: { type: { in: ["INCOME", "EXPENSE"] }, reversalOfId: null, reversedBy: { is: null } },
       orderBy: { date: "desc" },
       include: { account: true, allocations: true, _count: { select: { attachments: true } } },
     }),

@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { ProjectOutstanding } from "@/components/projects/project-outstanding";
 import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
 import { ProjectDocuments } from "@/components/projects/project-documents";
-import { toVnd, settlement } from "@/lib/money";
+import { toVnd, settlement, BOOKED } from "@/lib/money";
 import { defaultUsdRate } from "@/lib/fx";
 
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
@@ -21,7 +21,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       where: { id },
       include: {
         client: true,
-        transactions: { orderBy: { date: "desc" }, include: { category: true, vendor: true, invoice: true } },
+        transactions: { where: BOOKED, orderBy: { date: "desc" }, include: { category: true, vendor: true, invoice: true } }, // drafts wait for review
         attachments: { orderBy: { createdAt: "desc" } },
       },
     }),

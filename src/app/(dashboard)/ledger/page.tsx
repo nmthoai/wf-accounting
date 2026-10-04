@@ -3,11 +3,11 @@ import type { Prisma } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { deleteTransaction } from "@/app/actions/ledger";
-import { Trash2, Paperclip } from "lucide-react";
+import { Paperclip } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
-import { TYPE_LABEL, RATE_SOURCE_LABEL, isPnl, isInflow, toVnd, fmtMoney, fmtVnd } from "@/lib/money";
+import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, isPnl, isMoneyIn, toVnd, fmtMoney, fmtVnd } from "@/lib/money";
+import { RowActions, PostThrough } from "@/components/ledger/ledger-actions";
 import { DOC_STATUS, DOC_BADGE, DOC_OPEN, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 
 const badge: Record<string, string> = {
@@ -20,23 +20,40 @@ const badge: Record<string, string> = {
   OTHER_OUT: "bg-amber-100 text-amber-700",
 };
 
-// Review views: entries whose invoice/receipt is still to be found, and
-// expenses whose CIT or VAT treatment has not been decided.
-const VIEWS: Record<"docs" | "tax", Prisma.TransactionWhereInput> = {
-  docs: { type: { in: ["INCOME", "EXPENSE"] }, docStatus: { in: DOC_OPEN } },
-  tax: { type: "EXPENSE", OR: [{ citStatus: "PENDING" }, { vatStatus: "PENDING" }] },
+const STATUS_BADGE: Record<string, string> = {
+  DRAFT: "bg-amber-100 text-amber-700",
+  REVIEWED: "bg-blue-50 text-blue-700",
+  POSTED: "bg-slate-200 text-slate-700",
 };
+
+// Entries cancelled by a reversal (and the reversals) need no further review.
+const LIVE: Prisma.TransactionWhereInput = { reversalOfId: null, reversedBy: { is: null } };
+// Review views: drafts waiting for the owner, entries whose invoice/receipt is
+// still to be found, and expenses whose CIT or VAT treatment is undecided.
+const VIEWS: Record<"drafts" | "docs" | "tax", Prisma.TransactionWhereInput> = {
+  drafts: { status: "DRAFT" },
+  docs: { type: { in: ["INCOME", "EXPENSE"] }, docStatus: { in: DOC_OPEN }, ...LIVE },
+  tax: { type: "EXPENSE", OR: [{ citStatus: "PENDING" }, { vatStatus: "PENDING" }], ...LIVE },
+};
+
+// The last day of the previous month — the usual "post through" date.
+function lastMonthEnd() {
+  const d = new Date();
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), 0)).toISOString().slice(0, 10);
+}
 
 const taxTone = (s: string, good: string) => (s === "PENDING" ? "text-amber-700" : s === good ? "text-green-700" : "text-muted-foreground");
 
 export default async function LedgerPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const sp = await searchParams;
-  const view = sp.view === "docs" || sp.view === "tax" ? sp.view : null;
+  const view = sp.view === "drafts" || sp.view === "docs" || sp.view === "tax" ? sp.view : null;
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN";
-  const [docsCount, taxCount] = await Promise.all([
+  const [draftCount, docsCount, taxCount, reviewedCount] = await Promise.all([
+    prisma.transaction.count({ where: VIEWS.drafts }),
     prisma.transaction.count({ where: VIEWS.docs }),
     prisma.transaction.count({ where: VIEWS.tax }),
+    prisma.transaction.count({ where: { status: "REVIEWED" } }),
   ]);
   const transactions = await prisma.transaction.findMany({
     where: view ? VIEWS[view] : undefined,
@@ -48,6 +65,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
       project: true,
       account: true,
       allocations: { include: { invoice: { select: { number: true, direction: true } } } },
+      reversedBy: { select: { id: true } },
     },
   });
 
@@ -63,11 +81,14 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
         </Link>
       </div>
 
-      <div className="flex bg-muted p-1 rounded-lg text-sm w-fit">
-        {([[null, "All"], ["docs", `Documents to find (${docsCount})`], ["tax", `Tax review pending (${taxCount})`]] as const).map(([v, text]) => (
-          <Link key={text} href={v ? `/ledger?view=${v}` : "/ledger"}
-            className={`px-3 py-1 rounded-md font-medium transition-all ${view === v ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</Link>
-        ))}
+      <div className="flex justify-between items-center gap-3 flex-wrap">
+        <div className="flex bg-muted p-1 rounded-lg text-sm w-fit flex-wrap">
+          {([[null, "All"], ["drafts", `Drafts (${draftCount})`], ["docs", `Documents to find (${docsCount})`], ["tax", `Tax review pending (${taxCount})`]] as const).map(([v, text]) => (
+            <Link key={text} href={v ? `/ledger?view=${v}` : "/ledger"}
+              className={`px-3 py-1 rounded-md font-medium transition-all ${view === v ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</Link>
+          ))}
+        </div>
+        {isAdmin && <PostThrough defaultDate={lastMonthEnd()} reviewedCount={reviewedCount} />}
       </div>
 
       <Card>
@@ -83,7 +104,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Evidence</TableHead>
                 <TableHead className="text-right">Amount (VND)</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[110px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -91,9 +112,14 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                 <TableRow key={t.id}>
                   <TableCell className="font-medium whitespace-nowrap">{t.date.toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badge[t.type] ?? "bg-slate-200 text-slate-700"}`}>
-                      {TYPE_LABEL[t.type] ?? t.type}
-                    </span>
+                    <div className="flex flex-col gap-1 items-start">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badge[t.type] ?? "bg-slate-200 text-slate-700"}`}>
+                        {TYPE_LABEL[t.type] ?? t.type}
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${STATUS_BADGE[t.status] ?? ""}`}>
+                        {STATUS_LABEL[t.status] ?? t.status}{t.reversalOfId ? " · reversal" : t.reversedBy ? " · reversed" : ""}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{t.account?.name ?? <span className="text-amber-700">— none —</span>}</TableCell>
                   <TableCell>
@@ -155,40 +181,27 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                   </TableCell>
                   <TableCell className="text-right font-semibold">
                     <div className="flex flex-col items-end">
-                      <span className={isInflow(t.type) ? "text-green-700" : ""}>
-                        {isInflow(t.type) ? "+" : "−"}{fmtMoney(t.amount, t.currency)}
+                      <span className={`${isMoneyIn(t) ? "text-green-700" : ""} ${t.reversedBy ? "line-through text-muted-foreground" : ""}`}>
+                        {isMoneyIn(t) ? "+" : "−"}{fmtMoney(Math.abs(t.amount), t.currency)}
                       </span>
                       {t.currency !== "VND" && (
                         <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">
-                          {fmtVnd(toVnd(t))} · @{new Intl.NumberFormat("vi-VN").format(Math.round(t.exchangeRate * 100) / 100)}
+                          {fmtVnd(Math.abs(toVnd(t)))} · @{new Intl.NumberFormat("vi-VN").format(Math.round(t.exchangeRate * 100) / 100)}
                           {t.rateSource && ` ${RATE_SOURCE_LABEL[t.rateSource] ?? t.rateSource}`}
                         </span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex justify-end gap-2">
-                      {/* Income/expense edit in the entry form; transfers, capital and loans on the Accounts page. */}
-                      <Link href={isPnl(t.type) ? `/entry/${t.id}` : "/accounts"}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-edit-2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                        </Button>
-                      </Link>
-                      {isAdmin && (
-                        <form action={deleteTransaction.bind(null, t.id)}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </form>
-                      )}
-                    </div>
+                    {/* Income/expense open in the entry form; transfers, capital and loans on the Accounts page. */}
+                    <RowActions id={t.id} href={isPnl(t.type) ? `/entry/${t.id}` : "/accounts"} status={t.status} isAdmin={isAdmin} />
                   </TableCell>
                 </TableRow>
               ))}
               {transactions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    {view ? "Nothing here — all reviewed." : 'No transactions found. Click "New Entry" to add one.'}
+                    {view ? "Nothing here — all clear." : 'No transactions found. Click "New Entry" to add one.'}
                   </TableCell>
                 </TableRow>
               )}

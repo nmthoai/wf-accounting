@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { computeBalances, cashPosition, totalsList, settlement, isInflow, isPnl, toVnd, fmtMoney, TYPE_LABEL, type Totals } from "@/lib/money";
+import { computeBalances, cashPosition, totalsList, settlement, isMoneyIn, isPnl, isBooked, toVnd, fmtMoney, TYPE_LABEL, type Totals } from "@/lib/money";
 
 export default async function DashboardPage() {
   const [transactions, accounts, openInvoices, projectList] = await Promise.all([
@@ -17,17 +17,24 @@ export default async function DashboardPage() {
     prisma.project.findMany({ select: { id: true, name: true } }),
   ]);
 
+  // Drafts are not in the books until reviewed. A reversal and the entry it
+  // cancels stay in the totals (they net to zero) but not in the counts.
+  const booked = transactions.filter(isBooked);
+  const drafts = transactions.length - booked.length;
+  const cancelled = new Set(transactions.map((t) => t.reversalOfId).filter(Boolean));
+  const counted = (t: { id: string; reversalOfId: string | null }) => !t.reversalOfId && !cancelled.has(t.id);
+
   // All-time performance (in VND) — income and expenses only; transfers,
   // capital and loans move money but are not profit.
-  const income = transactions.filter(t => t.type === "INCOME");
-  const expense = transactions.filter(t => t.type === "EXPENSE");
+  const income = booked.filter(t => t.type === "INCOME");
+  const expense = booked.filter(t => t.type === "EXPENSE");
   const totalIncome = income.reduce((acc, t) => acc + toVnd(t), 0);
   const totalExpense = expense.reduce((acc, t) => acc + toVnd(t), 0);
   const netSurplus = totalIncome - totalExpense; // profit / surplus
 
   // Cash = real balances per account (opening + every movement since), kept per
   // currency — VND and USD are never added together or revalued.
-  const balances = computeBalances(accounts, transactions);
+  const balances = computeBalances(accounts, booked);
   const position = cashPosition(accounts, balances);
   const liquid = totalsList(position.liquid);
   const ownerTotals = totalsList(position.owner);
@@ -61,7 +68,7 @@ export default async function DashboardPage() {
   // Top projects by net profit — grouped from the transactions already fetched (no extra query).
   const projName = new Map(projectList.map((p) => [p.id, p.name]));
   const projAgg = new Map<string, { inc: number; exp: number; n: number }>();
-  for (const t of transactions) {
+  for (const t of booked) {
     if (!t.projectId || !isPnl(t.type)) continue;
     const a = projAgg.get(t.projectId) ?? { inc: 0, exp: 0, n: 0 };
     if (t.type === "INCOME") a.inc += toVnd(t); else a.exp += toVnd(t);
@@ -86,6 +93,11 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-3xl font-serif font-bold text-primary">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Financial overview for WorkFactory</p>
+          {drafts > 0 && (
+            <Link href="/ledger?view=drafts" className="inline-block mt-2 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 hover:underline">
+              {drafts} {drafts === 1 ? "entry" : "entries"} waiting for review — not counted below yet →
+            </Link>
+          )}
         </div>
         <Link href="/entry">
           <Button className="gap-2"><Plus className="h-4 w-4" />New Entry</Button>
@@ -127,7 +139,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatVnd(totalIncome)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{income.length} entries</p>
+            <p className="text-xs text-muted-foreground mt-1">{income.filter(counted).length} entries</p>
           </CardContent>
         </Card>
 
@@ -138,7 +150,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatVnd(totalExpense)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{expense.length} entries</p>
+            <p className="text-xs text-muted-foreground mt-1">{expense.filter(counted).length} entries</p>
           </CardContent>
         </Card>
       </div>
@@ -251,17 +263,18 @@ export default async function DashboardPage() {
             <div className="space-y-8">
               {recentTransactions.map(t => (
                 <div key={t.id} className="flex items-center">
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-full ${isInflow(t.type) ? "bg-green-100" : "bg-red-100"}`}>
-                    {isInflow(t.type) ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownRight className="h-4 w-4 text-red-600" />}
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-full ${isMoneyIn(t) ? "bg-green-100" : "bg-red-100"}`}>
+                    {isMoneyIn(t) ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownRight className="h-4 w-4 text-red-600" />}
                   </div>
                   <div className="ml-4 space-y-1">
                     <p className="text-sm font-medium leading-none">{isPnl(t.type) ? (t.category?.name || "Uncategorized") : TYPE_LABEL[t.type]}</p>
                     <p className="text-sm text-muted-foreground">
                       {t.description}
+                      {t.status === "DRAFT" && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">draft</span>}
                     </p>
                   </div>
-                  <div className={`ml-auto font-medium ${isInflow(t.type) ? "text-green-600" : ""}`}>
-                    {isInflow(t.type) ? "+" : "-"}{fmtMoney(t.amount, t.currency)}
+                  <div className={`ml-auto font-medium ${isMoneyIn(t) ? "text-green-600" : ""}`}>
+                    {isMoneyIn(t) ? "+" : "-"}{fmtMoney(Math.abs(t.amount), t.currency)}
                   </div>
                 </div>
               ))}

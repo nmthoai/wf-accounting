@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -9,8 +10,38 @@ import { CURRENCIES } from "@/lib/money";
 import { refreshInvoiceStatus, invoicesOf } from "@/lib/invoice-status";
 import { reviewProblem } from "@/lib/review";
 import { bankLinkProblem } from "@/lib/bank-match";
+import { diff, record, snapshot, type Change } from "@/lib/history";
 
 type Decisions = { purposeStatus: string; citStatus: string; vatStatus: string };
+
+async function currentUser() {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+  return { name: session.user.name ?? null, isAdmin: session.user.role === "ADMIN" };
+}
+
+function revalidateAll(id?: string) {
+  for (const p of ["/ledger", "/accounts", "/bank", "/invoices", "/reports", "/"]) revalidatePath(p);
+  if (id) revalidatePath(`/entry/${id}`);
+}
+
+// Evidence anyone may record. Business use, CIT and VAT are decisions the
+// owner records (from the accountant's review); other roles keep what is set.
+function parseReview(formData: FormData, type: string, amount: number, isAdmin: boolean, prev?: Decisions) {
+  const str = (k: string) => ((formData.get(k) as string) || "").trim();
+  const expense = type === "EXPENSE";
+  const decide = (k: keyof Decisions) => (!expense ? "PENDING" : isAdmin ? str(k) || "PENDING" : prev?.[k] ?? "PENDING");
+  const review = {
+    docStatus: str("docStatus") || "PENDING",
+    purposeStatus: decide("purposeStatus"),
+    citStatus: decide("citStatus"),
+    vatStatus: decide("vatStatus"),
+    vatAmount: expense && str("vatAmount") ? parseFloat(str("vatAmount")) : null,
+    reviewNote: str("reviewNote") || null,
+  };
+  const problem = reviewProblem({ type, amount, ...review });
+  return problem ? { error: problem } : { review };
+}
 
 // Shared parsing for the income/expense form. Other movement kinds (transfers,
 // capital, loans) are recorded on the Accounts page.
@@ -34,27 +65,14 @@ async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions
   const fx = await resolveFx(currency, amount, formData);
   if (!fx.ok) return { error: fx.message };
 
+  const r = parseReview(formData, type, amount, isAdmin, prev);
+  if ("error" in r) return { error: r.error };
+
   const description = formData.get("description") as string;
   const invoiceNumber = formData.get("invoiceNumber") as string;
   const categoryId = formData.get("categoryId") as string;
   const projectId = formData.get("projectId") as string;
   const vendorId = formData.get("vendorId") as string;
-
-  // Evidence anyone may record. Business use, CIT and VAT are decisions the
-  // owner records (from the accountant's review); other roles keep what is set.
-  const str = (k: string) => ((formData.get(k) as string) || "").trim();
-  const expense = type === "EXPENSE";
-  const decide = (k: keyof Decisions) => (!expense ? "PENDING" : isAdmin ? str(k) || "PENDING" : prev?.[k] ?? "PENDING");
-  const review = {
-    docStatus: str("docStatus") || "PENDING",
-    purposeStatus: decide("purposeStatus"),
-    citStatus: decide("citStatus"),
-    vatStatus: decide("vatStatus"),
-    vatAmount: expense && str("vatAmount") ? parseFloat(str("vatAmount")) : null,
-    reviewNote: str("reviewNote") || null,
-  };
-  const problem = reviewProblem({ type, amount, ...review });
-  if (problem) return { error: problem };
 
   return {
     data: {
@@ -71,16 +89,14 @@ async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions
       categoryId: categoryId || null,
       projectId: projectId || null,
       vendorId: vendorId || null,
-      ...review,
+      ...r.review,
     },
   };
 }
 
 export async function createTransaction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
-
-  const parsed = await parseEntry(formData, session.user.role === "ADMIN");
+  const me = await currentUser();
+  const parsed = await parseEntry(formData, me.isAdmin);
   if ("error" in parsed) return { success: false, message: parsed.error };
 
   // Created from a bank statement line: it must fit that line.
@@ -89,83 +105,179 @@ export async function createTransaction(formData: FormData) {
     const problem = await bankLinkProblem(bankLineId, [parsed.data]);
     if (problem) return { success: false, message: problem };
   }
+  // Re-entered in place of a reversed posted entry.
+  const correctionOfId = (formData.get("correctionOfId") as string) || null;
+  if (correctionOfId) {
+    const orig = await prisma.transaction.findUnique({ where: { id: correctionOfId }, include: { reversedBy: true } });
+    if (!orig?.reversedBy) return { success: false, message: "Only a reversed entry can be re-entered as a correction." };
+  }
 
-  const transaction = await prisma.transaction.create({ data: { ...parsed.data, bankLineId } });
+  // The owner's entries count as reviewed; anyone else's wait for review.
+  const transaction = await prisma.transaction.create({
+    data: { ...parsed.data, bankLineId, correctionOfId, status: me.isAdmin ? "REVIEWED" : "DRAFT", createdBy: me.name },
+  });
+  await record([{ entityId: transaction.id, action: "CREATE", newValue: snapshot(transaction), reason: correctionOfId ? "Correction of a reversed entry" : null }], me.name);
 
   await persistUploads(formData.getAll("files") as File[], { transactionId: transaction.id });
-
-  revalidatePath("/ledger");
-  revalidatePath("/accounts");
-  revalidatePath("/bank");
-  revalidatePath("/");
+  revalidateAll();
   return { success: true };
 }
 
 export async function deleteTransaction(id: string) {
-  const session = await auth();
-  if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+  const me = await currentUser();
+  if (!me.isAdmin) throw new Error("Unauthorized");
 
   // A transfer is two linked legs — delete both so money can't vanish from one side.
   const t = await prisma.transaction.findUnique({ where: { id } });
   if (!t) return;
-  const ids = t.transferId
-    ? (await prisma.transaction.findMany({ where: { transferId: t.transferId }, select: { id: true } })).map((x) => x.id)
-    : [id];
+  const legs = t.transferId ? await prisma.transaction.findMany({ where: { transferId: t.transferId } }) : [t];
+  // Posted entries are corrected by reversal, never deleted.
+  if (legs.some((l) => l.status === "POSTED")) throw new Error("Posted entries can't be deleted — reverse them instead.");
+  const ids = legs.map((l) => l.id);
 
   // Cascade-delete removes the Attachment rows; also remove the files from disk.
   const attachments = await prisma.attachment.findMany({ where: { transactionId: { in: ids } } });
   const invoices = await invoicesOf(ids); // payments being removed — their invoices reopen
 
   await prisma.transaction.deleteMany({ where: { id: { in: ids } } });
+  await record(legs.map((l) => ({ entityId: l.id, action: "DELETE", oldValue: snapshot(l) })), me.name);
 
   for (const a of attachments) await removeUploadFile(a.filePath);
   await refreshInvoiceStatus(invoices);
-  revalidatePath("/invoices");
-  revalidatePath("/bank"); // its bank line, if any, is open again
-
-  revalidatePath("/ledger");
-  revalidatePath("/accounts");
-  revalidatePath("/");
-  return;
+  revalidateAll();
 }
 
 export async function editTransaction(id: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
-
+  const me = await currentUser();
   const existing = await prisma.transaction.findUnique({ where: { id } });
   if (!existing) return { success: false, message: "Not found." };
   if (existing.type !== "INCOME" && existing.type !== "EXPENSE") {
     return { success: false, message: "Edit transfers, capital and loans on the Accounts page." };
   }
+  const reason = ((formData.get("reason") as string) || "").trim() || null;
 
-  const parsed = await parseEntry(formData, session.user.role === "ADMIN", existing);
+  // Posted: the money and classification are locked — only the evidence and
+  // tax review (often decided after handover) and new attachments can change.
+  if (existing.status === "POSTED") {
+    if (existing.reversalOfId) return { success: false, message: "A reversal can't be changed." };
+    const r = parseReview(formData, existing.type, existing.amount, me.isAdmin, existing);
+    if ("error" in r) return { success: false, message: r.error };
+    await prisma.transaction.update({ where: { id }, data: r.review });
+    await record(diff(id, existing, r.review, reason), me.name);
+    await persistUploads(formData.getAll("files") as File[], { transactionId: id });
+    revalidateAll(id);
+    return { success: true };
+  }
+
+  const parsed = await parseEntry(formData, me.isAdmin, existing);
   if ("error" in parsed) return { success: false, message: parsed.error };
   if (existing.bankLineId) {
     const problem = await bankLinkProblem(existing.bankLineId, [parsed.data], [id]);
     if (problem) return { success: false, message: `This entry is matched to a bank statement line. ${problem} Unmatch it on the Bank page first.` };
   }
 
-  await prisma.transaction.update({ where: { id }, data: parsed.data });
+  // A reviewed entry changed by anyone but the owner goes back to draft.
+  const data = { ...parsed.data, status: !me.isAdmin && existing.status === "REVIEWED" ? "DRAFT" : existing.status };
+  await prisma.transaction.update({ where: { id }, data });
+  await record(diff(id, existing, data, reason), me.name);
   await refreshInvoiceStatus(await invoicesOf([id]));
 
   // Append any newly attached receipts
   await persistUploads(formData.getAll("files") as File[], { transactionId: id });
+  revalidateAll(id);
+  return { success: true };
+}
 
-  revalidatePath("/ledger");
-  revalidatePath("/accounts");
-  revalidatePath("/bank");
-  revalidatePath("/");
-  revalidatePath(`/entry/${id}`);
+// The ids plus the other leg of any transfer among them — legs move together.
+async function withLegs(ids: string[]) {
+  const picked = await prisma.transaction.findMany({ where: { id: { in: ids } }, select: { transferId: true } });
+  const transferIds = picked.map((t) => t.transferId).filter((x): x is string => !!x);
+  return prisma.transaction.findMany({ where: { OR: [{ id: { in: ids } }, { transferId: { in: transferIds } }] } });
+}
+
+// Admin: approve drafts.
+export async function reviewEntries(ids: string[]) {
+  const me = await currentUser();
+  if (!me.isAdmin) throw new Error("Unauthorized");
+  const drafts = (await withLegs(ids)).filter((t) => t.status === "DRAFT");
+  await prisma.transaction.updateMany({ where: { id: { in: drafts.map((t) => t.id) } }, data: { status: "REVIEWED" } });
+  await record(drafts.map((t) => ({ entityId: t.id, action: "REVIEW", field: "status", oldValue: "DRAFT", newValue: "REVIEWED" })), me.name);
+  revalidateAll(ids.length === 1 ? ids[0] : undefined);
+  return { success: true, count: drafts.length };
+}
+
+// Admin: post (lock) reviewed entries — the chosen ones, or every reviewed
+// entry dated up to and including `through` (e.g. a month end).
+export async function postEntries(ids: string[] | null, through?: string) {
+  const me = await currentUser();
+  if (!me.isAdmin) throw new Error("Unauthorized");
+  let entries;
+  if (ids) entries = (await withLegs(ids)).filter((t) => t.status === "REVIEWED");
+  else {
+    if (!through || !/^\d{4}-\d{2}-\d{2}$/.test(through)) return { success: false, message: "Choose the date to post through.", count: 0 };
+    const end = new Date(`${through}T00:00:00.000Z`);
+    end.setUTCDate(end.getUTCDate() + 1);
+    entries = await prisma.transaction.findMany({ where: { status: "REVIEWED", date: { lt: end } } });
+  }
+  await prisma.transaction.updateMany({ where: { id: { in: entries.map((t) => t.id) } }, data: { status: "POSTED" } });
+  await record(entries.map((t) => ({ entityId: t.id, action: "POST", field: "status", oldValue: "REVIEWED", newValue: "POSTED" })), me.name);
+  revalidateAll(ids?.length === 1 ? ids[0] : undefined);
+  return { success: true, count: entries.length };
+}
+
+// Admin: correct a posted entry by cancelling it with a posted mirror image.
+// Both stay on record; the corrected entry is then entered afresh.
+export async function reverseEntry(id: string, reason: string) {
+  const me = await currentUser();
+  if (!me.isAdmin) throw new Error("Unauthorized");
+  const why = reason?.trim();
+  if (!why) return { success: false, message: "Give the reason for the correction." };
+  const t = await prisma.transaction.findUnique({ where: { id }, include: { reversedBy: true } });
+  if (!t || t.status !== "POSTED") return { success: false, message: "Only posted entries are reversed — change drafts and reviewed entries directly." };
+  if (t.reversalOfId) return { success: false, message: "This is itself a reversal." };
+  if (t.reversedBy) return { success: false, message: "This entry has already been reversed." };
+
+  const legs = t.transferId ? await prisma.transaction.findMany({ where: { transferId: t.transferId } }) : [t];
+  const invoices = await invoicesOf(legs.map((l) => l.id));
+  const transferId = t.transferId ? randomUUID() : null;
+
+  await prisma.$transaction(async (tx) => {
+    const changes: Change[] = [];
+    for (const l of legs) {
+      // Its bank match and invoice links no longer hold — the corrected entry takes them.
+      if (l.bankLineId) changes.push({ entityId: l.id, action: "UNMATCH", field: "bankLineId", oldValue: l.bankLineId, reason: why });
+      for (const a of await tx.paymentAllocation.findMany({ where: { transactionId: l.id } })) {
+        changes.push({ entityId: l.id, action: "UNLINK", field: "invoice", oldValue: `${a.invoiceId} ${a.kind} ${a.amount}`, reason: why });
+      }
+      await tx.paymentAllocation.deleteMany({ where: { transactionId: l.id } });
+      await tx.transaction.update({ where: { id: l.id }, data: { bankLineId: null } });
+      const rev = await tx.transaction.create({
+        data: {
+          type: l.type, date: l.date, currency: l.currency, exchangeRate: l.exchangeRate, rateSource: l.rateSource,
+          amount: -l.amount, vndAmount: l.vndAmount === null ? null : -l.vndAmount,
+          accountId: l.accountId, loanId: l.loanId, categoryId: l.categoryId, projectId: l.projectId, vendorId: l.vendorId,
+          invoiceNumber: l.invoiceNumber, transferId,
+          description: `Reversal: ${l.description ?? ""}`.trim(),
+          docStatus: l.docStatus, purposeStatus: l.purposeStatus, citStatus: l.citStatus, vatStatus: l.vatStatus,
+          vatAmount: l.vatAmount === null ? null : -l.vatAmount, reviewNote: why,
+          status: "POSTED", createdBy: me.name, reversalOfId: l.id,
+        },
+      });
+      changes.push({ entityId: l.id, action: "REVERSE", newValue: rev.id, reason: why }, { entityId: rev.id, action: "CREATE", newValue: snapshot(rev), reason: why });
+    }
+    await record(changes, me.name, tx);
+  });
+  await refreshInvoiceStatus(invoices);
+  revalidateAll(id);
   return { success: true };
 }
 
 export async function deleteAttachment(id: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
-
-  const att = await prisma.attachment.findUnique({ where: { id } });
-  if (!att) return;
+  await currentUser();
+  const att = await prisma.attachment.findUnique({ where: { id }, include: { transaction: { select: { status: true } } } });
+  if (!att) return { success: true };
+  // Evidence on a posted entry stays; more can be added.
+  if (att.transaction?.status === "POSTED") return { success: false, message: "This entry is posted — its attachments are kept." };
 
   await prisma.attachment.delete({ where: { id } });
   await removeUploadFile(att.filePath);
@@ -174,4 +286,5 @@ export async function deleteAttachment(id: string) {
   revalidatePath("/invoices");
   if (att.transactionId) revalidatePath(`/entry/${att.transactionId}`);
   if (att.projectId) revalidatePath(`/projects/${att.projectId}`);
+  return { success: true };
 }

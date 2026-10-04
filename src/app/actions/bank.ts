@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { parseStatement, dedupeKeys } from "@/lib/bank-statement";
 import { bankLinkProblem, tolerance } from "@/lib/bank-match";
 import { fmtMoney } from "@/lib/money";
+import { record } from "@/lib/history";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -127,14 +128,16 @@ export async function matchLine(lineId: string, transactionIds: string[]) {
   const ids = [...new Set(transactionIds)];
   if (ids.length === 0) return { success: false, message: "Choose at least one ledger entry." };
 
-  const entries = await prisma.transaction.findMany({ where: { id: { in: ids } } });
+  const entries = await prisma.transaction.findMany({ where: { id: { in: ids } }, include: { reversedBy: { select: { id: true } } } });
   if (entries.length !== ids.length) return { success: false, message: "An entry no longer exists — refresh the page." };
+  if (entries.some((e) => e.reversalOfId || e.reversedBy)) return { success: false, message: "A reversed entry can't be matched — match its correction instead." };
   const taken = entries.find((e) => e.bankLineId && e.bankLineId !== lineId);
   if (taken) return { success: false, message: `"${taken.description ?? "That entry"}" is already matched to another bank line.` };
   const problem = await bankLinkProblem(lineId, entries.filter((e) => e.bankLineId !== lineId));
   if (problem) return { success: false, message: problem };
 
   await prisma.transaction.updateMany({ where: { id: { in: ids } }, data: { bankLineId: lineId } });
+  await record(entries.filter((e) => e.bankLineId !== lineId).map((e) => ({ entityId: e.id, action: "MATCH", field: "bankLineId", newValue: lineId })), session.user.name);
   revalidateAll();
   return { success: true };
 }
@@ -142,7 +145,10 @@ export async function matchLine(lineId: string, transactionIds: string[]) {
 export async function unmatchEntry(transactionId: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
+  const t = await prisma.transaction.findUnique({ where: { id: transactionId } });
+  if (!t?.bankLineId) return { success: true };
   await prisma.transaction.update({ where: { id: transactionId }, data: { bankLineId: null } });
+  await record([{ entityId: t.id, action: "UNMATCH", field: "bankLineId", oldValue: t.bankLineId }], session.user.name);
   revalidateAll();
   return { success: true };
 }

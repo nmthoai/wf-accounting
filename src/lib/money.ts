@@ -29,6 +29,13 @@ const INFLOW = new Set(["INCOME", "TRANSFER_IN", "CAPITAL_IN", "LOAN_IN", "OTHER
 
 export const isPnl = (type: string) => type === "INCOME" || type === "EXPENSE";
 export const isInflow = (type: string) => INFLOW.has(type);
+// Money in (+) or out (−) as shown to people; a reversal carries a negative amount.
+export const isMoneyIn = (t: { type: string; amount: number }) => isInflow(t.type) === t.amount >= 0;
+
+// Workflow. Drafts are not in the books yet: every total counts reviewed and posted entries only.
+export const STATUS_LABEL: Record<string, string> = { DRAFT: "Draft", REVIEWED: "Reviewed", POSTED: "Posted" };
+export const BOOKED = { status: { not: "DRAFT" } };
+export const isBooked = (t: { status: string }) => t.status !== "DRAFT";
 
 type Money = { amount: number; exchangeRate: number; vndAmount?: number | null };
 

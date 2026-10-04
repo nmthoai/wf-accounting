@@ -39,7 +39,9 @@ export function EntryForm({
   isAdmin,
   initialData,
   prefill,
-  bankLine
+  bankLine,
+  correction,
+  locked = false
 }: {
   categories: any[];
   projects?: { id: string; name: string }[];
@@ -48,8 +50,10 @@ export function EntryForm({
   defaultUsdRate: number;
   isAdmin: boolean;
   initialData?: any;
-  prefill?: any; // a new entry started from a bank statement line
+  prefill?: any; // a new entry started from a bank statement line, or re-entered after a reversal
   bankLine?: { id: string; label: string };
+  correction?: { id: string; label: string }; // the reversed posted entry this one replaces
+  locked?: boolean; // posted: only evidence, tax review and new attachments can change
 }) {
   const router = useRouter();
   const init = initialData ?? prefill;
@@ -114,7 +118,8 @@ export function EntryForm({
     if (!confirm("Remove this receipt? This deletes the file.")) return;
     setRemovingId(id);
     try {
-      await deleteAttachment(id);
+      const res = await deleteAttachment(id);
+      if (!res.success) { alert(res.message); return; }
       setAttachments((prev) => prev.filter((a) => a.id !== id));
     } finally {
       setRemovingId(null);
@@ -138,6 +143,7 @@ export function EntryForm({
     formData.set("citStatus", citStatus);
     formData.set("vatStatus", vatStatus);
     if (bankLine) formData.set("bankLineId", bankLine.id);
+    if (correction) formData.set("correctionOfId", correction.id);
     // Submit exactly the files shown in the UI (state owns the list).
     formData.delete("files");
     for (const f of pendingFiles) formData.append("files", f);
@@ -175,8 +181,13 @@ export function EntryForm({
               From bank line <span className="font-medium">{bankLine.label}</span> — saving matches this entry to it.
             </p>
           )}
+          {correction && (
+            <p className="text-sm rounded-md border p-3 bg-muted/30">
+              Correcting <span className="font-medium">{correction.label}</span>, which has been reversed — enter the right values. Saving records this as its correction.
+            </p>
+          )}
           {/* Type Toggle */}
-          <div className="flex bg-muted p-1 rounded-lg">
+          <fieldset disabled={locked} className="flex bg-muted p-1 rounded-lg min-w-0 border-0 m-0">
             <button
               type="button"
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${type === "EXPENSE" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
@@ -199,9 +210,11 @@ export function EntryForm({
             >
               Income
             </button>
-          </div>
+          </fieldset>
 
           <div className="grid gap-6 md:grid-cols-2">
+            {/* Posted entries keep their money and classification. */}
+            <fieldset disabled={locked} className="grid gap-6 md:grid-cols-2 md:col-span-2 min-w-0 border-0 p-0 m-0">
             <div className="space-y-2 md:col-span-2">
               <Label>{type === "INCOME" ? "Received into" : "Paid from"}</Label>
               <AccountSelect
@@ -325,6 +338,8 @@ export function EntryForm({
               <Input id="description" name="description" placeholder="What was this for?" required defaultValue={init?.description || ""} />
             </div>
 
+            </fieldset>
+
             <div className="space-y-2 md:col-span-2">
               <Label>Attachments (Receipts / Invoices)</Label>
 
@@ -342,17 +357,19 @@ export function EntryForm({
                         <Paperclip className="h-4 w-4 shrink-0" />
                         <span className="truncate">{a.fileName}</span>
                       </a>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
-                        disabled={removingId === a.id}
-                        onClick={() => handleRemoveAttachment(a.id)}
-                        title="Remove receipt"
-                      >
-                        {removingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                      </Button>
+                      {!locked && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+                          disabled={removingId === a.id}
+                          onClick={() => handleRemoveAttachment(a.id)}
+                          title="Remove receipt"
+                        >
+                          {removingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -433,6 +450,13 @@ export function EntryForm({
             </div>
           </div>
 
+          {isEdit && (
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for the change (optional)</Label>
+              <Input id="reason" name="reason" placeholder="Kept in the entry's history" />
+            </div>
+          )}
+
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
@@ -440,7 +464,7 @@ export function EntryForm({
                 Saving...
               </>
             ) : (
-              isEdit ? "Update Transaction" : "Save Transaction"
+              locked ? "Save review" : isEdit ? "Update Transaction" : "Save Transaction"
             )}
           </Button>
         </form>

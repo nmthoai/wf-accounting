@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { accountDelta, isPnl, TYPE_LABEL } from "@/lib/money";
+import { accountDelta, isPnl, isBooked, TYPE_LABEL } from "@/lib/money";
 import { tolerance } from "@/lib/bank-match";
 import { BankClient, type LineRow, type EntryOpt, type AccountSummary, type StatementRow } from "@/components/bank/bank-client";
 
@@ -23,11 +23,15 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
     prisma.transaction.findMany({ where: { accountId: { in: accountIds } }, orderBy: { date: "desc" } }),
   ]);
   const acc = new Map(accounts.map((a) => [a.id, a]));
-  const label = (t: { type: string; description: string | null }) => `${TYPE_LABEL[t.type] ?? t.type}${t.description ? ` · ${t.description}` : ""}`;
+  const label = (t: { type: string; description: string | null; status: string }) =>
+    `${TYPE_LABEL[t.type] ?? t.type}${t.description ? ` · ${t.description}` : ""}${t.status === "DRAFT" ? " (draft)" : ""}`;
+  // A reversal and the posted entry it cancels net to zero — neither is a bank movement.
+  const cancelled = new Set(entries.map((t) => t.reversalOfId).filter(Boolean));
+  const live = (t: { id: string; reversalOfId: string | null }) => !t.reversalOfId && !cancelled.has(t.id);
   const href = (t: { id: string; type: string }) => (isPnl(t.type) ? `/entry/${t.id}` : "/accounts");
 
   // Ledger entries not yet on any bank line — candidates for matching.
-  const open: EntryOpt[] = entries.filter((t) => !t.bankLineId).map((t) => {
+  const open: EntryOpt[] = entries.filter((t) => !t.bankLineId && live(t)).map((t) => {
     const a = acc.get(t.accountId!)!;
     return { id: t.id, accountId: a.id, date: iso(t.date), amount: accountDelta(t, a.currency), label: label(t), href: href(t) };
   });
@@ -70,18 +74,18 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
     const own = statements.filter((s) => s.accountId === a.id);
     const from = own.length ? Math.min(...own.map((s) => +s.periodFrom)) : null;
     const to = st ? +st.periodTo : null;
-    const appBalance = st
-      ? entries.filter((t) => t.accountId === a.id && (!a.openingDate || t.date >= a.openingDate) && +t.date <= to!)
-        .reduce((s, t) => s + accountDelta(t, a.currency), a.openingBalance)
-      : null;
+    // The app's balance on the statement's last day — reviewed and posted entries only.
+    const upTo = entries.filter((t) => t.accountId === a.id && (!a.openingDate || t.date >= a.openingDate) && st && +t.date <= to!);
+    const appBalance = st ? upTo.filter(isBooked).reduce((s, t) => s + accountDelta(t, a.currency), a.openingBalance) : null;
     const notOnStatement = from !== null
-      ? entries.filter((t) => t.accountId === a.id && !t.bankLineId && +t.date >= from && +t.date <= to!).map((t) => ({ id: t.id, label: label(t), date: iso(t.date), amount: accountDelta(t, a.currency), href: href(t) }))
+      ? entries.filter((t) => t.accountId === a.id && !t.bankLineId && live(t) && +t.date >= from && +t.date <= to!).map((t) => ({ id: t.id, label: label(t), date: iso(t.date), amount: accountDelta(t, a.currency), href: href(t) }))
       : [];
     const mine = rows.filter((r) => r.accountId === a.id);
     return {
       id: a.id, name: a.name, currency: a.currency,
       bankClosing: st ? st.closingBalance : null, asOf: st ? iso(st.periodTo) : null, appBalance,
       lines: mine.length, open: mine.filter((r) => r.status !== "MATCHED").length,
+      drafts: upTo.filter((t) => !isBooked(t)).length,
       notOnStatement,
     };
   });

@@ -5,11 +5,12 @@ import { MonthPicker } from "@/components/reports/month-picker";
 import { ReportDownloads } from "@/components/reports/report-downloads";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
-import { toVnd, fmtMoney, totalsList, type Totals } from "@/lib/money";
+import { toVnd, fmtMoney, totalsList, BOOKED, type Totals } from "@/lib/money";
 import { DOC_STATUS, DOC_OPEN, CIT_STATUS } from "@/lib/review";
 
-// P&L counts income and expenses only — transfers, capital and loans are not profit.
-const PNL = { type: { in: ["INCOME", "EXPENSE"] } };
+// P&L counts income and expenses only — transfers, capital and loans are not
+// profit — and only reviewed or posted entries; drafts wait for review.
+const PNL = { type: { in: ["INCOME", "EXPENSE"] }, ...BOOKED };
 const fmt = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 
 function monthBounds(month: string) {
@@ -38,9 +39,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const { start, end, prevStart } = monthBounds(month);
 
-  const [txns, prevTxns] = await Promise.all([
+  const [txns, prevTxns, drafts] = await Promise.all([
     prisma.transaction.findMany({ where: { ...PNL, date: { gte: start, lt: end } }, include: { category: true, project: true } }),
     prisma.transaction.findMany({ where: { ...PNL, date: { gte: prevStart, lt: start } }, select: { type: true, amount: true, exchangeRate: true, vndAmount: true } }),
+    prisma.transaction.count({ where: { type: { in: ["INCOME", "EXPENSE"] }, status: "DRAFT", date: { gte: start, lt: end } } }),
   ]);
 
   // Per-project breakdown for the month
@@ -105,7 +107,12 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-serif font-bold text-primary">Profit &amp; Loss</h1>
-          <p className="text-muted-foreground mt-1">{label} · cash-basis (paid income &amp; expenses)</p>
+          <p className="text-muted-foreground mt-1">{label} · cash-basis (paid income &amp; expenses) · reviewed and posted entries</p>
+          {drafts > 0 && (
+            <Link href="/ledger?view=drafts" className="inline-block mt-2 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 hover:underline">
+              {drafts} draft {drafts === 1 ? "entry" : "entries"} this month not included — waiting for review →
+            </Link>
+          )}
         </div>
         <MonthPicker month={month} />
       </div>

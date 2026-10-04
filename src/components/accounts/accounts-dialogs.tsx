@@ -18,12 +18,14 @@ export type AccountRow = AccountOpt & {
   notes: string | null; openingBalance: number; openingDate: string | null; balance: number; movementCount: number;
 };
 export type LoanRow = { id: string; lender: string; currency: string; notes: string | null; received: number; repaid: number; outstanding: number };
-export type TransferRow = {
+// status: DRAFT / REVIEWED / POSTED; reversal = cancels a posted movement; reversed = cancelled by one.
+type Workflow = { status: string; reversal: boolean; reversed: boolean };
+export type TransferRow = Workflow & {
   isTransfer: true; id: string; transferId: string; date: string; description: string | null;
   fromAccountId: string | null; fromName: string; amountOut: number; currencyOut: string;
   toAccountId: string | null; toName: string; amountIn: number; currencyIn: string; rate: number | null;
 };
-export type SingleRow = {
+export type SingleRow = Workflow & {
   isTransfer: false; kind: string; id: string; date: string; description: string | null;
   accountId: string | null; accountName: string; amount: number; currency: string; loanId: string | null; lender: string | null;
 };

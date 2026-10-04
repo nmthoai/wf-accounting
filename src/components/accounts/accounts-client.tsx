@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, PiggyBank, User, Landmark, ArrowLeftRight, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
-import { deleteTransaction } from "@/app/actions/ledger";
+import { Wallet, PiggyBank, User, Landmark, ArrowLeftRight, Plus, Pencil, Trash2, AlertTriangle, Lock, Undo2 } from "lucide-react";
+import { deleteTransaction, reverseEntry } from "@/app/actions/ledger";
 import { ACCOUNT_TYPE_LABEL, TYPE_LABEL, fmtMoney, fmtVnd, totalsList, type Totals } from "@/lib/money";
 import {
   AccountDialog, TransferDialog, MovementDialog, LoanDialog,
@@ -23,6 +23,23 @@ const kindColor: Record<string, string> = {
 };
 const OUT_KINDS = new Set(["LOAN_REPAY", "OTHER_OUT"]);
 
+// One line per currency — currencies are never added together.
+function Stat({ label, totals, sub, icon, primary }: { label: string; totals: Totals; sub: string; icon: React.ReactNode; primary?: boolean }) {
+  const lines = totalsList(totals);
+  return (
+    <Card className={primary ? "bg-primary text-primary-foreground" : ""}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{label}</CardTitle>{icon}
+      </CardHeader>
+      <CardContent>
+        {lines.length === 0 && <div className="text-2xl font-bold">{fmtVnd(0)}</div>}
+        {lines.map(([c, v], i) => <div key={c} className={i === 0 ? "text-2xl font-bold" : "text-lg font-semibold"}>{fmtMoney(v, c)}</div>)}
+        <p className={`text-xs mt-1 ${primary ? "opacity-75" : "text-muted-foreground"}`}>{sub}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AccountsClient({ isAdmin, position, accounts, loans, movements }: {
   isAdmin: boolean;
   position: { liquid: Totals; deposits: Totals; owner: Totals; capital: Totals };
@@ -30,7 +47,18 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const unclassified = movements.filter((m): m is SingleRow => !m.isTransfer && m.kind.startsWith("OTHER_"));
+  const unclassified = movements.filter((m): m is SingleRow => !m.isTransfer && m.kind.startsWith("OTHER_") && !m.reversal && !m.reversed);
+
+  async function reverse(id: string) {
+    const reason = prompt("Reverse this posted movement? Give the reason — then record the correct one.");
+    if (!reason?.trim()) return;
+    setBusyId(id);
+    try {
+      const res = await reverseEntry(id, reason);
+      if (!res.success && res.message) alert(res.message);
+      router.refresh();
+    } finally { setBusyId(null); }
+  }
 
   async function remove(id: string) {
     if (!confirm("Delete this movement? A transfer deletes both sides.")) return;
@@ -40,22 +68,6 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
 
   const editButton = <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Edit"><Pencil className="h-4 w-4" /></Button>;
 
-  // One line per currency — currencies are never added together.
-  const Stat = ({ label, totals, sub, icon, primary }: { label: string; totals: Totals; sub: string; icon: React.ReactNode; primary?: boolean }) => {
-    const lines = totalsList(totals);
-    return (
-      <Card className={primary ? "bg-primary text-primary-foreground" : ""}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{label}</CardTitle>{icon}
-        </CardHeader>
-        <CardContent>
-          {lines.length === 0 && <div className="text-2xl font-bold">{fmtVnd(0)}</div>}
-          {lines.map(([c, v], i) => <div key={c} className={i === 0 ? "text-2xl font-bold" : "text-lg font-semibold"}>{fmtMoney(v, c)}</div>)}
-          <p className={`text-xs mt-1 ${primary ? "opacity-75" : "text-muted-foreground"}`}>{sub}</p>
-        </CardContent>
-      </Card>
-    );
-  };
   const ownerLines = totalsList(position.owner);
 
   return (
@@ -177,6 +189,10 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
                   ) : (
                     <><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${kindColor[m.kind] ?? "bg-slate-200 text-slate-700"}`}>{TYPE_LABEL[m.kind] ?? m.kind}</span>{m.accountName}</>
                   )}
+                  {m.status === "DRAFT" && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">draft</span>}
+                  {m.reversal && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-700">reversal</span>}
+                  {m.reversed && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-700">reversed</span>}
+                  {m.status === "POSTED" && <span title="Posted — locked"><Lock className="h-3.5 w-3.5 text-muted-foreground" /></span>}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {m.date}
@@ -191,17 +207,24 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
                     {m.rate && <div className="text-xs text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(Math.round(m.rate * 100) / 100)} VND/USD</div>}
                   </div>
                 ) : (
-                  <span className={`text-sm font-semibold ${OUT_KINDS.has(m.kind) ? "text-red-600" : "text-green-700"}`}>
-                    {OUT_KINDS.has(m.kind) ? "−" : "+"}{fmtMoney(m.amount, m.currency)}
+                  <span className={`text-sm font-semibold ${OUT_KINDS.has(m.kind) === m.amount >= 0 ? "text-red-600" : "text-green-700"}`}>
+                    {OUT_KINDS.has(m.kind) === m.amount >= 0 ? "−" : "+"}{fmtMoney(Math.abs(m.amount), m.currency)}
                   </span>
                 )}
-                {m.isTransfer
+                {/* Posted movements are locked: an admin reverses them, then records the correct one. */}
+                {m.status !== "POSTED" && (m.isTransfer
                   ? <TransferDialog accounts={accounts} transfer={m} trigger={editButton} />
-                  : <MovementDialog accounts={accounts} loans={loans} movement={m} trigger={editButton} />}
-                {isAdmin && (
+                  : <MovementDialog accounts={accounts} loans={loans} movement={m} trigger={editButton} />)}
+                {isAdmin && m.status !== "POSTED" && (
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="Delete"
                     disabled={busyId === m.id} onClick={() => remove(m.id)}>
                     <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+                {isAdmin && m.status === "POSTED" && !m.reversal && !m.reversed && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Reverse (correct a posted movement)"
+                    disabled={busyId === m.id} onClick={() => reverse(m.id)}>
+                    <Undo2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>

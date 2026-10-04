@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { ContactsClient } from "@/components/contacts/contacts-client";
-import { toVnd } from "@/lib/money";
+import { toVnd, BOOKED } from "@/lib/money";
 
 export default async function ContactsPage() {
   const [clients, vendors, projects, incomeTx] = await Promise.all([
     prisma.client.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { projects: true, invoices: true } } } }),
-    prisma.vendor.findMany({ orderBy: { name: "asc" }, include: { transactions: true } }),
+    prisma.vendor.findMany({ orderBy: { name: "asc" }, include: { transactions: { where: BOOKED } } }),
     prisma.project.findMany({ select: { id: true, clientId: true } }),
-    prisma.transaction.findMany({ where: { type: "INCOME" }, select: { projectId: true, amount: true, exchangeRate: true, vndAmount: true } }),
+    prisma.transaction.findMany({ where: { type: "INCOME", ...BOOKED }, select: { projectId: true, amount: true, exchangeRate: true, vndAmount: true } }),
   ]);
 
   // Revenue received per client = income transactions on that client's projects.
