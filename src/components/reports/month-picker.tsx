@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export function MonthPicker({ month }: { month: string }) {
+export function MonthPicker({ month, basePath = "/reports" }: { month: string; basePath?: string }) {
   const router = useRouter();
-  const go = (m: string) => router.push(`/reports?month=${m}`);
+  const go = (m: string) => router.push(`${basePath}?month=${m}`);
 
   const shift = (delta: number) => {
     const [y, mo] = month.split("-").map(Number);

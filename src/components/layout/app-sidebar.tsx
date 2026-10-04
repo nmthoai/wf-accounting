@@ -12,6 +12,7 @@ import {
   Wallet,
   Landmark,
   ReceiptText,
+  PackageCheck,
   BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ export const navigation = [
   { name: "Bank", href: "/bank", icon: Landmark },
   { name: "Costs", href: "/costs", icon: ReceiptText },
   { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Handover", href: "/handover", icon: PackageCheck },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

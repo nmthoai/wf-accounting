@@ -41,22 +41,49 @@ internal staff).
   contracts/files (same secure pipeline as receipts). Editable from the project detail page.
 - **Coming Payments** on the dashboard (what you'll pay vs receive) and a
   **per-project "unpaid" badge / Outstanding list**.
-- **Balance tab** — bank cash via an opening balance + deposits/withdrawals,
-  with business income/expenses auto-tracked from the ledger.
+- ~~Balance tab~~ — replaced by the typed cash book (Accounts, Oct 2026).
 - **Chart of accounts** — clean income/expense categories.
 - **Monthly P&L report** — income & expenses by category for any month, with a
   prior-month comparison (Reports tab).
+
+### Small additions (Sept 2026)
+- Edit invoices & bills in place; ZIP attachments with original filenames;
+  Excel export of ledger entries and invoices by date range.
+
+### Accounting controls — the October 2026 build list (all live)
+Built against the 4 Oct 2026 accounting review and the real MB statements.
+1. **Typed cash book** — every movement has an account (MB VND, MB USD, term
+   deposit, company cash, owner-paid, owner-held cash); balances per account and
+   per currency, never summed across currencies.
+2. **Transfers, capital & loans** — linked transfer legs, capital contributions,
+   a loan register (received / repaid / outstanding); none of it touches P&L.
+3. **Invoice ↔ payment matching** — many-to-many allocations; gross, received
+   and *evidenced* fees; any remainder shown as an unmatched difference.
+4. **Bookkeeping kept apart from tax** — document status, business purpose,
+   CIT deductibility and input VAT per entry; all pending until reviewed.
+5. **Bank import & reconciliation** — MB statement import (balance-checked:
+   opening + in − out = closing), duplicate-safe, suggested matches,
+   unreconciled lines both ways.
+6. **Per-transaction FX** — original currency, actual VND settled, rate source.
+7. **Draft → Reviewed → Posted + change history** — staff entries start as
+   drafts; posting locks; corrections by reversal; who/what/when/why logged.
+8. **Cost register** — cloud services and owner-paid costs from receipts;
+   pending until reviewed, then into the ledger once (duplicate check).
+9. **Accountant handover** — a monthly ZIP: ledger, invoices, bank
+   reconciliation, missing documents, open questions and history, each entry
+   linked to its evidence files.
 
 ---
 
 ## 🛣️ Roadmap
 
-### Near-term
-- **Revert invoice → Open** automatically when its ledger entry is deleted.
+### Next
+- **Gini** — the in-app accounting assistant (chat over the books, fenced to
+  WF accounting and Vietnamese accounting law/news; confirm-first actions;
+  Anthropic / OpenRouter / Ollama-RunPod providers). Plan agreed, not started.
 - **Off-server backup** (push the nightly archive to another host / object store).
-- **Edit invoice** — reclassify direction/party/category in place (vs delete+recreate).
 
-### Phase 2 — Intelligence (AI layer, Claude API)
+### Intelligence ideas (fold into Gini)
 - **Receipt OCR auto-fill** — snap a photo → vendor / amount / date / category.
 - **Natural-language entry** — "paid 2.5M for AWS yesterday" → a categorised entry.
 - **Auto-categorisation** of new transactions.
@@ -72,14 +99,17 @@ internal staff).
 
 ## 🧭 How to use it (the routine)
 
-1. **New client work** → *Projects* → add a project (pick the client).
-2. **You bill a client** → *Invoices & Bills → Receivable*; **Mark Paid** when they pay.
-3. **A vendor bills you** → *Invoices & Bills → Payable*; **Mark Paid** when you pay.
-4. **Recurring/small costs** (cloud, software, fees) → *New Entry → Expense* (tag project + category + vendor).
-5. **Non-business bank cash** (capital, owner draw, transfers) → *Balance* tab.
-6. **Monthly** → review the Dashboard, check each project's profit, and add a
-   Balance adjustment if the app's Cash on Hand drifts from your real bank.
+1. **Invoices & bills** → record them when issued/received; **Record payment**
+   when money moves (or link an existing ledger entry — one transfer can pay several).
+2. **Cloud & owner-paid receipts** → *Costs* → add the receipt; later **To ledger**
+   (it offers to link an expense that's already there instead of duplicating it).
+3. **Each month** → *Bank* → import both MB statements (the import refuses a file
+   that doesn't add up) → accept suggested matches → **+** for new income/expense
+   lines → record transfers, capital and loans on *Accounts*, then match them.
+4. **Review** → approve drafts (*Ledger → Drafts*), set evidence and the
+   accountant's CIT/VAT decisions, then **Post reviewed entries through** the month end.
+5. **Handover** → *Handover* → check the list → download the month's ZIP for the accountant.
 
-**One rule:** never log the same money twice — invoiced money goes through
-*Invoices & Bills*, everything else through *New Entry*. The ledger flags
-invoice-generated rows with a "from invoice" badge.
+**One rule:** never log the same money twice — payments go through the invoice
+(or are linked to it), bank lines are matched rather than re-entered, and register
+receipts are linked when the expense already exists.
