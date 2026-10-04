@@ -11,6 +11,7 @@ import { refreshInvoiceStatus, invoicesOf } from "@/lib/invoice-status";
 import { reviewProblem } from "@/lib/review";
 import { bankLinkProblem } from "@/lib/bank-match";
 import { diff, record, snapshot, type Change } from "@/lib/history";
+import { costItemProblem, convertCostItem } from "@/lib/cost-items";
 
 type Decisions = { purposeStatus: string; citStatus: string; vatStatus: string };
 
@@ -105,6 +106,13 @@ export async function createTransaction(formData: FormData) {
     const problem = await bankLinkProblem(bankLineId, [parsed.data]);
     if (problem) return { success: false, message: problem };
   }
+  // Converted from a cost register item: once only.
+  const costItemId = (formData.get("costItemId") as string) || null;
+  if (costItemId) {
+    if (parsed.data.type !== "EXPENSE") return { success: false, message: "A register item becomes an expense." };
+    const problem = await costItemProblem(costItemId);
+    if (problem) return { success: false, message: problem };
+  }
   // Re-entered in place of a reversed posted entry.
   const correctionOfId = (formData.get("correctionOfId") as string) || null;
   if (correctionOfId) {
@@ -117,6 +125,7 @@ export async function createTransaction(formData: FormData) {
     data: { ...parsed.data, bankLineId, correctionOfId, status: me.isAdmin ? "REVIEWED" : "DRAFT", createdBy: me.name },
   });
   await record([{ entityId: transaction.id, action: "CREATE", newValue: snapshot(transaction), reason: correctionOfId ? "Correction of a reversed entry" : null }], me.name);
+  if (costItemId) await convertCostItem(costItemId, transaction.id, me.name);
 
   await persistUploads(formData.getAll("files") as File[], { transactionId: transaction.id });
   revalidateAll();
@@ -135,6 +144,9 @@ export async function deleteTransaction(id: string) {
   if (legs.some((l) => l.status === "POSTED")) throw new Error("Posted entries can't be deleted — reverse them instead.");
   const ids = legs.map((l) => l.id);
 
+  // A register item that became this expense goes back to pending, keeping its receipts.
+  await prisma.costItem.updateMany({ where: { transactionId: { in: ids } }, data: { status: "PENDING", transactionId: null } });
+  await prisma.attachment.updateMany({ where: { transactionId: { in: ids }, costItemId: { not: null } }, data: { transactionId: null } });
   // Cascade-delete removes the Attachment rows; also remove the files from disk.
   const attachments = await prisma.attachment.findMany({ where: { transactionId: { in: ids } } });
   const invoices = await invoicesOf(ids); // payments being removed — their invoices reopen
@@ -278,6 +290,7 @@ export async function deleteAttachment(id: string) {
   if (!att) return { success: true };
   // Evidence on a posted entry stays; more can be added.
   if (att.transaction?.status === "POSTED") return { success: false, message: "This entry is posted — its attachments are kept." };
+  if (att.transactionId && att.costItemId) return { success: false, message: "This receipt belongs to a cost register item — it stays with the expense." };
 
   await prisma.attachment.delete({ where: { id } });
   await removeUploadFile(att.filePath);

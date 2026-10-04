@@ -169,6 +169,7 @@ model Transaction {
   reversalOf     Transaction? @relation("Reversal", fields: [reversalOfId], references: [id])
   reversedBy     Transaction? @relation("Reversal")
   correctionOfId String?                           // re-entered in place of that reversed entry
+  costItem       CostItem?                         // the register item this expense came from
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -275,7 +276,38 @@ model Attachment {
   invoice       Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   projectId     String?
   project       Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costItemId    String?      // a register receipt; shared with the expense it became
+  costItem      CostItem?    @relation(fields: [costItemId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
+}
+
+// Cloud services and costs paid by the owner, recorded from the receipt. Each
+// item stays pending until reviewed, then becomes one ledger expense — never
+// two. Evidence fields are kept as on the receipt once converted.
+model CostItem {
+  id                String       @id @default(cuid())
+  ref               String?      @unique   // outside reference, e.g. the review's C001
+  provider          String
+  receiptDate       DateTime                // invoice/payment date as printed
+  amount            Float                   // as printed, in `currency`
+  currency          String       @default("USD")
+  servicePeriodFrom DateTime?
+  servicePeriodTo   DateTime?
+  receiptNumber     String?                 // invoice or receipt number
+  billingEntity     String?                 // who the receipt is billed to
+  payer             String       @default("UNKNOWN")    // COMPANY, OWNER, UNKNOWN
+  renewalDate       DateTime?
+  reimbursement     String       @default("UNRESOLVED") // UNRESOLVED, NOT_NEEDED, OWED, REIMBURSED
+  docStatus         String       @default("RECEIPT")    // same scale as ledger entries
+  status            String       @default("PENDING")    // PENDING, CONVERTED, DISMISSED
+  notes             String?                 // evidence details as found
+  reviewNote        String?
+  transactionId     String?      @unique   // the ledger expense it became
+  transaction       Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  createdBy         String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  attachments       Attachment[]
 }
 
 model BankBalance {

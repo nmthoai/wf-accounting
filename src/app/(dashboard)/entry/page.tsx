@@ -3,10 +3,13 @@ import { EntryForm } from "./entry-form";
 import { defaultUsdRate } from "@/lib/fx";
 import { auth } from "@/auth";
 import { accountDelta, fmtMoney } from "@/lib/money";
+import { CostDuplicates, type Lookalike } from "@/components/costs/cost-duplicates";
 
-export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ bankLine?: string; reenter?: string }> }) {
-  const { bankLine: lineId, reenter } = await searchParams;
-  const [session, usdRate, accounts, categories, projects, vendors, line, reversed] = await Promise.all([
+const DAY = 86_400_000;
+
+export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ bankLine?: string; reenter?: string; costItem?: string }> }) {
+  const { bankLine: lineId, reenter, costItem: itemId } = await searchParams;
+  const [session, usdRate, accounts, categories, projects, vendors, line, reversed, item] = await Promise.all([
     auth(),
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
@@ -15,12 +18,48 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
     prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     lineId ? prisma.bankLine.findUnique({ where: { id: lineId }, include: { account: true, entries: true } }) : null,
     reenter ? prisma.transaction.findUnique({ where: { id: reenter }, include: { reversedBy: true } }) : null,
+    itemId ? prisma.costItem.findUnique({ where: { id: itemId } }) : null,
   ]);
 
   // Started from a bank statement line: the part of it not yet in the ledger.
   let prefill;
   let bankLine;
   let correction;
+  let costItem;
+  let lookalikes: Lookalike[] = [];
+  // From the cost register: the receipt's details, paid from the payer's account.
+  if (item?.status === "PENDING") {
+    const active = accounts.filter((a) => a.isActive);
+    const account = item.payer === "OWNER"
+      ? active.find((a) => a.type === "OWNER" && a.currency === "VND")
+      : item.payer === "COMPANY"
+        ? active.find((a) => a.type === "BANK" && a.currency === "VND") // cloud charges go through the company's VND card
+        : undefined;
+    const period = item.servicePeriodFrom && item.servicePeriodTo
+      ? ` — ${item.servicePeriodFrom.toISOString().slice(0, 10)} to ${item.servicePeriodTo.toISOString().slice(0, 10)}` : "";
+    prefill = {
+      type: "EXPENSE", accountId: account?.id ?? "", date: item.receiptDate, amount: item.amount, currency: item.currency,
+      rateSource: item.currency === "VND" ? null : "BANK",
+      description: `${item.provider}${period}`, invoiceNumber: item.receiptNumber,
+      vendorId: vendors.find((v) => v.name.toLowerCase() === item.provider.toLowerCase())?.id ?? "",
+      docStatus: item.docStatus, reviewNote: item.reviewNote,
+    };
+    costItem = { id: item.id, label: `${item.provider} · ${item.receiptDate.toISOString().slice(0, 10)} · ${fmtMoney(item.amount, item.currency)}` };
+    // Expenses within ten days that match the amount, or name the provider.
+    const word = item.provider.toLowerCase().split(/[\s/]+/)[0];
+    const nearby = await prisma.transaction.findMany({
+      where: {
+        type: "EXPENSE", reversalOfId: null, reversedBy: { is: null }, costItem: { is: null },
+        date: { gte: new Date(+item.receiptDate - 10 * DAY), lte: new Date(+item.receiptDate + 10 * DAY) },
+      },
+      include: { vendor: true },
+      orderBy: { date: "asc" },
+    });
+    lookalikes = nearby
+      .filter((t) => (t.currency === item.currency && Math.abs(t.amount - item.amount) <= Math.max(0.01, item.amount * 0.01))
+        || `${t.description ?? ""} ${t.vendor?.name ?? ""}`.toLowerCase().includes(word))
+      .map((t) => ({ id: t.id, date: t.date.toISOString().slice(0, 10), label: t.description ?? "Expense", amount: fmtMoney(t.amount, t.currency) }));
+  }
   // Re-entering a reversed posted entry: start from its values, to be corrected.
   if (reversed?.reversedBy && (reversed.type === "INCOME" || reversed.type === "EXPENSE")) {
     const r = reversed;
@@ -60,6 +99,8 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
         <p className="text-muted-foreground mt-1">Log a new income or expense transaction</p>
       </div>
 
+      {costItem && <CostDuplicates itemId={costItem.id} lookalikes={lookalikes} />}
+
       <EntryForm
         categories={categories}
         projects={projects}
@@ -70,6 +111,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
         prefill={prefill}
         bankLine={bankLine}
         correction={correction}
+        costItem={costItem}
       />
     </div>
   );

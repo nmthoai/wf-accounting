@@ -41,6 +41,7 @@ export function EntryForm({
   prefill,
   bankLine,
   correction,
+  costItem,
   locked = false
 }: {
   categories: any[];
@@ -53,6 +54,7 @@ export function EntryForm({
   prefill?: any; // a new entry started from a bank statement line, or re-entered after a reversal
   bankLine?: { id: string; label: string };
   correction?: { id: string; label: string }; // the reversed posted entry this one replaces
+  costItem?: { id: string; label: string }; // the cost register receipt this expense records
   locked?: boolean; // posted: only evidence, tax review and new attachments can change
 }) {
   const router = useRouter();
@@ -144,6 +146,7 @@ export function EntryForm({
     formData.set("vatStatus", vatStatus);
     if (bankLine) formData.set("bankLineId", bankLine.id);
     if (correction) formData.set("correctionOfId", correction.id);
+    if (costItem) formData.set("costItemId", costItem.id);
     // Submit exactly the files shown in the UI (state owns the list).
     formData.delete("files");
     for (const f of pendingFiles) formData.append("files", f);
@@ -157,7 +160,7 @@ export function EntryForm({
       }
 
       if (res.success) {
-        router.push(bankLine ? "/bank" : "/ledger");
+        router.push(bankLine ? "/bank" : costItem ? "/costs" : "/ledger");
       } else {
         alert(res.message);
       }
@@ -179,6 +182,11 @@ export function EntryForm({
           {bankLine && (
             <p className="text-sm rounded-md border p-3 bg-muted/30">
               From bank line <span className="font-medium">{bankLine.label}</span> — saving matches this entry to it.
+            </p>
+          )}
+          {costItem && (
+            <p className="text-sm rounded-md border p-3 bg-muted/30">
+              From the cost register: <span className="font-medium">{costItem.label}</span> — saving adds it to the ledger once, with its receipt.
             </p>
           )}
           {correction && (
