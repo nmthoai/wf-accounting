@@ -9,26 +9,50 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createTransaction, editTransaction, deleteAttachment } from "@/app/actions/ledger";
 import { Loader2, UploadCloud, Paperclip, X } from "lucide-react";
+import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
+import { CURRENCIES } from "@/lib/money";
 
 export function EntryForm({
   categories,
   projects = [],
   vendors = [],
+  accounts,
   defaultUsdRate,
   initialData
 }: {
   categories: any[];
   projects?: { id: string; name: string }[];
   vendors?: { id: string; name: string }[];
+  accounts: AccountOpt[];
   defaultUsdRate: number;
   initialData?: any;
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [type, setType] = useState<"INCOME" | "EXPENSE">(initialData?.type || "EXPENSE");
-  const [currency, setCurrency] = useState<"VND" | "USD">(initialData?.currency || "VND");
+  const [currency, setCurrency] = useState<string>(initialData?.currency || "VND");
   const [projectId, setProjectId] = useState<string>(initialData?.projectId || "");
   const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || "");
+  const [accountId, setAccountId] = useState<string>(initialData?.accountId || "");
+  // How a USD amount converts: bank-settled VND (exact), a manual rate, or the default.
+  const [rateMode, setRateMode] = useState<"BANK" | "MANUAL" | "DEFAULT">(
+    initialData?.rateSource === "BANK" ? "BANK" : initialData?.rateSource === "MANUAL" ? "MANUAL" : "DEFAULT"
+  );
+  const account = accounts.find((a) => a.id === accountId);
+  const usdAccount = account?.currency === "USD";
+
+  function chooseAccount(id: string) {
+    setAccountId(id);
+    // A USD account only holds USD.
+    if (accounts.find((a) => a.id === id)?.currency === "USD") setCurrency("USD");
+  }
+
+  function chooseCurrency(c: string) {
+    if (usdAccount && c !== "USD") return;
+    setCurrency(c);
+    // Only USD has a company default rate.
+    if (c !== "USD" && rateMode === "DEFAULT") setRateMode("BANK");
+  }
 
   const filteredCategories = categories.filter((c) => c.type === type);
 
@@ -77,6 +101,8 @@ export function EntryForm({
     formData.set("categoryId", categoryId);
     formData.set("projectId", projectId);
     formData.set("vendorId", type === "EXPENSE" ? vendorId : "");
+    formData.set("accountId", accountId);
+    formData.set("rateMode", rateMode);
     // Submit exactly the files shown in the UI (state owns the list).
     formData.delete("files");
     for (const f of pendingFiles) formData.append("files", f);
@@ -136,6 +162,17 @@ export function EntryForm({
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label>{type === "INCOME" ? "Received into" : "Paid from"}</Label>
+              <AccountSelect
+                accounts={accounts.filter((a) => a.isActive || a.id === accountId)}
+                value={accountId}
+                onChange={chooseAccount}
+                placeholder="Choose the account the money moved through"
+              />
+              <p className="text-xs text-muted-foreground">Bank, company cash, or Owner-paid if you paid it personally.</p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
               <Input id="date" name="date" type="date" required defaultValue={defaultDate} />
@@ -145,12 +182,39 @@ export function EntryForm({
               <div className="flex justify-between items-center mb-2">
                 <Label htmlFor="amount">Amount</Label>
                 <div className="flex bg-muted p-0.5 rounded text-xs font-medium cursor-pointer">
-                  <span onClick={() => setCurrency("VND")} className={`px-2 py-0.5 rounded-sm transition-all ${currency === "VND" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>VND</span>
-                  <span onClick={() => setCurrency("USD")} className={`px-2 py-0.5 rounded-sm transition-all ${currency === "USD" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>USD</span>
+                  {CURRENCIES.map((c) => (
+                    <span key={c} onClick={() => chooseCurrency(c)}
+                      className={`px-2 py-0.5 rounded-sm transition-all ${currency === c ? "bg-white shadow-sm" : "text-muted-foreground"} ${usdAccount && c !== "USD" ? "opacity-40 cursor-not-allowed" : ""}`}>{c}</span>
+                  ))}
                 </div>
               </div>
               <Input id="amount" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" defaultValue={initialData?.amount} />
             </div>
+
+            {currency !== "VND" && (
+              <div className="space-y-2 md:col-span-2 rounded-md border p-3 bg-muted/30">
+                <Label>VND value</Label>
+                <div className="flex bg-muted p-0.5 rounded text-xs font-medium w-fit">
+                  {([["BANK", "Actual VND settled"], ["MANUAL", "Enter rate"], ...(currency === "USD" ? [["DEFAULT", `Default (${new Intl.NumberFormat("vi-VN").format(defaultUsdRate)})`]] : [])] as [ "BANK" | "MANUAL" | "DEFAULT", string][]).map(([m, label]) => (
+                    <button key={m} type="button" onClick={() => setRateMode(m)}
+                      className={`px-2 py-1 rounded-sm ${rateMode === m ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{label}</button>
+                  ))}
+                </div>
+                {rateMode === "BANK" && (
+                  <Input name="vndAmount" type="number" step="1" min="0" required placeholder="VND exactly as on the bank statement"
+                    defaultValue={initialData?.vndAmount ?? ""} />
+                )}
+                {rateMode === "MANUAL" && (
+                  <Input name="rate" type="number" step="any" min="0" required placeholder={`VND per ${currency}`}
+                    defaultValue={initialData?.rateSource === "MANUAL" ? initialData.exchangeRate : ""} />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {rateMode === "BANK" ? "Most accurate — the rate is worked out from what the bank actually settled."
+                    : rateMode === "MANUAL" ? "Use the rate on the receipt or the bank's rate for that day."
+                    : "Only an estimate — switch to the bank figure when you have the statement."}
+                </p>
+              </div>
+            )}
 
             <div className={`space-y-2 md:col-span-2`}>
               <Label htmlFor="categoryId">Category</Label>

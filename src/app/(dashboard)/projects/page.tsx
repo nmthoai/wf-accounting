@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ProjectsClient } from "@/components/projects/projects-client";
-
-const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
+import { toVnd } from "@/lib/money";
 
 export default async function ProjectsPage() {
   const [projects, clients, openInvoices] = await Promise.all([

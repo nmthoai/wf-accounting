@@ -4,8 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MonthPicker } from "@/components/reports/month-picker";
 import { ReportDownloads } from "@/components/reports/report-downloads";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { toVnd } from "@/lib/money";
 
-const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
+// P&L counts income and expenses only — transfers, capital and loans are not profit.
+const PNL = { type: { in: ["INCOME", "EXPENSE"] } };
 const fmt = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 
 function monthBounds(month: string) {
@@ -17,7 +19,7 @@ function monthBounds(month: string) {
   };
 }
 
-function byCategory(txns: { type: string; amount: number; exchangeRate: number; category: { name: string } | null }[], type: string) {
+function byCategory(txns: { type: string; amount: number; exchangeRate: number; vndAmount: number | null; category: { name: string } | null }[], type: string) {
   const map = new Map<string, number>();
   for (const t of txns.filter((x) => x.type === type)) {
     const key = t.category?.name || "Uncategorized";
@@ -35,8 +37,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const { start, end, prevStart } = monthBounds(month);
 
   const [txns, prevTxns] = await Promise.all([
-    prisma.transaction.findMany({ where: { date: { gte: start, lt: end } }, include: { category: true, project: true } }),
-    prisma.transaction.findMany({ where: { date: { gte: prevStart, lt: start } }, select: { type: true, amount: true, exchangeRate: true } }),
+    prisma.transaction.findMany({ where: { ...PNL, date: { gte: start, lt: end } }, include: { category: true, project: true } }),
+    prisma.transaction.findMany({ where: { ...PNL, date: { gte: prevStart, lt: start } }, select: { type: true, amount: true, exchangeRate: true, vndAmount: true } }),
   ]);
 
   // Per-project breakdown for the month

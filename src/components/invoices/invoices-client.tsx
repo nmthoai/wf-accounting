@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Loader2, CheckCircle2, Ban, Trash2, AlertTriangle, Paperclip, ArrowDownLeft, ArrowUpRight } from "lucide-react";
-import { createInvoice, markInvoicePaid, voidInvoice, deleteInvoice } from "@/app/actions/invoices";
+import { Plus, Loader2, Ban, Trash2, AlertTriangle, Paperclip, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { createInvoice, voidInvoice, deleteInvoice } from "@/app/actions/invoices";
 import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
+import { MarkPaidDialog } from "@/components/invoices/mark-paid-dialog";
+import type { AccountOpt } from "@/components/accounts/account-select";
 
 type Invoice = {
   id: string; number: string | null; direction: string; party: string | null; projectName: string | null; categoryName: string | null;
@@ -26,9 +27,9 @@ const money = (i: { currency: string; amount: number }) =>
   i.currency === "USD" ? "$" + new Intl.NumberFormat("en-US").format(i.amount) : vnd(i.amount);
 
 export function InvoicesClient({
-  invoices, clients, vendors, projects, categories, defaultUsdRate, summary,
+  invoices, clients, vendors, projects, categories, accounts, defaultUsdRate, summary,
 }: {
-  invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; categories: Cat[]; defaultUsdRate: number;
+  invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; categories: Cat[]; accounts: AccountOpt[]; defaultUsdRate: number;
   summary: { arOutstanding: number; apOutstanding: number; arOverdue: number; apOverdue: number };
 }) {
   const router = useRouter();
@@ -232,35 +233,7 @@ export function InvoicesClient({
                   {i.status !== "VOID" && (
                     <EditInvoiceDialog invoice={i} clients={clients} vendors={vendors} projects={projects} categories={categories} defaultUsdRate={defaultUsdRate} />
                   )}
-                  {i.status === "OPEN" && (
-                    <Dialog>
-                      <DialogTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1 text-green-700" disabled={busyId === i.id} />}>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Mark paid
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Mark {i.number || (i.direction === "PAYABLE" ? "bill" : "invoice")} paid</DialogTitle>
-                        </DialogHeader>
-                        <form
-                          onSubmit={async (e) => {
-                            e.preventDefault();
-                            const fd = new FormData(e.currentTarget);
-                            await run(i.id, () => markInvoicePaid(i.id, fd));
-                          }}
-                          className="space-y-4 pt-2"
-                        >
-                          <p className="text-sm text-muted-foreground">
-                            Records the {i.direction === "PAYABLE" ? "expense" : "income"} transaction in the ledger, dated below.
-                          </p>
-                          <div className="space-y-2">
-                            <Label htmlFor={`pd-${i.id}`}>Payment date</Label>
-                            <Input id={`pd-${i.id}`} name="paidDate" type="date" defaultValue={today} required />
-                          </div>
-                          <Button type="submit" className="w-full">Confirm payment</Button>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
-                  )}
+                  {i.status === "OPEN" && <MarkPaidDialog invoice={i} accounts={accounts} />}
                   {i.status === "OPEN" && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Void" disabled={busyId === i.id}
                       onClick={() => { if (confirm("Void this?")) run(i.id, () => voidInvoice(i.id)); }}>

@@ -7,8 +7,8 @@ import { ArrowLeft } from "lucide-react";
 import { ProjectOutstanding } from "@/components/projects/project-outstanding";
 import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
 import { ProjectDocuments } from "@/components/projects/project-documents";
+import { toVnd } from "@/lib/money";
 
-const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const fmtDate = (d: Date | null) => (d ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : null);

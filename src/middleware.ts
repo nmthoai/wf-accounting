@@ -38,5 +38,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // The logo is shown on the login page, so it must load before sign-in;
+  // everything else stays behind the login.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|logo.svg).*)"],
 };

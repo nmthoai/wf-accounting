@@ -35,13 +35,51 @@ model Category {
   invoices     Invoice[]
 }
 
+// A place money sits: a bank account, company cash, the owner's pocket
+// (owner-paid expenses; a negative balance = owed to the owner), or a term deposit.
+model Account {
+  id             String    @id @default(cuid())
+  name           String
+  type           String    @default("BANK") // BANK, CASH, OWNER, TERM_DEPOSIT
+  currency       String    @default("VND")  // VND or USD
+  openingBalance Float     @default(0)      // in the account's own currency
+  openingDate    DateTime?                  // movements before this date are already in the opening balance
+  isActive       Boolean   @default(true)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  transactions   Transaction[]
+}
+
+// A loan to the company (e.g. from the owner). Outstanding = received − repaid.
+model Loan {
+  id        String   @id @default(cuid())
+  lender    String
+  currency  String   @default("VND")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+}
+
 model Transaction {
   id            String   @id @default(cuid())
   date          DateTime
-  type          String   // INCOME, EXPENSE
-  currency      String   @default("VND") // VND or USD
-  exchangeRate  Float    @default(1.0)
+  // INCOME, EXPENSE (profit & loss) · TRANSFER_OUT, TRANSFER_IN · CAPITAL_IN ·
+  // LOAN_IN, LOAN_REPAY · OTHER_IN, OTHER_OUT (not yet classified)
+  type          String
+  currency      String   @default("VND") // original currency of the amount: VND or USD
+  exchangeRate  Float    @default(1.0)   // VND per unit of currency
+  vndAmount     Float?                   // exact VND actually settled, when known (bank statement)
+  rateSource    String?                  // BANK, MANUAL, DEFAULT; null for VND amounts
   amount        Float
+  accountId     String?
+  account       Account?  @relation(fields: [accountId], references: [id])
+  transferId    String?                  // shared by the two legs of an internal transfer
+  loanId        String?
+  loan          Loan?     @relation(fields: [loanId], references: [id])
   description   String?
   invoiceNumber String?
   categoryId    String?

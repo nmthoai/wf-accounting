@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { persistUploads, removeUploadFile } from "@/lib/uploads";
+import { defaultUsdRate } from "@/lib/fx";
 
 async function requireUser() {
   const session = await auth();
@@ -15,12 +16,13 @@ function revalidateAll() {
   revalidatePath("/invoices");
   revalidatePath("/ledger");
   revalidatePath("/projects");
+  revalidatePath("/accounts");
   revalidatePath("/");
 }
 
 // Create a receivable (client owes you) or payable (you owe a vendor).
 export async function createInvoice(formData: FormData) {
-  const session = await requireUser();
+  await requireUser();
 
   const direction = (formData.get("direction") as string) === "PAYABLE" ? "PAYABLE" : "RECEIVABLE";
   const number = (formData.get("number") as string)?.trim() || null;
@@ -39,8 +41,7 @@ export async function createInvoice(formData: FormData) {
 
   let exchangeRate = 1.0;
   if (currency === "USD") {
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-    exchangeRate = user?.defaultUsdRate || 25400;
+    exchangeRate = await defaultUsdRate();
   }
 
   const invoice = await prisma.invoice.create({
@@ -72,7 +73,7 @@ export async function createInvoice(formData: FormData) {
 // everything else is editable. If it's already PAID, the linked cash
 // transaction is kept in sync so the ledger and reports stay correct.
 export async function updateInvoice(id: string, formData: FormData) {
-  const session = await requireUser();
+  await requireUser();
   const inv = await prisma.invoice.findUnique({ where: { id }, include: { transaction: true } });
   if (!inv) return { success: false, message: "Not found." };
   if (inv.status === "VOID") return { success: false, message: "This invoice is voided." };
@@ -97,8 +98,7 @@ export async function updateInvoice(id: string, formData: FormData) {
   let exchangeRate = inv.exchangeRate;
   if (currency !== inv.currency) {
     if (currency === "USD") {
-      const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-      exchangeRate = user?.defaultUsdRate || 25400;
+      exchangeRate = await defaultUsdRate();
     } else {
       exchangeRate = 1.0;
     }
@@ -154,6 +154,13 @@ export async function markInvoicePaid(id: string, formData?: FormData) {
   const paidStr = formData?.get("paidDate") as string | null;
   const paidDate = paidStr ? new Date(paidStr) : new Date();
 
+  const accountId = formData?.get("accountId") as string | null;
+  const account = accountId ? await prisma.account.findUnique({ where: { id: accountId } }) : null;
+  if (!account) return { success: false, message: "Choose the account the money moved through." };
+  if (account.currency === "USD" && inv.currency !== "USD") {
+    return { success: false, message: `${account.name} is a USD account — this invoice is in ${inv.currency}.` };
+  }
+
   const isReceivable = inv.direction === "RECEIVABLE";
 
   // Record the actual cash movement, linked back to the invoice/bill.
@@ -163,6 +170,8 @@ export async function markInvoicePaid(id: string, formData?: FormData) {
       amount: inv.amount,
       currency: inv.currency,
       exchangeRate: inv.exchangeRate,
+      rateSource: inv.currency !== "VND" ? "DEFAULT" : null,
+      accountId: account.id,
       date: paidDate,
       description: isReceivable
         ? `Payment received${inv.number ? ` — Invoice ${inv.number}` : ""}`

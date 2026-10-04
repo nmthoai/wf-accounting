@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { EntryForm } from "./entry-form";
-import { auth } from "@/auth";
+import { defaultUsdRate } from "@/lib/fx";
 
 export default async function NewEntryPage() {
-  const session = await auth();
-  const [currentUser, categories, projects, vendors] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session?.user?.id } }),
+  const [usdRate, accounts, categories, projects, vendors] = await Promise.all([
+    defaultUsdRate(),
+    prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -22,7 +22,8 @@ export default async function NewEntryPage() {
         categories={categories}
         projects={projects}
         vendors={vendors}
-        defaultUsdRate={currentUser?.defaultUsdRate || 25400}
+        accounts={accounts}
+        defaultUsdRate={usdRate}
       />
     </div>
   );

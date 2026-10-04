@@ -5,8 +5,22 @@ import { Button } from "@/components/ui/button";
 import { deleteTransaction } from "@/app/actions/ledger";
 import { Trash2, Paperclip } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/auth";
+import { TYPE_LABEL, RATE_SOURCE_LABEL, isPnl, isInflow, toVnd, fmtMoney, fmtVnd } from "@/lib/money";
+
+const badge: Record<string, string> = {
+  INCOME: "bg-green-100 text-green-700",
+  EXPENSE: "bg-red-100 text-red-700",
+  CAPITAL_IN: "bg-violet-100 text-violet-700",
+  LOAN_IN: "bg-sky-100 text-sky-700",
+  LOAN_REPAY: "bg-sky-100 text-sky-700",
+  OTHER_IN: "bg-amber-100 text-amber-700",
+  OTHER_OUT: "bg-amber-100 text-amber-700",
+};
 
 export default async function LedgerPage() {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
   const transactions = await prisma.transaction.findMany({
     orderBy: { date: "desc" },
     include: {
@@ -14,6 +28,7 @@ export default async function LedgerPage() {
       attachments: true,
       invoice: true,
       project: true,
+      account: true,
     },
   });
 
@@ -36,6 +51,7 @@ export default async function LedgerPage() {
               <TableRow className="bg-muted/50">
                 <TableHead>Date</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Invoice #</TableHead>
@@ -49,13 +65,14 @@ export default async function LedgerPage() {
                 <TableRow key={t.id}>
                   <TableCell className="font-medium whitespace-nowrap">{t.date.toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.type === "INCOME" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                      {t.type}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badge[t.type] ?? "bg-slate-200 text-slate-700"}`}>
+                      {TYPE_LABEL[t.type] ?? t.type}
                     </span>
                   </TableCell>
+                  <TableCell className="whitespace-nowrap">{t.account?.name ?? <span className="text-amber-700">— none —</span>}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <span>{t.category?.name || "Uncategorized"}</span>
+                      <span>{isPnl(t.type) ? (t.category?.name || "Uncategorized") : <span className="text-muted-foreground">—</span>}</span>
                       {t.project && <span className="text-xs text-muted-foreground">{t.project.name}</span>}
                     </div>
                   </TableCell>
@@ -85,38 +102,39 @@ export default async function LedgerPage() {
                   </TableCell>
                   <TableCell className="text-right font-semibold">
                     <div className="flex flex-col items-end">
-                      <span>
-                        {t.currency === "USD" 
-                          ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount)
-                          : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(t.amount)
-                        }
+                      <span className={isInflow(t.type) ? "text-green-700" : ""}>
+                        {isInflow(t.type) ? "+" : "−"}{fmtMoney(t.amount, t.currency)}
                       </span>
-                      {t.currency === "USD" && (
-                        <span className="text-xs text-muted-foreground font-normal">
-                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(t.amount * t.exchangeRate)}
+                      {t.currency !== "VND" && (
+                        <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">
+                          {fmtVnd(toVnd(t))} · @{new Intl.NumberFormat("vi-VN").format(Math.round(t.exchangeRate * 100) / 100)}
+                          {t.rateSource && ` ${RATE_SOURCE_LABEL[t.rateSource] ?? t.rateSource}`}
                         </span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">
-                      <Link href={`/entry/${t.id}`}>
+                      {/* Income/expense edit in the entry form; transfers, capital and loans on the Accounts page. */}
+                      <Link href={isPnl(t.type) ? `/entry/${t.id}` : "/accounts"}>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-edit-2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                         </Button>
                       </Link>
-                      <form action={deleteTransaction.bind(null, t.id)}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </form>
+                      {isAdmin && (
+                        <form action={deleteTransaction.bind(null, t.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </form>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
               {transactions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     No transactions found. Click "New Entry" to add one.
                   </TableCell>
                 </TableRow>

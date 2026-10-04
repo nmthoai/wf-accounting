@@ -20,7 +20,7 @@ export const navigation = [
   { name: "Invoices", href: "/invoices", icon: FileText },
   { name: "Projects", href: "/projects", icon: Briefcase },
   { name: "Clients & Vendors", href: "/contacts", icon: Users },
-  { name: "Balance", href: "/balance", icon: Wallet },
+  { name: "Accounts", href: "/accounts", icon: Wallet },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import * as xlsx from "xlsx";
+import { TYPE_LABEL, RATE_SOURCE_LABEL, isPnl, toVnd } from "@/lib/money";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 const vnd = (amount: number, rate: number) => Math.round(amount * rate);
@@ -35,31 +36,35 @@ export async function GET(req: Request) {
     const txns = await prisma.transaction.findMany({
       where: { date: { gte: start, lt: end } },
       orderBy: { date: "asc" },
-      include: { category: true, project: true, vendor: true, _count: { select: { attachments: true } } },
+      include: { category: true, project: true, vendor: true, account: true, _count: { select: { attachments: true } } },
     });
 
-    const headers = ["Date", "Type", "Description", "Category", "Project", "Vendor", "Invoice #", "Currency", "Amount", "Rate", "Amount (VND)", "Attachments"];
-    const rows = txns.map((t) => ({
+    const headers = ["Date", "Type", "Account", "Description", "Category", "Project", "Vendor", "Invoice #", "Currency", "Amount", "Rate", "Rate source", "Amount (VND)", "Attachments"];
+    const rows: Record<string, unknown>[] = txns.map((t) => ({
       "Date": iso(t.date),
-      "Type": t.type === "INCOME" ? "Income" : "Expense",
+      "Type": TYPE_LABEL[t.type] ?? t.type,
+      "Account": t.account?.name ?? "",
       "Description": t.description ?? "",
-      "Category": t.category?.name ?? "Uncategorized",
+      "Category": isPnl(t.type) ? t.category?.name ?? "Uncategorized" : "",
       "Project": t.project?.name ?? "",
       "Vendor": t.vendor?.name ?? "",
       "Invoice #": t.invoiceNumber ?? "",
       "Currency": t.currency,
       "Amount": t.amount,
       "Rate": t.exchangeRate,
-      "Amount (VND)": vnd(t.amount, t.exchangeRate),
+      "Rate source": t.rateSource ? RATE_SOURCE_LABEL[t.rateSource] ?? t.rateSource : "",
+      "Amount (VND)": Math.round(toVnd(t)),
       "Attachments": t._count.attachments,
     }));
 
-    const totalIncome = txns.filter((t) => t.type === "INCOME").reduce((a, t) => a + vnd(t.amount, t.exchangeRate), 0);
-    const totalExpense = txns.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + vnd(t.amount, t.exchangeRate), 0);
-    rows.push({ "Date": "", "Type": "", "Description": "", "Category": "", "Project": "", "Vendor": "", "Invoice #": "", "Currency": "", "Amount": "" as unknown as number, "Rate": "" as unknown as number, "Amount (VND)": "" as unknown as number, "Attachments": "" as unknown as number });
-    rows.push({ "Date": "", "Type": "TOTAL Income", "Description": "", "Category": "", "Project": "", "Vendor": "", "Invoice #": "", "Currency": "", "Amount": "" as unknown as number, "Rate": "" as unknown as number, "Amount (VND)": totalIncome, "Attachments": "" as unknown as number });
-    rows.push({ "Date": "", "Type": "TOTAL Expense", "Description": "", "Category": "", "Project": "", "Vendor": "", "Invoice #": "", "Currency": "", "Amount": "" as unknown as number, "Rate": "" as unknown as number, "Amount (VND)": totalExpense, "Attachments": "" as unknown as number });
-    rows.push({ "Date": "", "Type": "NET", "Description": "", "Category": "", "Project": "", "Vendor": "", "Invoice #": "", "Currency": "", "Amount": "" as unknown as number, "Rate": "" as unknown as number, "Amount (VND)": totalIncome - totalExpense, "Attachments": "" as unknown as number });
+    // Totals are profit & loss only — transfers, capital and loans are listed but not summed.
+    const totalIncome = txns.filter((t) => t.type === "INCOME").reduce((a, t) => a + Math.round(toVnd(t)), 0);
+    const totalExpense = txns.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + Math.round(toVnd(t)), 0);
+    const blank = Object.fromEntries(headers.map((h) => [h, ""]));
+    rows.push({ ...blank });
+    rows.push({ ...blank, "Type": "TOTAL Income", "Amount (VND)": totalIncome });
+    rows.push({ ...blank, "Type": "TOTAL Expense", "Amount (VND)": totalExpense });
+    rows.push({ ...blank, "Type": "NET", "Amount (VND)": totalIncome - totalExpense });
 
     xlsx.utils.book_append_sheet(wb, sheet(rows, headers), "Ledger Entries");
     filename = `wf-ledger_${from}_${to}.xlsx`;

@@ -3,14 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-
-// Convert a transaction to VND (USD rows carry the exchangeRate used at entry time).
-const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
+import { computeBalances, cashPosition, totalsList, isInflow, isPnl, toVnd, fmtMoney, TYPE_LABEL } from "@/lib/money";
 
 export default async function DashboardPage() {
-  const [transactions, bankMovements, openInvoices, projectList] = await Promise.all([
+  const [transactions, accounts, openInvoices, projectList] = await Promise.all([
     prisma.transaction.findMany({ orderBy: { date: "desc" }, include: { category: true } }),
-    prisma.bankBalance.findMany(),
+    prisma.account.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.invoice.findMany({
       where: { status: "OPEN" },
       orderBy: { dueDate: "asc" },
@@ -19,20 +17,22 @@ export default async function DashboardPage() {
     prisma.project.findMany({ select: { id: true, name: true } }),
   ]);
 
-  // All-time performance (in VND)
+  // All-time performance (in VND) — income and expenses only; transfers,
+  // capital and loans move money but are not profit.
   const income = transactions.filter(t => t.type === "INCOME");
   const expense = transactions.filter(t => t.type === "EXPENSE");
   const totalIncome = income.reduce((acc, t) => acc + toVnd(t), 0);
   const totalExpense = expense.reduce((acc, t) => acc + toVnd(t), 0);
   const netSurplus = totalIncome - totalExpense; // profit / surplus
 
-  // Cash on Hand = bank opening + non-business deposits − withdrawals, plus the
-  // business flows from the ledger (income − expenses auto-track).
-  const opening = bankMovements.filter(m => m.type === "OPENING").reduce((a, m) => a + m.amount, 0);
-  const deposits = bankMovements.filter(m => m.type === "DEPOSIT").reduce((a, m) => a + m.amount, 0);
-  const withdrawals = bankMovements.filter(m => m.type === "WITHDRAWAL").reduce((a, m) => a + m.amount, 0);
-  const cashOnHand = opening + deposits - withdrawals + totalIncome - totalExpense;
-  const hasOpening = bankMovements.some(m => m.type === "OPENING");
+  // Cash = real balances per account (opening + every movement since), kept per
+  // currency — VND and USD are never added together or revalued.
+  const balances = computeBalances(accounts, transactions);
+  const position = cashPosition(accounts, balances);
+  const liquid = totalsList(position.liquid);
+  const ownerTotals = totalsList(position.owner);
+  const accountList = accounts.filter((a) => a.isActive || (balances.get(a.id) ?? 0) !== 0);
+  const unclassified = transactions.filter((t) => t.type === "OTHER_IN" || t.type === "OTHER_OUT").length;
 
   const recentTransactions = transactions.slice(0, 5);
 
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
   const projName = new Map(projectList.map((p) => [p.id, p.name]));
   const projAgg = new Map<string, { inc: number; exp: number; n: number }>();
   for (const t of transactions) {
-    if (!t.projectId) continue;
+    if (!t.projectId || !isPnl(t.type)) continue;
     const a = projAgg.get(t.projectId) ?? { inc: 0, exp: 0, n: 0 };
     if (t.type === "INCOME") a.inc += toVnd(t); else a.exp += toVnd(t);
     a.n++;
@@ -70,16 +70,9 @@ export default async function DashboardPage() {
   const formatVnd = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
-  const formatTransactionAmount = (t: any) => {
-    if (t.currency === "USD") {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(t.amount);
-    }
-    return formatVnd(t.amount);
-  };
-
-  const cashSubtitle = hasOpening
-    ? "Opening + deposits − withdrawals + business flows"
-    : "Set an opening balance in the Balance tab";
+  const cashSubtitle = accounts.length > 0
+    ? `Bank + cash across ${accounts.filter((a) => a.type === "BANK" || a.type === "CASH").length} accounts`
+    : "Add your accounts on the Accounts page";
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -96,11 +89,14 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cash on Hand</CardTitle>
+            <CardTitle className="text-sm font-medium">Cash &amp; Bank</CardTitle>
             <Wallet className="h-4 w-4 opacity-75" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatVnd(cashOnHand)}</div>
+            {liquid.length === 0 && <div className="text-2xl font-bold">{formatVnd(0)}</div>}
+            {liquid.map(([c, v], i) => (
+              <div key={c} className={i === 0 ? "text-2xl font-bold" : "text-lg font-semibold"}>{fmtMoney(v, c)}</div>
+            ))}
             <p className="text-xs opacity-75 mt-1">{cashSubtitle}</p>
           </CardContent>
         </Card>
@@ -141,7 +137,36 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Accounts</CardTitle>
+            <Link href="/accounts"><Button variant="outline" size="sm">Manage</Button></Link>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {accountList.map((a) => {
+              const b = balances.get(a.id) ?? 0;
+              return (
+                <div key={a.id} className="flex items-center justify-between text-sm">
+                  <span className="truncate">{a.name}</span>
+                  <span className={`font-medium ${b < 0 ? "text-red-600" : ""}`}>{fmtMoney(b, a.currency)}</span>
+                </div>
+              );
+            })}
+            {accountList.length === 0 && <p className="text-xs text-muted-foreground">No accounts yet.</p>}
+            {ownerTotals.map(([c, v]) => (
+              <p key={c} className={`text-xs border-t pt-2 ${v < 0 ? "text-red-600" : "text-amber-700"}`}>
+                {v < 0 ? `Company owes the owner ${fmtMoney(-v, c)}` : `Owner holds ${fmtMoney(v, c)} of company money`}
+              </p>
+            ))}
+            {unclassified > 0 && (
+              <Link href="/accounts" className="block text-xs text-amber-700 border-t pt-2 hover:underline">
+                {unclassified} movement{unclassified > 1 ? "s" : ""} need classifying →
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Coming Payments</CardTitle>
@@ -220,17 +245,17 @@ export default async function DashboardPage() {
             <div className="space-y-8">
               {recentTransactions.map(t => (
                 <div key={t.id} className="flex items-center">
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-full ${t.type === "INCOME" ? "bg-green-100" : "bg-red-100"}`}>
-                    {t.type === "INCOME" ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownRight className="h-4 w-4 text-red-600" />}
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-full ${isInflow(t.type) ? "bg-green-100" : "bg-red-100"}`}>
+                    {isInflow(t.type) ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownRight className="h-4 w-4 text-red-600" />}
                   </div>
                   <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">{t.category?.name || "Uncategorized"}</p>
+                    <p className="text-sm font-medium leading-none">{isPnl(t.type) ? (t.category?.name || "Uncategorized") : TYPE_LABEL[t.type]}</p>
                     <p className="text-sm text-muted-foreground">
                       {t.description}
                     </p>
                   </div>
-                  <div className={`ml-auto font-medium ${t.type === "INCOME" ? "text-green-600" : ""}`}>
-                    {t.type === "INCOME" ? "+" : "-"}{formatTransactionAmount(t)}
+                  <div className={`ml-auto font-medium ${isInflow(t.type) ? "text-green-600" : ""}`}>
+                    {isInflow(t.type) ? "+" : "-"}{fmtMoney(t.amount, t.currency)}
                   </div>
                 </div>
               ))}
@@ -260,11 +285,11 @@ export default async function DashboardPage() {
               </div>
               <div className="font-medium">Log Expense</div>
             </Link>
-            <Link href="/settings" className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors">
+            <Link href="/accounts" className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors">
               <div className="bg-primary/10 p-2 rounded-full">
                 <Wallet className="h-4 w-4 text-primary" />
               </div>
-              <div className="font-medium">Update Bank Balance</div>
+              <div className="font-medium">Transfers, capital &amp; loans</div>
             </Link>
           </CardContent>
         </Card>

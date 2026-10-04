@@ -1,14 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { ContactsClient } from "@/components/contacts/contacts-client";
-
-const toVnd = (t: { amount: number; exchangeRate: number }) => t.amount * t.exchangeRate;
+import { toVnd } from "@/lib/money";
 
 export default async function ContactsPage() {
   const [clients, vendors, projects, incomeTx] = await Promise.all([
     prisma.client.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { projects: true, invoices: true } } } }),
     prisma.vendor.findMany({ orderBy: { name: "asc" }, include: { transactions: true } }),
     prisma.project.findMany({ select: { id: true, clientId: true } }),
-    prisma.transaction.findMany({ where: { type: "INCOME" }, select: { projectId: true, amount: true, exchangeRate: true } }),
+    prisma.transaction.findMany({ where: { type: "INCOME" }, select: { projectId: true, amount: true, exchangeRate: true, vndAmount: true } }),
   ]);
 
   // Revenue received per client = income transactions on that client's projects.
@@ -17,7 +16,7 @@ export default async function ContactsPage() {
   for (const t of incomeTx) {
     const cid = t.projectId ? projClient.get(t.projectId) : null;
     if (!cid) continue;
-    revByClient.set(cid, (revByClient.get(cid) ?? 0) + t.amount * t.exchangeRate);
+    revByClient.set(cid, (revByClient.get(cid) ?? 0) + toVnd(t));
   }
 
   const clientRows = clients.map((c) => ({

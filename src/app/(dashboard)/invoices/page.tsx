@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { defaultUsdRate } from "@/lib/fx";
 import { InvoicesClient } from "@/components/invoices/invoices-client";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 export default async function InvoicesPage() {
-  const session = await auth();
-  const [user, invoices, clients, vendors, projects, categories] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session?.user?.id } }),
+  const [usdRate, accounts, invoices, clients, vendors, projects, categories] = await Promise.all([
+    defaultUsdRate(),
+    prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     prisma.invoice.findMany({
       orderBy: [{ status: "asc" }, { dueDate: "asc" }],
       include: { client: true, vendor: true, project: true, category: true, attachments: true },
@@ -63,7 +63,8 @@ export default async function InvoicesPage() {
         vendors={vendors}
         projects={projects}
         categories={categories}
-        defaultUsdRate={user?.defaultUsdRate || 25400}
+        accounts={accounts}
+        defaultUsdRate={usdRate}
         summary={summary}
       />
     </div>
