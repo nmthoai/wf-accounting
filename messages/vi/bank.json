@@ -2,7 +2,8 @@
   "page": {
     "title": "Đối chiếu ngân hàng",
     "subtitle": "Dòng sao kê ngân hàng được khớp với sổ thu chi",
-    "draftLabel": "{label} (nháp)"
+    "draftLabel": "{label} (nháp)",
+    "feeDeducted": "{label} (đã trừ phí {fee})"
   },
   "summary": {
     "statementTo": "{currency} · sao kê đến ngày {date}",

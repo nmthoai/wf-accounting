@@ -15,8 +15,9 @@ import { notify } from "@/components/ui/toast";
 type Ref = { id: string; label: string } | null;
 
 // Where an entry stands in Draft → Reviewed → Posted, and what the owner can do next.
-export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, correctionOf }: {
+export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, correctionOf, withFee = false }: {
   id: string; status: string; isAdmin: boolean; reversalOf: Ref; reversedBy: Ref; correctionOf: Ref;
+  withFee?: boolean; // a receipt with a withheld bank fee, or that fee: reversed together
 }) {
   const t = useTranslations("ledger");
   const tc = useTranslations("common");
@@ -44,7 +45,9 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
       if (!res.success) { setErr(res.message ?? t("status.reverseFailed")); return; }
       notify.success(t("toast.reversed"), t("toast.reversedNext"));
       setOpen(false);
-      router.push(`/entry?reenter=${id}`); // enter the corrected version
+      // A receipt with a withheld fee is corrected by recording the payment
+      // again on its invoice; anything else is re-entered here.
+      router.push(withFee ? "/invoices" : `/entry?reenter=${id}`);
     } catch { notify.error(tc("errors.somethingWrong")); }
     finally { setBusy(false); }
   }
@@ -89,6 +92,7 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
                   <p className="text-sm text-muted-foreground">
                     {t("reverse.body")}
                   </p>
+                  {withFee && <p className="text-sm text-muted-foreground">{t("reverse.withFee")}</p>}
                   <div className="space-y-2">
                     <Label htmlFor="reverse-reason">{t("reverse.reason")}</Label>
                     <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reverse.reasonPlaceholder")} />

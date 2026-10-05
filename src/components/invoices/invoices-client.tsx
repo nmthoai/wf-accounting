@@ -23,7 +23,7 @@ type Invoice = {
   issueDate: string; dueDate: string; paidDate: string | null;
   currency: string; amount: number; status: string; overdue: boolean; attachment: string | null;
   received: number; fees: number; difference: number;
-  allocations: { id: string; kind: string; amount: number; date: string; accountName: string; description: string | null; draft: boolean }[];
+  allocations: { id: string; kind: string; amount: number; date: string; accountName: string; description: string | null; draft: boolean; feeDeducted: number | null }[];
 };
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
@@ -63,6 +63,7 @@ export function InvoicesClient({
   const shown = openOnly ? invoices.filter((i) => i.status === "OPEN" || i.status === "PARTIAL") : invoices;
   // Receivables become income; payables become an expense — show the matching categories.
   const cats = categories.filter((c) => c.type === (direction === "PAYABLE" ? "EXPENSE" : "INCOME"));
+  const feeCategories = categories.filter((c) => c.type === "EXPENSE");
 
   async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string) {
     setBusyId(id);
@@ -269,7 +270,7 @@ export function InvoicesClient({
                   {i.status !== "VOID" && (
                     <EditInvoiceDialog invoice={i} clients={clients} vendors={vendors} projects={projects} categories={categories} defaultUsdRate={defaultUsdRate} />
                   )}
-                  {(i.status === "OPEN" || i.status === "PARTIAL") && <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} />}
+                  {(i.status === "OPEN" || i.status === "PARTIAL") && <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} feeCategories={feeCategories} />}
                   {i.status !== "VOID" && <LinkEntryDialog invoice={i} candidates={candidates} />}
                   {isAdmin && i.allocations.length === 0 && i.status === "OPEN" && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title={t("list.void")} disabled={busyId === i.id}
@@ -302,6 +303,11 @@ export function InvoicesClient({
                           </span>
                           {a.date} · {a.accountName}{a.description ? ` · ${a.description}` : ""}
                           {a.draft && <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{t("list.draftBadge")}</span>}
+                          {a.feeDeducted ? (
+                            <span className="block mt-0.5 text-muted-foreground">
+                              {t("list.feeDeducted", { fee: fmtMoney(a.feeDeducted, i.currency), net: fmtMoney(a.amount - a.feeDeducted, i.currency), account: a.accountName })}
+                            </span>
+                          ) : null}
                         </span>
                         <span className="flex items-center gap-2">
                           <span className="font-medium">{fmtMoney(a.amount, i.currency)}</span>

@@ -171,6 +171,12 @@ model Transaction {
   reversalOf     Transaction? @relation("Reversal", fields: [reversalOfId], references: [id])
   reversedBy     Transaction? @relation("Reversal")
   correctionOfId String?                           // re-entered in place of that reversed entry
+  requestId      String?      @unique              // the form submission that created it — a retried save can't record twice
+  // A bank fee withheld from that receipt: booked with it, in the same account,
+  // so the account moves by the net amount the bank actually credited.
+  deductedFromId String?      @unique
+  deductedFrom   Transaction? @relation("DeductedFee", fields: [deductedFromId], references: [id])
+  deductedFee    Transaction? @relation("DeductedFee")
   costItem       CostItem?                         // the register item this expense came from
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

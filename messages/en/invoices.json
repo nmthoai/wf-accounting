@@ -63,7 +63,8 @@
     "draftBadge": "draft — counts once reviewed",
     "unlinkTitle": "Unlink (the ledger entry stays)",
     "emptyOpen": "Nothing outstanding — all settled.",
-    "empty": "Nothing yet. Add a receivable (client owes you) or a payable (you owe a vendor)."
+    "empty": "Nothing yet. Add a receivable (client owes you) or a payable (you owe a vendor).",
+    "feeDeducted": "Fee deducted {fee} · net {net} into {account}"
   },
   "confirm": {
     "void": "Void this?",
@@ -109,7 +110,22 @@
     "descReceived": "Payment received",
     "descReceivedNo": "Payment received — Invoice {number}",
     "descPaid": "Vendor payment",
-    "descPaidNo": "Vendor payment — Bill {number}"
+    "descPaidNo": "Vendor payment — Bill {number}",
+    "amountSettled": "Amount settled ({currency})",
+    "feeDeducted": "Fee deducted ({currency})",
+    "feePlaceholder": "Optional — what the bank kept",
+    "feeCategory": "Fee category",
+    "feeCategoryPlaceholder": "Choose a category",
+    "breakdown": {
+      "settled": "Amount settled against invoice",
+      "fee": "Fee deducted",
+      "net": "Net received into {account}"
+    },
+    "feeNote": "Enter the amount this payment settles. If the bank withheld a fee, enter it too: the invoice is settled by the full amount, the fee is booked as an expense, and the account receives only the net. Without a fee, a shortfall stays open — it is never assumed to be a fee.",
+    "evidence": "Evidence (bank advice, remittance) — optional",
+    "feeDesc": "Bank fee deducted from a receipt",
+    "feeDescNo": "Bank fee deducted — Invoice {number}",
+    "noFeeCategories": "No expense categories — add one in Settings"
   },
   "link": {
     "trigger": "Link an existing ledger entry",
@@ -148,6 +164,11 @@
     "notEnoughFree": "That entry only has {amount} left to allocate.",
     "postedUnlink": "That payment is posted — only the owner can unlink it.",
     "ownerOnlyVoid": "Only the owner can void an invoice.",
-    "hasPayments": "It has payments linked — unlink them first."
+    "hasPayments": "It has payments linked — unlink them first.",
+    "feeInvalid": "Enter the fee as an amount of 0 or more.",
+    "feeReceiptsOnly": "A deducted fee can only be entered for money received.",
+    "feeTooLarge": "The fee must be less than the amount settled.",
+    "feeCategory": "Choose the expense category for the fee.",
+    "withheldFee": "This bank fee was withheld from a receipt and is already part of that receipt's settlement."
   }
 }

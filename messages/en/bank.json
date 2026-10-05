@@ -2,7 +2,8 @@
   "page": {
     "title": "Bank reconciliation",
     "subtitle": "Bank statement lines matched to the ledger",
-    "draftLabel": "{label} (draft)"
+    "draftLabel": "{label} (draft)",
+    "feeDeducted": "{label} (fee {fee} deducted)"
   },
   "summary": {
     "statementTo": "{currency} · statement to {date}",

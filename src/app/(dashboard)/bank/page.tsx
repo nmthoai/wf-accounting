@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { getTranslations } from "next-intl/server";
-import { accountDelta, isPnl, isBooked } from "@/lib/money";
-import { tolerance } from "@/lib/bank-match";
+import { accountDelta, fmtMoney, isPnl, isBooked } from "@/lib/money";
+import { explained, tolerance } from "@/lib/bank-match";
 import { BankClient, type LineRow, type EntryOpt, type AccountSummary, type StatementRow } from "@/components/bank/bank-client";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -35,16 +35,31 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
   const live = (t: { id: string; reversalOfId: string | null }) => !t.reversalOfId && !cancelled.has(t.id);
   const href = (t: { id: string; type: string }) => (isPnl(t.type) ? `/entry/${t.id}` : "/accounts");
 
-  // Ledger entries not yet on any bank line — candidates for matching.
-  const open: EntryOpt[] = entries.filter((t) => !t.bankLineId && live(t)).map((t) => {
+  // A receipt and the bank fee withheld from it reach the bank as one net
+  // movement: offered, matched and listed together, at the net amount.
+  type E = (typeof entries)[number];
+  const byId = new Map(entries.map((t) => [t.id, t]));
+  const feeOf = new Map(entries.filter((t) => t.deductedFromId).map((t) => [t.deductedFromId!, t]));
+  const unmatched = (t: E) => !t.bankLineId && live(t);
+  const asUnit = (t: E) => {
     const a = acc.get(t.accountId!)!;
-    return { id: t.id, accountId: a.id, date: iso(t.date), amount: accountDelta(t, a.currency), label: label(t), href: href(t) };
-  });
+    const fee = feeOf.get(t.id);
+    const withFee = fee && unmatched(fee) ? fee : null;
+    return {
+      id: t.id, accountId: a.id, date: iso(t.date), href: href(t),
+      amount: accountDelta(t, a.currency) + (withFee ? accountDelta(withFee, a.currency) : 0),
+      label: withFee ? tb("page.feeDeducted", { label: label(t), fee: fmtMoney(Math.abs(accountDelta(withFee, a.currency)), a.currency) }) : label(t),
+    };
+  };
+  const ownUnit = (t: E) => !(t.deductedFromId && byId.get(t.deductedFromId) && unmatched(byId.get(t.deductedFromId)!));
+
+  // Ledger entries not yet on any bank line — candidates for matching.
+  const open: EntryOpt[] = entries.filter((t) => unmatched(t) && ownUnit(t)).map(asUnit);
 
   // Each line: how much of it the ledger explains, oldest first for suggestions.
   const rows: LineRow[] = lines.map((l) => {
     const a = acc.get(l.accountId)!;
-    const matched = l.entries.reduce((s, t) => s + Math.abs(accountDelta(t, a.currency)), 0);
+    const matched = explained(l, l.entries, a.currency);
     const remaining = Math.abs(l.amount) - matched;
     const tol = tolerance(a.currency);
     return {
@@ -53,7 +68,7 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
       reference: l.reference, counterparty: l.counterparty, description: l.description, locator: l.locator,
       amount: l.amount, remaining: remaining > tol ? remaining : 0,
       status: matched <= tol ? "UNMATCHED" : remaining > tol ? "PARTIAL" : "MATCHED",
-      entries: l.entries.map((t) => ({ id: t.id, label: label(t), date: iso(t.date), amount: Math.abs(accountDelta(t, a.currency)), href: href(t) })),
+      entries: l.entries.map((t) => ({ id: t.id, label: label(t), date: iso(t.date), amount: Math.sign(l.amount) * accountDelta(t, a.currency), href: href(t) })),
       suggestion: null,
     };
   });
@@ -83,7 +98,7 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
     const upTo = entries.filter((t) => t.accountId === a.id && (!a.openingDate || t.date >= a.openingDate) && st && +t.date <= to!);
     const appBalance = st ? upTo.filter(isBooked).reduce((s, t) => s + accountDelta(t, a.currency), a.openingBalance) : null;
     const notOnStatement = from !== null
-      ? entries.filter((t) => t.accountId === a.id && !t.bankLineId && live(t) && +t.date >= from && +t.date <= to!).map((t) => ({ id: t.id, label: label(t), date: iso(t.date), amount: accountDelta(t, a.currency), href: href(t) }))
+      ? entries.filter((t) => t.accountId === a.id && unmatched(t) && ownUnit(t) && +t.date >= from && +t.date <= to!).map(asUnit)
       : [];
     const mine = rows.filter((r) => r.accountId === a.id);
     return {

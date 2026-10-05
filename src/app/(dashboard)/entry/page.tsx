@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { EntryForm } from "./entry-form";
 import { defaultUsdRate } from "@/lib/fx";
 import { requirePageSession } from "@/lib/session";
-import { accountDelta, fmtMoney } from "@/lib/money";
+import { fmtMoney } from "@/lib/money";
+import { explained } from "@/lib/bank-match";
 import { CostDuplicates, type Lookalike } from "@/components/costs/cost-duplicates";
 
 const DAY = 86_400_000;
@@ -77,7 +78,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
   }
   if (line) {
     const cur = line.account.currency;
-    const matched = line.entries.reduce((s, t) => s + Math.abs(accountDelta(t, cur)), 0);
+    const matched = explained(line, line.entries, cur);
     const open = Math.round((Math.abs(line.amount) - matched) * 100) / 100;
     prefill = {
       type: line.amount > 0 ? "INCOME" : "EXPENSE",

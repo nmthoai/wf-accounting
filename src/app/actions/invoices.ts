@@ -7,7 +7,7 @@ import { persistUploads, removeUploadFile } from "@/lib/uploads";
 import { defaultUsdRate, resolveFx } from "@/lib/fx";
 import { EPS, fmtMoney, settlement } from "@/lib/money";
 import { refreshInvoiceStatus } from "@/lib/invoice-status";
-import { diff, record, snapshot } from "@/lib/history";
+import { diff, record, snapshot, type Change } from "@/lib/history";
 import { getT } from "@/i18n/server";
 
 async function requireUser() {
@@ -143,16 +143,28 @@ export async function updateInvoice(id: string, formData: FormData) {
   const own = inv.allocations.filter((a) => a.kind === "PAYMENT" && a.transaction._count.allocations === 1 && a.transaction.status !== "POSTED");
   const isAdmin = session.user?.role === "ADMIN";
   for (const a of own) {
-    const data = {
+    const carried = {
       invoiceNumber: number,
       projectId: projectId || null,
       categoryId: categoryId || null,
       vendorId: isReceivable ? null : (vendorId || null),
-      // A reviewed entry changed by anyone but the owner goes back to draft.
-      status: !isAdmin && a.transaction.status === "REVIEWED" ? "DRAFT" : a.transaction.status,
     };
+    const changes = diff(a.transactionId, a.transaction, carried, "Invoice details changed");
+    if (changes.length === 0) continue; // notes, dates or the amount alone leave payments as they are
+    // A reviewed payment whose classification anyone but the owner changes goes
+    // back to draft; a new invoice number alone keeps it booked.
+    const reclassified = changes.some((c) => c.field !== "invoiceNumber");
+    const data = { ...carried, status: !isAdmin && reclassified && a.transaction.status === "REVIEWED" ? "DRAFT" : a.transaction.status };
     await prisma.transaction.update({ where: { id: a.transactionId }, data });
-    await record(diff(a.transactionId, a.transaction, data, "Invoice details changed"), session.user?.name);
+    const all = diff(a.transactionId, a.transaction, data, "Invoice details changed");
+    // A bank fee withheld from the payment follows its project, number and status.
+    const fee = await prisma.transaction.findUnique({ where: { deductedFromId: a.transactionId } });
+    if (fee) {
+      const follow = { invoiceNumber: number, projectId: projectId || null, status: data.status === "DRAFT" && fee.status === "REVIEWED" ? "DRAFT" : fee.status };
+      await prisma.transaction.update({ where: { id: fee.id }, data: follow });
+      all.push(...diff(fee.id, fee, follow, "Invoice details changed"));
+    }
+    await record(all, session.user?.name);
   }
 
   await refreshInvoiceStatus([id]);
@@ -162,10 +174,34 @@ export async function updateInvoice(id: string, formData: FormData) {
 
 // Record a payment (part or all of what's still open) as a new ledger entry
 // in the chosen account, allocated to this invoice/bill.
+//
+// A bank fee withheld from a receipt is booked with it: income for the amount
+// the payment settles, and a fee expense for what the bank kept, both in the
+// account it arrived in — so the account moves by the net the bank credited
+// and the invoice is settled by the full amount. The fee is only what the user
+// enters; a shortfall is never assumed to be one. A retried save (same
+// requestId) records nothing twice.
+class StillOpen extends Error { constructor(public open: number) { super("still open"); } }
+
 export async function recordPayment(id: string, formData: FormData) {
   const session = await requireUser();
   const t = await getT("invoices");
   const me = session.user?.name ?? null;
+  const requestId = ((formData.get("requestId") as string) || "").trim().slice(0, 100) || null;
+  const files = (formData.getAll("files") as File[]).filter((f) => f && f.size > 0);
+  // The same save arriving again: finish what the first one may not have (its
+  // evidence, the invoice's status) and report it saved.
+  const already = async (): Promise<{ success: boolean; message?: string } | null> => {
+    const done = requestId ? await prisma.transaction.findUnique({ where: { requestId }, select: { id: true, _count: { select: { attachments: true } } } }) : null;
+    if (!done) return null;
+    if (files.length && done._count.attachments === 0) await persistUploads(files, { transactionId: done.id });
+    await refreshInvoiceStatus([id]);
+    revalidateAll();
+    return { success: true };
+  };
+  const repeat = await already();
+  if (repeat) return repeat;
+
   const inv = await prisma.invoice.findUnique({ where: { id }, include: { allocations: true } });
   if (!inv) return { success: false, message: (await getT("common"))("errors.notFound") };
   if (inv.status === "VOID") return { success: false, message: t("errors.voided") };
@@ -179,6 +215,17 @@ export async function recordPayment(id: string, formData: FormData) {
     return { success: false, message: t("errors.moreThanOpen", { amount: fmtMoney(open, inv.currency) }) };
   }
 
+  const feeRaw = ((formData.get("feeDeducted") as string) || "").trim();
+  const fee = feeRaw ? parseFloat(feeRaw) : 0;
+  if (!(fee >= 0)) return { success: false, message: t("errors.feeInvalid") };
+  if (fee > 0 && inv.direction !== "RECEIVABLE") return { success: false, message: t("errors.feeReceiptsOnly") };
+  if (fee > 0 && fee >= amount - EPS) return { success: false, message: t("errors.feeTooLarge") };
+  const net = amount - fee;
+  const feeCategory = fee > 0
+    ? await prisma.category.findFirst({ where: { id: (formData.get("feeCategoryId") as string) || "", type: "EXPENSE" } })
+    : null;
+  if (fee > 0 && !feeCategory) return { success: false, message: t("errors.feeCategory") };
+
   const dateStr = formData.get("paidDate") as string;
   const accountId = formData.get("accountId") as string;
   const account = accountId ? await prisma.account.findUnique({ where: { id: accountId } }) : null;
@@ -186,41 +233,81 @@ export async function recordPayment(id: string, formData: FormData) {
   if (account.currency === "USD" && inv.currency !== "USD") {
     return { success: false, message: t("errors.usdAccount", { account: account.name, currency: inv.currency }) };
   }
-  const fx = await resolveFx(inv.currency, amount, formData);
+  // The bank's VND figure, when given, is what it credited — the net.
+  const fx = await resolveFx(inv.currency, net, formData);
   if (!fx.ok) return { success: false, message: fx.message };
+  const payVnd = fx.vndAmount === null ? null : fee > 0 ? Math.round(amount * fx.exchangeRate) : fx.vndAmount;
+  const feeVnd = payVnd === null || fx.vndAmount === null ? null : payVnd - fx.vndAmount;
 
   const isReceivable = inv.direction === "RECEIVABLE";
   const description = isReceivable
     ? (inv.number ? t("payment.descReceivedNo", { number: inv.number }) : t("payment.descReceived"))
     : (inv.number ? t("payment.descPaidNo", { number: inv.number }) : t("payment.descPaid"));
-  await prisma.$transaction(async (tx) => {
-    const t = await tx.transaction.create({
-      data: {
-        type: isReceivable ? "INCOME" : "EXPENSE",
-        amount,
-        currency: inv.currency,
-        exchangeRate: fx.exchangeRate,
-        vndAmount: fx.vndAmount,
-        rateSource: fx.rateSource,
-        accountId: account.id,
-        date: dateStr ? new Date(dateStr) : new Date(),
-        description,
-        invoiceNumber: inv.number,
-        projectId: inv.projectId,
-        categoryId: inv.categoryId,
-        vendorId: isReceivable ? null : inv.vendorId,
-        // The owner's entries count as reviewed; anyone else's wait for review.
-        status: session.user?.role === "ADMIN" ? "REVIEWED" : "DRAFT",
-        createdBy: me,
-      },
-    });
-    await tx.paymentAllocation.create({ data: { invoiceId: inv.id, transactionId: t.id, kind: "PAYMENT", amount } });
-    await record([
-      { entityId: t.id, action: "CREATE", newValue: snapshot(t) },
-      { entityId: t.id, action: "LINK", field: "invoice", newValue: linkNote(inv, "PAYMENT", amount) },
-    ], me, tx);
-  });
+  const date = dateStr ? new Date(dateStr) : new Date();
+  // The owner's entries count as reviewed; anyone else's wait for review.
+  const status = session.user?.role === "ADMIN" ? "REVIEWED" : "DRAFT";
+  const common = {
+    currency: inv.currency, exchangeRate: fx.exchangeRate, rateSource: fx.rateSource, accountId: account.id, date,
+    invoiceNumber: inv.number, projectId: inv.projectId, status, createdBy: me,
+  };
 
+  let paymentId: string;
+  try {
+    paymentId = await prisma.$transaction(async (tx) => {
+      // Checked again inside the write: two saves can't both settle the same open amount.
+      const now = await tx.paymentAllocation.findMany({ where: { invoiceId: inv.id }, select: { kind: true, amount: true } });
+      const stillOpen = settlement(inv.amount, now).difference;
+      if (amount > stillOpen + EPS) throw new StillOpen(stillOpen);
+
+      const p = await tx.transaction.create({
+        data: {
+          ...common, type: isReceivable ? "INCOME" : "EXPENSE", amount, vndAmount: payVnd, description,
+          categoryId: inv.categoryId, vendorId: isReceivable ? null : inv.vendorId, requestId,
+        },
+      });
+      await tx.paymentAllocation.create({ data: { invoiceId: inv.id, transactionId: p.id, kind: "PAYMENT", amount } });
+      const changes: Change[] = [
+        { entityId: p.id, action: "CREATE", newValue: snapshot(p) },
+        { entityId: p.id, action: "LINK", field: "invoice", newValue: linkNote(inv, "PAYMENT", amount) },
+      ];
+      if (fee > 0) {
+        const f = await tx.transaction.create({
+          data: {
+            ...common, type: "EXPENSE", amount: fee, vndAmount: feeVnd, categoryId: feeCategory!.id,
+            description: inv.number ? t("payment.feeDescNo", { number: inv.number }) : t("payment.feeDesc"),
+            requestId: requestId ? `${requestId}:fee` : null, deductedFromId: p.id,
+          },
+        });
+        changes.push(
+          { entityId: f.id, action: "CREATE", newValue: snapshot(f) },
+          { entityId: p.id, action: "LINK", field: "deductedFee", newValue: `${fee} ${inv.currency} · ${f.id}` },
+        );
+      }
+      // The settlement as the user confirmed it, for the audit trail — on the
+      // invoice and on the entry, so the entry's history shows it too.
+      const summary = [
+        `settled ${amount} ${inv.currency}`, `fee deducted ${fee}`, `net ${Math.round(net * 100) / 100} into ${account.name}`,
+        `paid ${date.toISOString().slice(0, 10)}`, `entry ${p.id}`,
+        `evidence: ${files.length ? files.map((x) => x.name).join(", ") : "none"}`,
+      ].join(" · ");
+      changes.push(
+        { entity: "Invoice", entityId: inv.id, action: "PAYMENT", field: "settlement", newValue: summary },
+        { entityId: p.id, action: "LINK", field: "settlement", newValue: summary },
+      );
+      await record(changes, me, tx);
+      return p.id;
+    });
+  } catch (e) {
+    // The same save arriving twice at once: the first one recorded it.
+    const repeat = await already();
+    if (repeat) return repeat;
+    if (e instanceof StillOpen) {
+      return { success: false, message: e.open <= EPS ? t("errors.nothingToSettle") : t("errors.moreThanOpen", { amount: fmtMoney(e.open, inv.currency) }) };
+    }
+    throw e;
+  }
+
+  if (files.length) await persistUploads(files, { transactionId: paymentId });
   await refreshInvoiceStatus([id]);
   revalidateAll();
   return { success: true };
@@ -248,6 +335,7 @@ export async function linkToInvoice(id: string, formData: FormData) {
     : null;
   if (!t) return { success: false, message: tr("errors.chooseEntry") };
   if (t.reversalOfId || t.reversedBy) return { success: false, message: tr("errors.entryReversed") };
+  if (t.deductedFromId) return { success: false, message: tr("errors.withheldFee") };
   if (t.currency !== inv.currency) {
     return { success: false, message: tr("errors.currencyMismatch", { entryCurrency: t.currency, currency: inv.currency }) };
   }
@@ -269,6 +357,11 @@ export async function linkToInvoice(id: string, formData: FormData) {
   const free = t.amount - t.allocations.reduce((s, a) => s + a.amount, 0);
   if (amount > free + EPS) {
     return { success: false, message: tr("errors.notEnoughFree", { amount: fmtMoney(Math.max(0, free), t.currency) }) };
+  }
+  // Never more than the invoice still has open — a fee or payment can't overpay it.
+  const open = settlement(inv.amount, await prisma.paymentAllocation.findMany({ where: { invoiceId: id } })).difference;
+  if (amount > open + EPS) {
+    return { success: false, message: open <= EPS ? tr("errors.nothingToSettle") : tr("errors.moreThanOpen", { amount: fmtMoney(open, inv.currency) }) };
   }
 
   await prisma.paymentAllocation.create({ data: { invoiceId: id, transactionId: t.id, kind, amount } });

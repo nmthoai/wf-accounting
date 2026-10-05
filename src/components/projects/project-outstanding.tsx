@@ -11,7 +11,9 @@ type OpenItem = {
   amount: number; difference: number; currency: string; dueDate: string; overdue: boolean;
 };
 
-export function ProjectOutstanding({ items, accounts, defaultUsdRate }: { items: OpenItem[]; accounts: AccountOpt[]; defaultUsdRate: number }) {
+export function ProjectOutstanding({ items, accounts, defaultUsdRate, feeCategories }: {
+  items: OpenItem[]; accounts: AccountOpt[]; defaultUsdRate: number; feeCategories: { id: string; name: string }[];
+}) {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
   if (items.length === 0) {
@@ -41,7 +43,7 @@ export function ProjectOutstanding({ items, accounts, defaultUsdRate }: { items:
               <div className={`text-sm font-semibold ${i.direction === "PAYABLE" ? "text-red-600" : "text-green-700"}`}>{fmtMoney(i.difference, i.currency)}</div>
               {i.status === "PARTIAL" && <div className="text-xs text-muted-foreground">{t("outstanding.openOf", { amount: fmtMoney(i.amount, i.currency) })}</div>}
             </div>
-            <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} />
+            <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} feeCategories={feeCategories} />
           </div>
         </div>
       ))}

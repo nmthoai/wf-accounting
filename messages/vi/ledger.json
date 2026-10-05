@@ -46,7 +46,7 @@
   "rowActions": {
     "approve": "Duyệt (chuyển sang Đã duyệt)",
     "openPosted": "Mở (đã ghi sổ — đã khóa)",
-    "confirmDelete": "Xóa bút toán này? Với bút toán chuyển tiền, cả hai bên đều bị xóa."
+    "confirmDelete": "Xóa bút toán này? Với bút toán chuyển tiền, cả hai bên đều bị xóa; với khoản thu, phí ngân hàng bị trừ từ nó cũng bị xóa."
   },
   "postThrough": {
     "label": "Ghi sổ các bút toán đã duyệt đến ngày",
@@ -87,7 +87,8 @@
     "reason": "Lý do",
     "reasonPlaceholder": "Ví dụ: sai số tiền — ngân hàng ghi 8.221.200",
     "submit": "Đảo và nhập bút toán điều chỉnh",
-    "descPrefix": "Đảo: {description}"
+    "descPrefix": "Đảo: {description}",
+    "withFee": "Khoản thu này và phí ngân hàng bị trừ từ nó được đảo cùng lúc. Hóa đơn của nó được mở lại — hãy ghi nhận lại khoản thanh toán đúng từ hóa đơn."
   },
   "new": {
     "title": "Bút toán mới",
@@ -115,7 +116,8 @@
       "MATCH": "Đã khớp với dòng sao kê",
       "UNMATCH": "Đã bỏ khớp dòng sao kê",
       "LINK": "Đã liên kết",
-      "UNLINK": "Đã bỏ liên kết"
+      "UNLINK": "Đã bỏ liên kết",
+      "REVALUE": "Đã đánh giá lại tỷ giá"
     },
     "field": {
       "type": "Loại nghiệp vụ",
@@ -142,7 +144,10 @@
       "bankLineId": "Dòng sao kê",
       "invoice": "Hóa đơn",
       "costItem": "Chứng từ trong bảng kê",
-      "attachment": "Tệp đính kèm"
+      "attachment": "Tệp đính kèm",
+      "deductedFee": "Phí bị trừ",
+      "vndValue": "Giá trị quy đổi VND",
+      "settlement": "Đối trừ hóa đơn"
     }
   },
   "form": {
@@ -229,6 +234,35 @@
     "attachmentPosted": "Bút toán này đã ghi sổ — tệp đính kèm được giữ lại.",
     "attachmentCostItem": "Tệp này thuộc một chứng từ trong bảng kê chi phí — tệp được giữ cùng khoản chi.",
     "attachmentFeeEvidence": "Đây là chứng từ của một khoản phí trên hóa đơn — hãy bỏ liên kết khoản phí trước.",
-    "attachmentOwnerOnly": "Chỉ chủ doanh nghiệp mới được xóa chứng từ này."
+    "attachmentOwnerOnly": "Chỉ chủ doanh nghiệp mới được xóa chứng từ này.",
+    "feePairLocked": "Phí ngân hàng bị trừ từ một khoản thu luôn đi cùng khoản thu đó: cùng tài khoản, loại tiền, loại nghiệp vụ, ngày và dự án. Hãy sửa khoản thu — phí sẽ theo — hoặc đảo hay xóa cả hai cùng lúc.",
+    "feeExceedsReceipt": "Phí ngân hàng phải nhỏ hơn khoản thu mà phí đó bị trừ.",
+    "pairNotPosted": "Mọi bút toán đi cùng bút toán này phải đã ghi sổ và chưa bị đảo thì mới đảo được."
+  },
+  "revalue": {
+    "booked": "Đã ghi nhận theo tỷ giá {rate} VND/{currency} → {vnd} VND · tỷ giá {source}",
+    "withFee": "Bao gồm phí ngân hàng bị trừ ({fee}); cả hai được đánh giá lại cùng lúc.",
+    "keptHint": "Khi sửa bút toán, giá trị này được giữ nguyên. Muốn thay đổi, hãy đánh giá lại tỷ giá — kèm lý do được lưu vào lịch sử.",
+    "adminOnly": "Khi sửa bút toán, giá trị này được giữ nguyên. Chỉ quản trị viên mới được đánh giá lại tỷ giá.",
+    "feeHint": "Phí bị trừ từ khoản thu được đánh giá lại cùng khoản thu đó.",
+    "transferHint": "Chuyển tiền nội bộ giữ tỷ giá suy ra từ hai bên.",
+    "open": "Đánh giá lại tỷ giá…",
+    "modeDefault": "Tỷ giá mặc định hiện tại ({rate})",
+    "netPlaceholder": "Số VND ngân hàng ghi có (sau phí)",
+    "preview": "Giá trị quy đổi VND: {before} → {after}",
+    "reason": "Lý do",
+    "reasonPlaceholder": "Vì sao giá trị thay đổi — được lưu vào lịch sử",
+    "confirm": "Đánh giá lại",
+    "done": "Đã đánh giá lại bút toán",
+    "errors": {
+      "vnd": "Bút toán bằng VND không có tỷ giá để đánh giá lại.",
+      "posted": "Bút toán đã ghi sổ — hãy đảo bút toán và nhập bút toán điều chỉnh.",
+      "transfer": "Chuyển tiền nội bộ giữ tỷ giá suy ra từ hai bên — hãy sửa giao dịch chuyển tiền.",
+      "fee": "Hãy đánh giá lại khoản thu có phí này bị trừ — phí sẽ được đánh giá lại theo.",
+      "unchanged": "Giá trị quy đổi VND không thay đổi — không có gì để đánh giá lại.",
+      "enterValue": "Nhập tỷ giá mới hoặc số tiền VND.",
+      "matched": "Bút toán đã khớp với một dòng sao kê của tài khoản theo dõi bằng loại tiền khác — hãy bỏ khớp trước khi đánh giá lại tỷ giá, rồi khớp lại."
+    },
+    "postedHint": "Đã ghi sổ: giá trị này đã khóa. Muốn thay đổi, hãy đảo bút toán và nhập bút toán điều chỉnh."
   }
 }

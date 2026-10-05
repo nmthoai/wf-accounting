@@ -44,18 +44,22 @@ test("staff can't make business-use, CIT or VAT decisions — even with a crafte
   assert.deepEqual([t.docStatus, t.purposeStatus, t.citStatus, t.vatStatus], ["INVOICE", "PENDING", "PENDING", "PENDING"]);
 });
 
-test("a reviewed entry changed by staff goes back to draft, with old → new and the reason recorded", async () => {
+test("staff fixing a note keeps a reviewed entry booked; changing its money sends it back to draft — old → new and the reason recorded", async () => {
   as.admin();
   const t = await make("to be edited");
   as.staff();
+  // A note alone never takes the entry out of the books.
   const res = await L.editTransaction(t.id, expense({ description: "to be edited (fixed)", reason: "typo in name" }));
   assert.equal(res.success, true, res.message);
-  const after = await S.prisma.transaction.findUniqueOrThrow({ where: { id: t.id } });
-  assert.equal(after.status, "DRAFT");
+  assert.equal((await S.prisma.transaction.findUniqueOrThrow({ where: { id: t.id } })).status, "REVIEWED");
+  // A changed amount needs the owner's review again.
+  assert.equal((await L.editTransaction(t.id, expense({ description: "to be edited (fixed)", amount: 1500000, reason: "bank shows 1.5m" }))).success, true);
+  assert.equal((await S.prisma.transaction.findUniqueOrThrow({ where: { id: t.id } })).status, "DRAFT");
   const rows = (await history(t.id)).filter((h) => h.action === "UPDATE");
   assert.deepEqual(rows.map((h) => [h.field, h.oldValue, h.newValue, h.reason]), [
     ["description", "to be edited", "to be edited (fixed)", "typo in name"],
-    ["status", "REVIEWED", "DRAFT", "typo in name"],
+    ["amount", String((t as { amount: number }).amount), "1500000", "bank shows 1.5m"],
+    ["status", "REVIEWED", "DRAFT", "bank shows 1.5m"],
   ]);
 });
 

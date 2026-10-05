@@ -52,7 +52,25 @@ async function problemText(problem: ReviewProblem) {
 
 // Shared parsing for the income/expense form. Other movement kinds (transfers,
 // capital, loans) are recorded on the Accounts page.
-async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions) {
+type Booked = { currency: string; amount: number; exchangeRate: number; vndAmount: number | null; rateSource: string | null };
+
+// Changes that alter the books. A note, an invoice number, evidence or the
+// tax-review fields never take a reviewed entry out of the balances.
+const BOOKS_FIELDS = new Set(["type", "date", "amount", "currency", "exchangeRate", "vndAmount", "rateSource", "accountId", "loanId", "categoryId", "projectId", "vendorId"]);
+
+// The VND value an entry was booked at stays when it is edited in the same
+// currency: notes, category, project or files never re-price it, and a changed
+// amount is valued at the booked rate. Only revalueEntry changes the rate.
+function keptFx(booked: Booked, amount: number) {
+  return {
+    ok: true as const,
+    exchangeRate: booked.exchangeRate,
+    rateSource: booked.rateSource,
+    vndAmount: booked.vndAmount === null ? null : Math.abs(amount - booked.amount) <= EPS ? booked.vndAmount : Math.round(amount * booked.exchangeRate),
+  };
+}
+
+async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions, booked?: Booked) {
   const type = formData.get("type") as string;
   const amount = parseFloat(formData.get("amount") as string);
   const currency = (formData.get("currency") as string) || "VND";
@@ -70,7 +88,7 @@ async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions
   // A USD account only holds USD; a VND account can settle VND or USD amounts.
   if (account.currency === "USD" && currency !== "USD") return { error: t("errors.usdAccount", { name: account.name }) };
 
-  const fx = await resolveFx(currency, amount, formData);
+  const fx = booked && booked.currency === currency && currency !== "VND" ? keptFx(booked, amount) : await resolveFx(currency, amount, formData);
   if (!fx.ok) return { error: fx.message };
 
   const r = parseReview(formData, type, amount, isAdmin, prev);
@@ -159,6 +177,8 @@ export async function deleteTransaction(id: string) {
   const t = await prisma.transaction.findUnique({ where: { id } });
   if (!t) return;
   const legs = t.transferId ? await prisma.transaction.findMany({ where: { transferId: t.transferId } }) : [t];
+  // A receipt takes the bank fee withheld from it along; a fee alone can go.
+  legs.push(...(await prisma.transaction.findMany({ where: { deductedFromId: { in: legs.map((l) => l.id) } } })));
   // Posted entries are corrected by reversal, never deleted.
   if (legs.some((l) => l.status === "POSTED")) throw new Error("Posted entries can't be deleted — reverse them instead.");
   const ids = legs.map((l) => l.id);
@@ -170,8 +190,19 @@ export async function deleteTransaction(id: string) {
   const attachments = await prisma.attachment.findMany({ where: { transactionId: { in: ids } } });
   const invoices = await invoicesOf(ids); // payments being removed — their invoices reopen
 
+  // A line that no longer adds up without them (a receipt left behind by its
+  // deleted fee) loses its remaining matches too, so it shows as open again.
+  const unmatch: Change[] = [];
+  for (const lineId of new Set(legs.map((l) => l.bankLineId).filter((x): x is string => !!x))) {
+    if (await bankLinkProblem(lineId, [], ids)) {
+      const rest = await prisma.transaction.findMany({ where: { bankLineId: lineId, id: { notIn: ids } }, select: { id: true } });
+      await prisma.transaction.updateMany({ where: { id: { in: rest.map((r) => r.id) } }, data: { bankLineId: null } });
+      unmatch.push(...rest.map((r) => ({ entityId: r.id, action: "UNMATCH", field: "bankLineId", oldValue: lineId, reason: "matched entry deleted" })));
+    }
+  }
+
   await prisma.transaction.deleteMany({ where: { id: { in: ids } } });
-  await record(legs.map((l) => ({ entityId: l.id, action: "DELETE", oldValue: snapshot(l) })), me.name);
+  await record([...legs.map((l) => ({ entityId: l.id, action: "DELETE", oldValue: snapshot(l) })), ...unmatch], me.name);
 
   for (const a of attachments) await removeUploadFile(a.filePath);
   await refreshInvoiceStatus(invoices);
@@ -182,7 +213,10 @@ export async function editTransaction(id: string, formData: FormData) {
   const me = await currentUser();
   const existing = await prisma.transaction.findUnique({
     where: { id },
-    include: { reversedBy: { select: { id: true } }, allocations: { include: { invoice: { select: { direction: true, currency: true } } } } },
+    include: {
+      reversedBy: { select: { id: true } }, deductedFee: { select: { id: true } },
+      allocations: { include: { invoice: { select: { direction: true, currency: true } } } },
+    },
   });
   if (!existing) {
     const tc = await getT("common");
@@ -212,13 +246,8 @@ export async function editTransaction(id: string, formData: FormData) {
     return { success: true };
   }
 
-  const parsed = await parseEntry(formData, me.isAdmin, existing);
+  const parsed = await parseEntry(formData, me.isAdmin, existing, existing);
   if ("error" in parsed) return { success: false, message: parsed.error };
-  // An entry at the default rate keeps the rate it was booked at — editing it
-  // doesn't re-price it at today's default.
-  if (parsed.data.rateSource === "DEFAULT" && existing.rateSource === "DEFAULT" && parsed.data.currency === existing.currency) {
-    parsed.data.exchangeRate = existing.exchangeRate;
-  }
   // Payments linked to invoices must still fit them.
   if (existing.allocations.length) {
     const d = parsed.data;
@@ -227,16 +256,38 @@ export async function editTransaction(id: string, formData: FormData) {
       d.currency === a.invoice.currency && d.type === (a.kind === "FEE" || a.invoice.direction === "PAYABLE" ? "EXPENSE" : "INCOME"));
     if (!fits) return { success: false, message: t("errors.settlesInvoice") };
   }
+  // A receipt and the fee withheld from it stay one type each, in one account
+  // and currency; the fee keeps its receipt's date and project, and both
+  // keep a positive net.
+  const fee = existing.deductedFee ? await prisma.transaction.findUnique({ where: { id: existing.deductedFee.id } }) : null;
+  const receipt = existing.deductedFromId ? await prisma.transaction.findUnique({ where: { id: existing.deductedFromId } }) : null;
+  if ((fee || receipt) && (parsed.data.accountId !== existing.accountId || parsed.data.currency !== existing.currency || parsed.data.type !== existing.type
+    || (receipt && (+parsed.data.date !== +receipt.date || (parsed.data.projectId || null) !== receipt.projectId)))) {
+    return { success: false, message: t("errors.feePairLocked") };
+  }
+  if ((fee && parsed.data.amount <= fee.amount + EPS) || (receipt && parsed.data.amount >= receipt.amount - EPS)) {
+    return { success: false, message: t("errors.feeExceedsReceipt") };
+  }
   if (existing.bankLineId) {
-    const problem = await bankLinkProblem(existing.bankLineId, [parsed.data], [id]);
+    const problem = await bankLinkProblem(existing.bankLineId, [{ ...parsed.data, id, deductedFromId: existing.deductedFromId }], [id]);
     if (problem) return { success: false, message: t("errors.bankLineMatched", { problem }) };
   }
 
-  // A reviewed entry changed by anyone but the owner goes back to draft.
-  const data = { ...parsed.data, status: !me.isAdmin && existing.status === "REVIEWED" ? "DRAFT" : existing.status };
+  // A reviewed entry whose money or classification anyone but the owner
+  // changes goes back to draft; a note or evidence alone keeps it booked.
+  const booksChanged = diff(id, existing, parsed.data).some((c) => BOOKS_FIELDS.has(c.field!));
+  const data = { ...parsed.data, status: !me.isAdmin && booksChanged && existing.status === "REVIEWED" ? "DRAFT" : existing.status };
   await prisma.transaction.update({ where: { id }, data });
-  await record(diff(id, existing, data, reason), me.name);
-  await refreshInvoiceStatus(await invoicesOf([id]));
+  const changes = diff(id, existing, data, reason);
+  // The partner moves with it: a fee takes its receipt's date, project and status.
+  const partner = fee ?? receipt;
+  if (partner) {
+    const follow = { ...(fee ? { date: data.date, projectId: data.projectId ?? null } : {}), status: data.status === "DRAFT" && partner.status === "REVIEWED" ? "DRAFT" : partner.status };
+    await prisma.transaction.update({ where: { id: partner.id }, data: follow });
+    changes.push(...diff(partner.id, partner, follow, reason));
+  }
+  await record(changes, me.name);
+  await refreshInvoiceStatus(await invoicesOf([id, ...(partner ? [partner.id] : [])]));
 
   // Append any newly attached receipts
   await persistUploads(formData.getAll("files") as File[], { transactionId: id });
@@ -244,11 +295,15 @@ export async function editTransaction(id: string, formData: FormData) {
   return { success: true };
 }
 
-// The ids plus the other leg of any transfer among them — legs move together.
+// Entries that move together: the two legs of a transfer, and a receipt with
+// the bank fee withheld from it.
 async function withLegs(ids: string[]) {
-  const picked = await prisma.transaction.findMany({ where: { id: { in: ids } }, select: { transferId: true } });
+  const picked = await prisma.transaction.findMany({ where: { id: { in: ids } }, select: { transferId: true, deductedFromId: true } });
   const transferIds = picked.map((t) => t.transferId).filter((x): x is string => !!x);
-  return prisma.transaction.findMany({ where: { OR: [{ id: { in: ids } }, { transferId: { in: transferIds } }] } });
+  const receipts = [...ids, ...picked.map((t) => t.deductedFromId).filter((x): x is string => !!x)];
+  return prisma.transaction.findMany({
+    where: { OR: [{ id: { in: receipts } }, { transferId: { in: transferIds } }, { deductedFromId: { in: receipts } }] },
+  });
 }
 
 // Admin: approve drafts.
@@ -279,6 +334,16 @@ export async function postEntries(ids: string[] | null, through?: string) {
     end.setUTCDate(end.getUTCDate() + 1);
     entries = await prisma.transaction.findMany({ where: { status: "REVIEWED", date: { lt: end } } });
   }
+  // A receipt and the fee withheld from it are posted together or not at all.
+  const posting = new Set(entries.map((t) => t.id));
+  const partners = await prisma.transaction.findMany({
+    where: { OR: [{ id: { in: entries.map((t) => t.deductedFromId).filter((x): x is string => !!x) } }, { deductedFromId: { in: [...posting] } }] },
+    select: { id: true, status: true, deductedFromId: true },
+  });
+  entries = entries.filter((t) => {
+    const p = partners.find((x) => (t.deductedFromId ? x.id === t.deductedFromId : x.deductedFromId === t.id));
+    return !p || posting.has(p.id) || p.status === "POSTED";
+  });
   await prisma.transaction.updateMany({ where: { id: { in: entries.map((t) => t.id) } }, data: { status: "POSTED" } });
   await record(entries.map((t) => ({ entityId: t.id, action: "POST", field: "status", oldValue: "REVIEWED", newValue: "POSTED" })), me.name);
   revalidateAll(ids?.length === 1 ? ids[0] : undefined);
@@ -298,9 +363,13 @@ export async function reverseEntry(id: string, reason: string) {
   if (t.reversalOfId) return { success: false, message: tl("errors.isReversal") };
   if (t.reversedBy) return { success: false, message: tl("errors.alreadyReversed") };
 
-  const legs = t.transferId ? await prisma.transaction.findMany({ where: { transferId: t.transferId } }) : [t];
+  // A receipt and its withheld fee are reversed together, receipt first.
+  const legs = (await withLegs([id])).sort((a, b) => Number(!!a.deductedFromId) - Number(!!b.deductedFromId));
+  const reversed = await prisma.transaction.count({ where: { reversalOfId: { in: legs.map((l) => l.id) } } });
+  if (legs.some((l) => l.status !== "POSTED" || l.reversalOfId) || reversed > 0) return { success: false, message: tl("errors.pairNotPosted") };
   const invoices = await invoicesOf(legs.map((l) => l.id));
   const transferId = t.transferId ? randomUUID() : null;
+  const reversalOf = new Map<string, string>(); // original id → its reversal
 
   await prisma.$transaction(async (tx) => {
     const changes: Change[] = [];
@@ -329,13 +398,73 @@ export async function reverseEntry(id: string, reason: string) {
           docStatus: l.docStatus, purposeStatus: l.purposeStatus, citStatus: l.citStatus, vatStatus: l.vatStatus,
           vatAmount: l.vatAmount === null ? null : -l.vatAmount, reviewNote: why,
           status: "POSTED", createdBy: me.name, reversalOfId: l.id,
+          deductedFromId: l.deductedFromId ? reversalOf.get(l.deductedFromId) ?? null : null,
         },
       });
+      reversalOf.set(l.id, rev.id);
       changes.push({ entityId: l.id, action: "REVERSE", newValue: rev.id, reason: why }, { entityId: rev.id, action: "CREATE", newValue: snapshot(rev), reason: why });
     }
     await record(changes, me.name, tx);
   });
   await refreshInvoiceStatus(invoices);
+  revalidateAll(id);
+  return { success: true };
+}
+
+// Admin: revalue a recorded foreign-currency entry — the only way its VND
+// value changes after it was booked. Needs a reason; the old and new VND value
+// go into the change history. A receipt is revalued with the fee withheld from
+// it (the bank's VND figure is then what it credited, the net). Posted entries
+// are corrected by reversal instead; a transfer keeps the rate its two sides imply.
+export async function revalueEntry(id: string, formData: FormData) {
+  const me = await currentUser();
+  if (!me.isAdmin) throw new Error("Unauthorized");
+  const t = await getT("ledger");
+  const reason = ((formData.get("reason") as string) || "").trim();
+  if (!reason) return { success: false, message: t("errors.reasonRequired") };
+  const e = await prisma.transaction.findUnique({ where: { id }, include: { deductedFee: true, reversedBy: { select: { id: true } } } });
+  if (!e) return { success: false, message: (await getT("common"))("errors.notFound") };
+  if (e.currency === "VND") return { success: false, message: t("revalue.errors.vnd") };
+  if (e.status === "POSTED") return { success: false, message: t("revalue.errors.posted") };
+  if (e.reversalOfId || e.reversedBy) return { success: false, message: t("errors.reversedLocked") };
+  if (e.transferId) return { success: false, message: t("revalue.errors.transfer") };
+  if (e.deductedFromId) return { success: false, message: t("revalue.errors.fee") };
+
+  const fee = e.deductedFee;
+  if (fee && (fee.status === "POSTED" || fee.reversalOfId)) return { success: false, message: t("revalue.errors.posted") };
+  // In an account kept in another currency (a USD receipt in a VND account), the
+  // VND value is the bank movement itself: unmatch it before revaluing.
+  if (e.bankLineId || fee?.bankLineId) {
+    const acc = e.accountId ? await prisma.account.findUnique({ where: { id: e.accountId }, select: { currency: true } }) : null;
+    if (acc && acc.currency !== e.currency) return { success: false, message: t("revalue.errors.matched") };
+  }
+  const net = e.amount - (fee?.amount ?? 0);
+  const fx = await resolveFx(e.currency, net, formData);
+  if (!fx.ok) return { success: false, message: fx.message };
+  const vnd = fx.vndAmount === null ? null : fee ? Math.round(e.amount * fx.exchangeRate) : fx.vndAmount;
+  const next = { exchangeRate: fx.exchangeRate, rateSource: fx.rateSource, vndAmount: vnd };
+  const feeNext = fee ? { exchangeRate: fx.exchangeRate, rateSource: fx.rateSource, vndAmount: vnd === null || fx.vndAmount === null ? null : vnd - fx.vndAmount } : null;
+  const value = (x: { amount: number; exchangeRate: number; vndAmount: number | null }) => Math.round(x.vndAmount ?? x.amount * x.exchangeRate);
+  const before = value(e), after = value({ amount: e.amount, ...next });
+  if (before === after && e.rateSource === next.rateSource) return { success: false, message: t("revalue.errors.unchanged") };
+  if (e.bankLineId) {
+    const problem = await bankLinkProblem(e.bankLineId, [{ ...e, ...next }, ...(fee && fee.bankLineId === e.bankLineId ? [{ ...fee, ...feeNext! }] : [])], [e.id, ...(fee ? [fee.id] : [])]);
+    if (problem) return { success: false, message: t("errors.bankLineMatched", { problem }) };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.transaction.update({ where: { id: e.id }, data: next });
+    const changes: Change[] = [
+      ...diff(e.id, e, next, reason),
+      { entityId: e.id, action: "REVALUE", field: "vndValue", oldValue: String(before), newValue: String(after), reason },
+    ];
+    if (fee && feeNext) {
+      await tx.transaction.update({ where: { id: fee.id }, data: feeNext });
+      changes.push(...diff(fee.id, fee, feeNext, reason),
+        { entityId: fee.id, action: "REVALUE", field: "vndValue", oldValue: String(value(fee)), newValue: String(value({ amount: fee.amount, ...feeNext })), reason });
+    }
+    await record(changes, me.name, tx);
+  });
   revalidateAll(id);
   return { success: true };
 }

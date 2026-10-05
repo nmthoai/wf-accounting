@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CheckCircle2, Link2, Loader2 } from "lucide-react";
 import { recordPayment, linkToInvoice } from "@/app/actions/invoices";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { fmtMoney , vnToday } from "@/lib/money";
 import { notify } from "@/components/ui/toast";
+import { uploadProblem } from "@/lib/upload-limit";
 
 type Inv = { id: string; number: string | null; direction: string; currency: string; difference: number };
 export type Candidate = {
@@ -48,10 +49,35 @@ function useSubmit(close: () => void, done: string) {
   return { saving, err, submit };
 }
 
-// Record money received/paid against this invoice — all of it or part.
-export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate }: { invoice: Inv; accounts: AccountOpt[]; defaultUsdRate: number }) {
+// A fresh id for each opening of the dialog: a double click or a retry of the
+// same save is recognised on the server and recorded once.
+const newRequestId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+// The likeliest category for a bank fee: a bank one, then FX, then any fee.
+const feeDefault = (cats: { id: string; name: string }[]) =>
+  (cats.find((c) => /bank|ngân hàng/i.test(c.name)) ?? cats.find((c) => /\bfx\b/i.test(c.name)) ?? cats.find((c) => /fee|phí/i.test(c.name)))?.id ?? "";
+
+// Record money received/paid against this invoice — all of it or part. For a
+// receipt, a fee the bank withheld can be entered: the invoice is settled by
+// the full amount and the account receives the net.
+export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCategories }: {
+  invoice: Inv; accounts: AccountOpt[]; defaultUsdRate: number; feeCategories: { id: string; name: string }[];
+}) {
   const t = useTranslations("invoices");
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
+  const [requestId, setRequestId] = useState(newRequestId);
+  const receipt = invoice.direction === "RECEIVABLE";
+  const openAmount = String(Math.round(invoice.difference * 100) / 100);
+  const [amountText, setAmountText] = useState(openAmount);
+  const [feeText, setFeeText] = useState("");
+  const [feeCategoryId, setFeeCategoryId] = useState(feeDefault(feeCategories));
+  // Each opening starts afresh: what is open now, no fee, a new request id.
+  const openDialog = (o: boolean) => {
+    if (o) { setRequestId(newRequestId()); setAmountText(openAmount); setFeeText(""); setFeeCategoryId(feeDefault(feeCategories)); }
+    setOpen(o);
+  };
+  const settled = parseFloat(amountText) || 0;
+  const fee = receipt ? parseFloat(feeText) || 0 : 0;
   const { saving, err, submit } = useSubmit(() => setOpen(false), t("toast.paymentRecorded"));
   // VND invoices settle through VND accounts; foreign ones through any account.
   const usable = accounts.filter((a) => a.isActive && (invoice.currency !== "VND" || a.currency === "VND"));
@@ -70,13 +96,17 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate }: { inv
   const today = vnToday();
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={openDialog}>
       <DialogTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1 text-green-700" />}>
         <CheckCircle2 className="h-3.5 w-3.5" /> {t("payment.record")}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>{t("payment.title", { label: label(invoice, t) })}</DialogTitle></DialogHeader>
-        <form className="space-y-4 pt-2" onSubmit={(e) => submit(e, (fd) => recordPayment(invoice.id, fd), { accountId, rateMode: foreign ? mode : "" })}>
+        <form className="space-y-4 pt-2" onSubmit={(e) => {
+          const tooBig = uploadProblem(new FormData(e.currentTarget).getAll("files") as File[], tc);
+          if (tooBig) { e.preventDefault(); notify.error(tooBig); return; }
+          submit(e, (fd) => recordPayment(invoice.id, fd), { accountId, rateMode: foreign ? mode : "", requestId, feeCategoryId: fee > 0 ? feeCategoryId : "" });
+        }}>
           <p className="text-sm text-muted-foreground">
             {t.rich("payment.intro", {
               direction: invoice.direction, label: label(invoice, t), amount: fmtMoney(invoice.difference, invoice.currency),
@@ -89,15 +119,46 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate }: { inv
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor={`pa-${invoice.id}`}>{t("payment.amount", { currency: invoice.currency })}</Label>
-              <Input key={invoice.difference} id={`pa-${invoice.id}`} name="amount" type="number" step="any" min="0" defaultValue={Math.round(invoice.difference * 100) / 100} required />
+              <Label htmlFor={`pa-${invoice.id}`}>{receipt ? t("payment.amountSettled", { currency: invoice.currency }) : t("payment.amount", { currency: invoice.currency })}</Label>
+              <Input id={`pa-${invoice.id}`} name="amount" type="number" step="any" min="0" value={amountText} onChange={(e) => setAmountText(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor={`pd-${invoice.id}`}>{t("payment.date")}</Label>
               <Input id={`pd-${invoice.id}`} name="paidDate" type="date" defaultValue={today} required />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">{t("payment.shortfallNote")}</p>
+          {receipt && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor={`pf-${invoice.id}`}>{t("payment.feeDeducted", { currency: invoice.currency })}</Label>
+                <Input id={`pf-${invoice.id}`} name="feeDeducted" type="number" step="any" min="0" placeholder={t("payment.feePlaceholder")} value={feeText} onChange={(e) => setFeeText(e.target.value)} />
+              </div>
+              {fee > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor={`pc-${invoice.id}`}>{t("payment.feeCategory")}</Label>
+                  <Select value={feeCategoryId} onValueChange={(v) => setFeeCategoryId(v || "")}
+                    items={feeCategories.map((c) => ({ value: c.id, label: c.name }))}>
+                    <SelectTrigger id={`pc-${invoice.id}`}><SelectValue placeholder={t("payment.feeCategoryPlaceholder")} /></SelectTrigger>
+                    <SelectContent>
+                      {feeCategories.length === 0
+                        ? <SelectItem value="none" disabled>{t("payment.noFeeCategories")}</SelectItem>
+                        : feeCategories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
+          {fee > 0 && (
+            <dl className="rounded-md border p-3 text-sm space-y-1 tabular-nums">
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("payment.breakdown.settled")}</dt><dd>{fmtMoney(settled, invoice.currency)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("payment.breakdown.fee")}</dt><dd>− {fmtMoney(fee, invoice.currency)}</dd></div>
+              <div className="flex justify-between gap-4 border-t pt-1 font-medium">
+                <dt>{t("payment.breakdown.net", { account: account?.name ?? "—" })}</dt><dd>{fmtMoney(settled - fee, invoice.currency)}</dd>
+              </div>
+            </dl>
+          )}
+          <p className="text-xs text-muted-foreground">{receipt ? t("payment.feeNote") : t("payment.shortfallNote")}</p>
           {foreign && (
             <div className="space-y-2 rounded-md border p-3 bg-muted/30">
               <Label>{t("payment.vndValue")}</Label>
@@ -111,6 +172,10 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate }: { inv
               {mode === "MANUAL" && <Input name="rate" type="number" step="any" min="0" required placeholder={t("payment.ratePlaceholder", { currency: invoice.currency })} />}
             </div>
           )}
+          <div className="space-y-2">
+            <Label htmlFor={`pe-${invoice.id}`}>{t("payment.evidence")}</Label>
+            <Input id={`pe-${invoice.id}`} name="files" type="file" multiple accept="image/*,.pdf,.zip,.xml" />
+          </div>
           {err && <p className="text-sm text-destructive">{err}</p>}
           <Button type="submit" className="w-full" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("payment.record")}</Button>
         </form>

@@ -65,9 +65,12 @@ test("M1: a draft payment doesn't settle an invoice until it's reviewed", async 
   const pay = await S.prisma.transaction.findFirstOrThrow({ where: { invoiceNumber: "M1" } });
   await L.reviewEntries([pay.id]);
   assert.equal(await invoiceStatus(inv.id), "PAID");
-  // …and a reviewed payment that staff change goes back to draft — the invoice reopens.
+  // …a staff note leaves it booked, but a reviewed payment whose money staff
+  // change goes back to draft — the invoice reopens.
   as.staff();
   await L.editTransaction(pay.id, fd({ type: "INCOME", amount: 5000000, currency: "VND", date: "2026-07-21", accountId: S.vnd.id, description: "edited by staff" }));
+  assert.equal(await invoiceStatus(inv.id), "PAID");
+  await L.editTransaction(pay.id, fd({ type: "INCOME", amount: 5000000, currency: "VND", date: "2026-07-22", accountId: S.vnd.id, description: "edited by staff" }));
   assert.equal(await invoiceStatus(inv.id), "OPEN");
 });
 
@@ -149,9 +152,13 @@ test("L11: staff editing an invoice puts its reviewed payments back to draft", a
   const bill = await S.prisma.invoice.findFirstOrThrow({ where: { number: "L11" } });
   await I.recordPayment(bill.id, fd({ amount: 2000000, paidDate: "2026-07-15", accountId: S.vnd.id }));
   as.staff();
-  await I.updateInvoice(bill.id, fd({ number: "L11-B", vendorId: S.vendor.id, issueDate: "2026-07-01", dueDate: "2026-07-31", currency: "VND", amount: 2000000 }));
+  // A new number or notes carry over but keep the payment booked…
+  await I.updateInvoice(bill.id, fd({ number: "L11-B", vendorId: S.vendor.id, issueDate: "2026-07-01", dueDate: "2026-07-31", currency: "VND", amount: 2000000, notes: "paid in full" }));
   const pay = await S.prisma.transaction.findFirstOrThrow({ where: { invoiceNumber: "L11-B" } });
-  assert.equal(pay.status, "DRAFT");
+  assert.equal(pay.status, "REVIEWED");
+  // …reclassifying it puts it back to draft for the owner's review.
+  await I.updateInvoice(bill.id, fd({ number: "L11-B", vendorId: S.vendor.id, categoryId: S.expense.id, issueDate: "2026-07-01", dueDate: "2026-07-31", currency: "VND", amount: 2000000 }));
+  assert.equal((await S.prisma.transaction.findUniqueOrThrow({ where: { id: pay.id } })).status, "DRAFT");
 });
 
 test("L13: an account's currency can't change once it has bank statement lines", async () => {

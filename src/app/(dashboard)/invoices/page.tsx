@@ -16,7 +16,7 @@ export default async function InvoicesPage() {
     prisma.invoice.findMany({
       include: {
         client: true, vendor: true, project: true, category: true, attachments: true,
-        allocations: { include: { transaction: { include: { account: true } } }, orderBy: { createdAt: "asc" } },
+        allocations: { include: { transaction: { include: { account: true, deductedFee: { select: { amount: true } } } } }, orderBy: { createdAt: "asc" } },
       },
     }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -24,9 +24,10 @@ export default async function InvoicesPage() {
     prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, type: true } }),
     // Ledger entries that could settle an invoice: income/expense with money not
-    // yet allocated — not a reversal, nor an entry a reversal cancelled.
+    // yet allocated — not a reversal, nor an entry a reversal cancelled, nor a
+    // bank fee already counted in the receipt it was withheld from.
     prisma.transaction.findMany({
-      where: { type: { in: ["INCOME", "EXPENSE"] }, reversalOfId: null, reversedBy: { is: null } },
+      where: { type: { in: ["INCOME", "EXPENSE"] }, reversalOfId: null, reversedBy: { is: null }, deductedFromId: null },
       orderBy: { date: "desc" },
       include: { account: true, allocations: true, _count: { select: { attachments: true } } },
     }),
@@ -62,6 +63,7 @@ export default async function InvoicesPage() {
         date: iso(a.transaction.date)!,
         accountName: a.transaction.account?.name ?? "—",
         description: a.transaction.description,
+        feeDeducted: a.transaction.deductedFee?.amount ?? null, // withheld by the bank: the account got the net
       })),
     };
   });

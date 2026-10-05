@@ -7,6 +7,7 @@ import { UPLOAD_DIR } from "@/lib/uploads";
 import { EPS, BOOKED, accountDelta, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
 import { DOC_OPEN } from "@/lib/review";
 import { translator } from "@/i18n/server";
+import { explained } from "@/lib/bank-match";
 import { DEFAULT_LOCALE, type Locale } from "@/i18n/config";
 
 // The monthly package for the accountant: ledger, invoices, bank
@@ -86,6 +87,10 @@ export async function collect(month: string) {
     }
     evidenceOf.set(t.id, paths);
   }
+  // A bank fee withheld from a receipt is evidenced by the receipt's files (the bank advice).
+  for (const t of booked) {
+    if (t.deductedFromId && evidenceOf.has(t.deductedFromId)) evidenceOf.set(t.id, [...evidenceOf.get(t.id)!, ...evidenceOf.get(t.deductedFromId)!]);
+  }
   for (const inv of invoices) {
     for (const a of inv.attachments) {
       if (!files.has(a.id)) files.set(a.id, { zipPath: `evidence/invoices/${safe(inv.number ?? inv.id.slice(-6))}_${a.id.slice(-6)}_${safe(a.fileName)}`, filePath: a.filePath });
@@ -108,7 +113,7 @@ export async function collect(month: string) {
       .reduce((s, t) => s + accountDelta(t, a.currency), a.openingBalance);
     const covered = statements.some((s) => s.accountId === a.id && s.periodFrom < end && s.periodTo >= start);
     const status = (l: (typeof own)[number]) => {
-      const matched = l.entries.reduce((s, t) => s + Math.abs(accountDelta(t, a.currency)), 0);
+      const matched = explained(l, l.entries, a.currency);
       return matched <= tol(a.currency) ? "Not in ledger" : Math.abs(l.amount) - matched > tol(a.currency) ? "Part matched" : "Matched";
     };
     return { account: a, covered, opening, closing, app, lines: monthLines.map((l) => ({ ...l, status: status(l) })) };

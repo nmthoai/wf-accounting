@@ -15,6 +15,7 @@ import { CURRENCIES, vnToday } from "@/lib/money";
 import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 import { uploadProblem } from "@/lib/upload-limit";
 import { notify, notifyResult } from "@/components/ui/toast";
+import { BookedRate } from "@/components/ledger/booked-rate";
 
 // One of the evidence/tax review statuses, as a dropdown.
 function StatusSelect({ id, label, options, value, onChange, disabled }: {
@@ -265,6 +266,10 @@ export function EntryForm({
             {currency !== "VND" && (
               <div className="space-y-2 md:col-span-2 rounded-md border p-3 bg-muted/30">
                 <Label>{t("form.vndValue")}</Label>
+                {initialData && initialData.currency === currency ? (
+                  // Recorded: it keeps its booked VND value; only an explicit revaluation changes it.
+                  <BookedRate entry={initialData} isAdmin={isAdmin} locked={locked} defaultUsdRate={defaultUsdRate} />
+                ) : (<>
                 <div className="flex bg-muted p-0.5 rounded text-xs font-medium w-fit">
                   {([["BANK", t("form.rateBank")], ["MANUAL", t("form.rateManual")], ...(currency === "USD" ? [["DEFAULT", t("form.rateDefault", { rate: new Intl.NumberFormat("vi-VN").format(defaultUsdRate) })]] : [])] as [ "BANK" | "MANUAL" | "DEFAULT", string][]).map(([m, label]) => (
                     <button key={m} type="button" onClick={() => setRateMode(m)}
@@ -284,6 +289,7 @@ export function EntryForm({
                     : rateMode === "MANUAL" ? t("form.rateManualHint")
                     : t("form.rateDefaultHint")}
                 </p>
+                </>)}
               </div>
             )}
 

@@ -17,7 +17,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     prisma.project.findMany({ where: { status: { not: "ARCHIVED" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.vendor.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.transaction.findUnique({ where: { id }, include: { attachments: true, reversalOf: true, reversedBy: true } }),
+    prisma.transaction.findUnique({ where: { id }, include: { attachments: true, reversalOf: true, reversedBy: true, deductedFee: { select: { amount: true } } } }),
     prisma.changeLog.findMany({ where: { entity: "Transaction", entityId: id }, orderBy: { createdAt: "desc" } }),
     prisma.project.findMany({ select: { id: true, name: true } }),
   ]);
@@ -71,6 +71,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
         reversalOf={ref(transaction.reversalOf)}
         reversedBy={ref(transaction.reversedBy)}
         correctionOf={ref(correctionOf)}
+        withFee={!!transaction.deductedFee || !!transaction.deductedFromId}
       />
 
       <EntryForm
@@ -99,7 +100,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
                   {h.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC{h.user ? ` · ${h.user}` : ""}
                 </span>
               </div>
-              {h.action === "UPDATE" && (
+              {(h.action === "UPDATE" || h.action === "REVALUE") && (
                 <p className="text-xs text-muted-foreground">{show(h.field, h.oldValue)} → <span className="text-foreground">{show(h.field, h.newValue)}</span></p>
               )}
               {(h.action === "CREATE" || h.action === "DELETE" || h.action === "LINK" || h.action === "UNLINK") && (

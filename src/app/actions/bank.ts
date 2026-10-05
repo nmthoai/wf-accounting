@@ -129,8 +129,13 @@ export async function matchLine(lineId: string, transactionIds: string[]) {
   const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   const t = await getT("bank");
-  const ids = [...new Set(transactionIds)];
-  if (ids.length === 0) return { success: false, message: t("errors.chooseEntry") };
+  if (transactionIds.length === 0) return { success: false, message: t("errors.chooseEntry") };
+  // A receipt and the bank fee withheld from it reach the bank as one net line.
+  const picked = await prisma.transaction.findMany({
+    where: { id: { in: transactionIds } }, select: { deductedFromId: true, deductedFee: { select: { id: true } } },
+  });
+  const partners = picked.flatMap((p) => [p.deductedFromId, p.deductedFee?.id]).filter((x): x is string => !!x);
+  const ids = [...new Set([...transactionIds, ...partners])];
 
   const entries = await prisma.transaction.findMany({ where: { id: { in: ids } }, include: { reversedBy: { select: { id: true } } } });
   if (entries.length !== ids.length) return { success: false, message: t("errors.entryGone") };
@@ -150,11 +155,13 @@ export async function unmatchEntry(transactionId: string) {
   const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   const tb = await getT("bank");
-  const t = await prisma.transaction.findUnique({ where: { id: transactionId } });
+  const t = await prisma.transaction.findUnique({ where: { id: transactionId }, include: { deductedFee: true, deductedFrom: true } });
   if (!t?.bankLineId) return { success: true };
-  if (t.status === "POSTED" && session.user.role !== "ADMIN") return { success: false, message: tb("errors.postedUnmatch") };
-  await prisma.transaction.update({ where: { id: transactionId }, data: { bankLineId: null } });
-  await record([{ entityId: t.id, action: "UNMATCH", field: "bankLineId", oldValue: t.bankLineId }], session.user.name);
+  // A receipt and its withheld fee leave the line together.
+  const unit = [t, t.deductedFee, t.deductedFrom].filter((x): x is NonNullable<typeof x> => !!x && x.bankLineId === t.bankLineId);
+  if (unit.some((x) => x.status === "POSTED") && session.user.role !== "ADMIN") return { success: false, message: tb("errors.postedUnmatch") };
+  await prisma.transaction.updateMany({ where: { id: { in: unit.map((x) => x.id) } }, data: { bankLineId: null } });
+  await record(unit.map((x) => ({ entityId: x.id, action: "UNMATCH", field: "bankLineId", oldValue: x.bankLineId })), session.user.name);
   revalidateAll();
   return { success: true };
 }

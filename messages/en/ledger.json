@@ -46,7 +46,7 @@
   "rowActions": {
     "approve": "Approve (mark reviewed)",
     "openPosted": "Open (posted — locked)",
-    "confirmDelete": "Delete this entry? A transfer deletes both sides."
+    "confirmDelete": "Delete this entry? A transfer deletes both sides; a receipt also deletes the bank fee withheld from it."
   },
   "postThrough": {
     "label": "Post reviewed entries through",
@@ -87,7 +87,8 @@
     "reason": "Reason",
     "reasonPlaceholder": "e.g. wrong amount — bank shows 8,221,200",
     "submit": "Reverse and enter the correction",
-    "descPrefix": "Reversal: {description}"
+    "descPrefix": "Reversal: {description}",
+    "withFee": "This receipt and the bank fee withheld from it are reversed together. Its invoice reopens — record the corrected payment from the invoice."
   },
   "new": {
     "title": "New Entry",
@@ -115,7 +116,8 @@
       "MATCH": "Matched to a bank line",
       "UNMATCH": "Unmatched from a bank line",
       "LINK": "Linked",
-      "UNLINK": "Unlinked"
+      "UNLINK": "Unlinked",
+      "REVALUE": "Revalued"
     },
     "field": {
       "type": "Type",
@@ -142,7 +144,10 @@
       "bankLineId": "Bank line",
       "invoice": "Invoice",
       "costItem": "Register item",
-      "attachment": "Attachment"
+      "attachment": "Attachment",
+      "deductedFee": "Fee deducted",
+      "vndValue": "VND value",
+      "settlement": "Settlement"
     }
   },
   "form": {
@@ -229,6 +234,35 @@
     "attachmentPosted": "This entry is posted — its attachments are kept.",
     "attachmentCostItem": "This receipt belongs to a cost register item — it stays with the expense.",
     "attachmentFeeEvidence": "This is the evidence for a fee on an invoice — unlink the fee first.",
-    "attachmentOwnerOnly": "Only the owner can remove this document."
+    "attachmentOwnerOnly": "Only the owner can remove this document.",
+    "feePairLocked": "A bank fee withheld from a receipt stays with it: same account, currency, type, date and project. Change the receipt — the fee follows — or reverse or delete them together.",
+    "feeExceedsReceipt": "The bank fee must stay less than the receipt it was withheld from.",
+    "pairNotPosted": "Everything that moves with this entry must be posted, and not yet reversed, before it can be reversed."
+  },
+  "revalue": {
+    "booked": "Booked at {rate} VND/{currency} → {vnd} VND · {source} rate",
+    "withFee": "Includes the bank fee withheld from it ({fee}); both are revalued together.",
+    "keptHint": "Editing this entry keeps this value. To change it, revalue it — with a reason that goes into the history.",
+    "adminOnly": "Editing this entry keeps this value. Only an admin can revalue it.",
+    "feeHint": "A fee withheld from a receipt is revalued with its receipt.",
+    "transferHint": "A transfer keeps the rate its two sides imply.",
+    "open": "Revalue…",
+    "modeDefault": "Today's default ({rate})",
+    "netPlaceholder": "VND the bank credited (net of the fee)",
+    "preview": "VND value: {before} → {after}",
+    "reason": "Reason",
+    "reasonPlaceholder": "Why the value changes — kept in the history",
+    "confirm": "Revalue",
+    "done": "Entry revalued",
+    "errors": {
+      "vnd": "A VND entry has no exchange rate to revalue.",
+      "posted": "This entry is posted — reverse it and enter the correction instead.",
+      "transfer": "A transfer keeps the rate its two sides imply — edit the transfer instead.",
+      "fee": "Revalue the receipt this fee was withheld from — the fee follows it.",
+      "unchanged": "That gives the same VND value — nothing to revalue.",
+      "enterValue": "Enter the new rate or VND amount.",
+      "matched": "This entry is matched to a bank line in an account kept in another currency — unmatch it before revaluing, then match it again."
+    },
+    "postedHint": "Posted: this value is locked. To change it, reverse the entry and enter the correction."
   }
 }

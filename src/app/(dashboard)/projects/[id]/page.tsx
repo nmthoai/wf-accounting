@@ -22,7 +22,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const t = await getTranslations("projects");
   const locale = await getLocale();
   const { id } = await params;
-  const [project, openInvoices, clients, accounts, usdRate] = await Promise.all([
+  const [project, openInvoices, clients, accounts, usdRate, feeCategories] = await Promise.all([
     prisma.project.findUnique({
       where: { id },
       include: {
@@ -39,6 +39,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     defaultUsdRate(),
+    prisma.category.findMany({ where: { type: "EXPENSE" }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   if (!project) redirect("/projects");
 
@@ -118,7 +119,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <CardDescription>{t("detail.outstandingDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <ProjectOutstanding items={outstanding} accounts={accounts} defaultUsdRate={usdRate} />
+          <ProjectOutstanding items={outstanding} accounts={accounts} defaultUsdRate={usdRate} feeCategories={feeCategories} />
         </CardContent>
       </Card>
 

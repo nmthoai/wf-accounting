@@ -36,7 +36,7 @@ const PUBLIC = new Set(["auth.ts:authenticate", "locale.ts:setLocale", "auth.ts:
 const ADMIN_ONLY = [
   "accounts.ts:saveAccount", "bank.ts:deleteStatement", "clients.ts:deleteClient", "vendors.ts:deleteVendor", "projects.ts:deleteProject",
   "costs.ts:dismissCostItem", "costs.ts:reopenCostItem", "costs.ts:deleteCostItem", "invoices.ts:deleteInvoice",
-  "ledger.ts:deleteTransaction", "ledger.ts:reviewEntries", "ledger.ts:postEntries", "ledger.ts:reverseEntry",
+  "ledger.ts:deleteTransaction", "ledger.ts:reviewEntries", "ledger.ts:postEntries", "ledger.ts:reverseEntry", "ledger.ts:revalueEntry",
   "settings.ts:createCategory", "settings.ts:updateCategory", "settings.ts:deleteCategory", "settings.ts:updateExchangeRate",
   "settings.ts:createUnitRate", "settings.ts:updateUnitRate", "settings.ts:deleteUnitRate",
   "users.ts:createUser", "users.ts:deleteUser", "users.ts:setUserActive", "users.ts:resetUserPassword", "users.ts:resetUser2FA", "users.ts:unlockUser",

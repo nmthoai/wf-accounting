@@ -356,3 +356,10 @@ Recurring wording settled while translating the screens.
 | Area / Item / Question / detail (handover open-questions columns) | Nhóm / Mục / Câu hỏi / chi tiết |
 | Evidence files linked from each entry (handover) | Tệp chứng từ dẫn chiếu theo từng bút toán |
 | Intelligence, Orchestrated. (login tagline) | Kept in English — brand slogan |
+| Fee deducted / withheld bank fee (on a receipt) | Phí bị trừ / phí ngân hàng bị trừ (“khấu trừ” is kept for VAT) |
+| Amount settled against invoice | Số tiền đối trừ hóa đơn |
+| Net received into {account} | Thực nhận vào {account} |
+| Bank credit advice | Giấy báo Có |
+| Revalue / Revaluation (exchange rate) | Đánh giá lại tỷ giá |
+| Booked at {rate} (the VND value an entry was recorded at) | Đã ghi nhận theo tỷ giá {rate} |
+| Internal transfer | Chuyển tiền nội bộ |

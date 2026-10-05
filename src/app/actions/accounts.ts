@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { defaultUsdRate } from "@/lib/fx";
 import { bankLinkProblem } from "@/lib/bank-match";
+import { EPS } from "@/lib/money";
 import { diff, record, snapshot } from "@/lib/history";
 import { getT, type Translate } from "@/i18n/server";
 
@@ -152,6 +153,14 @@ export async function updateMovement(id: string, formData: FormData) {
   if (existing.status === "POSTED") return { success: false, message: t("errors.locked") };
   const parsed = await parseMovement(formData, t);
   if ("error" in parsed) return { success: false, message: parsed.error };
+  // Editing never re-prices a movement at today's default: in the same
+  // currency it keeps the rate it was booked at (revalueEntry changes it).
+  if (parsed.data.currency === existing.currency && existing.currency !== "VND") {
+    Object.assign(parsed.data, {
+      exchangeRate: existing.exchangeRate, rateSource: existing.rateSource,
+      vndAmount: existing.vndAmount === null ? null : Math.abs(parsed.data.amount - existing.amount) <= EPS ? existing.vndAmount : Math.round(parsed.data.amount * existing.exchangeRate),
+    });
+  }
   const problem = await stillFits(existing, parsed.data);
   if (problem) return { success: false, message: problem };
   const data = { ...parsed.data, status: nextStatus(me, existing.status) };
@@ -236,6 +245,11 @@ export async function updateTransfer(transferId: string, formData: FormData) {
 
   const parsed = await parseTransfer(formData, t);
   if ("error" in parsed) return { success: false, message: parsed.error };
+  // A same-currency USD transfer was valued at the default rate of its day:
+  // editing it keeps that rate rather than re-pricing it at today's.
+  for (const [leg, next] of [[outLeg, parsed.out], [inLeg, parsed.in]] as const) {
+    if (leg.currency === next.currency && next.rateSource === "DEFAULT" && leg.rateSource === "DEFAULT") next.exchangeRate = leg.exchangeRate;
+  }
   const problem = (await stillFits(outLeg, parsed.out)) ?? (await stillFits(inLeg, parsed.in));
   if (problem) return { success: false, message: problem };
   const out = { ...parsed.out, status: nextStatus(me, outLeg.status) };
