@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pencil, Loader2 } from "lucide-react";
 import { updateInvoice } from "@/app/actions/invoices";
+import { notify } from "@/components/ui/toast";
 
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
@@ -52,7 +53,10 @@ export function EditInvoiceDialog({
       const res = await updateInvoice(invoice.id, fd);
       if (!res.success) { setErr(res.message || "Could not save."); return; }
       setOpen(false);
+      notify.success(isReceivable ? "Invoice updated" : "Bill updated");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setSaving(false);
     }

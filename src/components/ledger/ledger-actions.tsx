@@ -7,20 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Loader2, Lock, Pencil, Trash2 } from "lucide-react";
 import { deleteTransaction, postEntries, reviewEntries } from "@/app/actions/ledger";
+import { notify, notifyResult } from "@/components/ui/toast";
 
 // Per-row actions: open, approve a draft (admin), delete if not posted (admin).
 export function RowActions({ id, href, status, isAdmin }: { id: string; href: string; status: string; isAdmin: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  async function run(fn: () => Promise<unknown>) {
+  async function run(fn: () => Promise<unknown>, done: string) {
     setBusy(true);
-    try { await fn(); router.refresh(); } finally { setBusy(false); }
+    try { await fn(); notify.success(done); router.refresh(); }
+    catch { notify.error("Something went wrong — please try again."); }
+    finally { setBusy(false); }
   }
   return (
     <div className="flex justify-end gap-1">
       {isAdmin && status === "DRAFT" && (
         <Button variant="ghost" size="icon" className="h-8 w-8 text-green-700 hover:bg-green-50" title="Approve (mark reviewed)" disabled={busy}
-          onClick={() => run(() => reviewEntries([id]))}>
+          onClick={() => run(() => reviewEntries([id]), "Entry approved")}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         </Button>
       )}
@@ -31,7 +34,7 @@ export function RowActions({ id, href, status, isAdmin }: { id: string; href: st
       </Link>
       {isAdmin && status !== "POSTED" && (
         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="Delete" disabled={busy}
-          onClick={() => { if (confirm("Delete this entry? A transfer deletes both sides.")) run(() => deleteTransaction(id)); }}>
+          onClick={() => { if (confirm("Delete this entry? A transfer deletes both sides.")) run(() => deleteTransaction(id), "Entry deleted"); }}>
           <Trash2 className="h-4 w-4" />
         </Button>
       )}
@@ -49,9 +52,10 @@ export function PostThrough({ defaultDate, reviewedCount }: { defaultDate: strin
     setBusy(true);
     try {
       const res = await postEntries(null, date);
-      alert(res.success ? `Posted ${res.count} ${res.count === 1 ? "entry" : "entries"}.` : res.message);
+      notifyResult(res, `${res.count} ${res.count === 1 ? "entry" : "entries"} posted`, "Could not post.");
       router.refresh();
-    } finally { setBusy(false); }
+    } catch { notify.error("Something went wrong — please try again."); }
+    finally { setBusy(false); }
   }
   return (
     <div className="flex items-center gap-2 text-sm flex-wrap">

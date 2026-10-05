@@ -15,6 +15,7 @@ import { CURRENCIES, fmtMoney, totalsList, type Totals } from "@/lib/money";
 import { DOC_STATUS, DOC_BADGE } from "@/lib/review";
 import { PAYER, REIMBURSEMENT, COST_STATUS } from "@/lib/costs";
 import { uploadProblem } from "@/lib/upload-limit";
+import { notify } from "@/components/ui/toast";
 
 export type CostRow = {
   id: string; ref: string | null; provider: string; receiptDate: string; amount: number; currency: string;
@@ -63,8 +64,11 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
     try {
       const res = await saveCostItem(item?.id ?? null, fd);
       if (!res.success) { setErr(res.message ?? "Could not save."); return; }
+      notify.success(item ? "Receipt saved" : "Receipt added to the register", (fd.get("provider") as string | null) || item?.provider);
       setOpen(false);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setBusy(false); }
   }
 
@@ -157,12 +161,15 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
-  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>) {
+  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string, detail?: string) {
     setBusyId(id);
     try {
       const res = await fn();
-      if (!res.success && res.message) alert(res.message);
+      if (res.success) notify.success(done, detail);
+      else if (res.message) notify.error(res.message);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setBusyId(null); }
   }
 
@@ -242,19 +249,19 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
                 )}
                 {isAdmin && i.status === "PENDING" && (
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Not a company cost" disabled={busyId === i.id}
-                    onClick={() => { const r = prompt("Why is this not a company cost?"); if (r?.trim()) run(i.id, () => dismissCostItem(i.id, r)); }}>
+                    onClick={() => { const r = prompt("Why is this not a company cost?"); if (r?.trim()) run(i.id, () => dismissCostItem(i.id, r), "Marked as not a company cost", i.provider); }}>
                     <Ban className="h-4 w-4" />
                   </Button>
                 )}
                 {isAdmin && i.status === "DISMISSED" && (
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Back to pending" disabled={busyId === i.id}
-                    onClick={() => run(i.id, () => reopenCostItem(i.id))}>
+                    onClick={() => run(i.id, () => reopenCostItem(i.id), "Moved back to pending", i.provider)}>
                     <Undo2 className="h-4 w-4" />
                   </Button>
                 )}
                 {isAdmin && i.status !== "CONVERTED" && (
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="Delete (entered by mistake)" disabled={busyId === i.id}
-                    onClick={() => { if (confirm(`Delete ${i.provider} ${i.receiptDate}? Its receipt files go too.`)) run(i.id, () => deleteCostItem(i.id)); }}>
+                    onClick={() => { if (confirm(`Delete ${i.provider} ${i.receiptDate}? Its receipt files go too.`)) run(i.id, () => deleteCostItem(i.id), "Receipt deleted", `${i.provider} ${i.receiptDate}`); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}

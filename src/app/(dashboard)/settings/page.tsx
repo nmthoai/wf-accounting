@@ -12,6 +12,7 @@ import { requirePageSession } from "@/lib/session";
 import { UserManagement } from "@/components/settings/user-management";
 import { EditCategoryDialog } from "@/components/settings/edit-category-dialog";
 import { EditUnitRateDialog } from "@/components/settings/edit-unit-rate-dialog";
+import { ActionForm } from "@/components/settings/action-form";
 
 export default async function SettingsPage() {
   const session = await requirePageSession();
@@ -57,7 +58,7 @@ export default async function SettingsPage() {
               <CardDescription>Manage Invoice and Cost types</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <form action={createCategory} className="flex gap-4 items-end">
+              <ActionForm action={createCategory} success="Category added" className="flex gap-4 items-end">
                 <div className="space-y-2 flex-1">
                   <Label htmlFor="name">Name</Label>
                   <Input id="name" name="name" placeholder="e.g. Software License" required />
@@ -75,7 +76,7 @@ export default async function SettingsPage() {
                   </Select>
                 </div>
                 <Button type="submit">Add</Button>
-              </form>
+              </ActionForm>
 
               <div className="space-y-4">
                 <div>
@@ -120,7 +121,7 @@ export default async function SettingsPage() {
               <CardDescription>Reference for billing rates (Hours, Projects, Mandays)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <form action={createUnitRate} className="flex gap-4 items-end flex-wrap">
+              <ActionForm action={createUnitRate} success="Unit rate added" className="flex gap-4 items-end flex-wrap">
                 <div className="space-y-2 flex-1 min-w-[200px]">
                   <Label htmlFor="description">Description</Label>
                   <Input id="description" name="description" placeholder="e.g. Senior Developer" required />
@@ -143,7 +144,7 @@ export default async function SettingsPage() {
                   </Select>
                 </div>
                 <Button type="submit">Add</Button>
-              </form>
+              </ActionForm>
 
               <div className="space-y-2">
                 {unitRates.map((r) => (
@@ -154,9 +155,9 @@ export default async function SettingsPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <EditUnitRateDialog unitRate={r} action={updateUnitRate} />
-                      <form action={deleteUnitRate.bind(null, r.id)}>
+                      <ActionForm action={deleteUnitRate.bind(null, r.id)} success="Unit rate deleted">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                      </form>
+                      </ActionForm>
                     </div>
                   </div>
                 ))}
@@ -189,14 +190,14 @@ export default async function SettingsPage() {
                 </div>
               </div>
 
-              <form action={updateExchangeRate} className="space-y-4">
+              <ActionForm action={updateExchangeRate} success="Exchange rate updated" className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="rate">Set New Exchange Rate</Label>
                   <Input key={currentUser?.defaultUsdRate} id="rate" name="rate" type="number" step="0.01" defaultValue={currentUser?.defaultUsdRate} required />
                   <p className="text-xs text-muted-foreground">This rate will automatically populate when logging USD transactions.</p>
                 </div>
                 <Button type="submit">Update Rate</Button>
-              </form>
+              </ActionForm>
             </CardContent>
           </Card>
         </div>

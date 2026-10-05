@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Trash2, Loader2, FolderPlus, Paperclip } from "lucide-react";
 import { createProject, deleteProject, setProjectStatus } from "@/app/actions/projects";
+import { notify } from "@/components/ui/toast";
 
 type ProjectRow = {
   id: string; name: string; status: string; clientId: string | null; clientName: string | null;
@@ -27,12 +28,15 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
   const [err, setErr] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>) {
+  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string, detail?: string) {
     setBusyId(id);
     try {
       const res = await fn();
-      if (!res.success && res.message) alert(res.message);
+      if (res.success) notify.success(done, detail);
+      else if (res.message) notify.error(res.message);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setBusyId(null);
     }
@@ -48,9 +52,12 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
     try {
       const res = await createProject(fd);
       if (!res.success) { setErr(res.message || "Could not create project."); return; }
+      notify.success("Project created", (fd.get("name") as string).trim());
       form.reset();
       setProjectClientId("");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setAddingProject(false);
     }
@@ -125,17 +132,17 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                 <span className={`font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{vnd(p.net)}</span>
                 {p.status !== "ARCHIVED" ? (
                   <Button variant="outline" size="sm" className="h-8" disabled={busyId === p.id}
-                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ARCHIVED"))}>
+                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ARCHIVED"), "Project archived", p.name)}>
                     Archive
                   </Button>
                 ) : (
                   <Button variant="outline" size="sm" className="h-8" disabled={busyId === p.id}
-                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ACTIVE"))}>
+                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ACTIVE"), "Project reactivated", p.name)}>
                     Reactivate
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === p.id}
-                  onClick={() => { if (confirm(`Delete project ${p.name}?`)) run(p.id, () => deleteProject(p.id)); }}>
+                  onClick={() => { if (confirm(`Delete project ${p.name}?`)) run(p.id, () => deleteProject(p.id), "Project deleted", p.name); }}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

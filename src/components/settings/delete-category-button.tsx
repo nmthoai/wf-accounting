@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
 import { deleteCategory } from "@/app/actions/settings";
+import { notify } from "@/components/ui/toast";
 
 // Delete a category — refused, with the reason, while entries or invoices use it.
 export function DeleteCategoryButton({ id, name }: { id: string; name: string }) {
@@ -15,8 +16,11 @@ export function DeleteCategoryButton({ id, name }: { id: string; name: string })
     setBusy(true);
     try {
       const res = await deleteCategory(id);
-      if (!res.success) alert(res.message);
+      if (res.success) notify.success("Category deleted", name);
+      else notify.error(res.message || "Could not delete the category.");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setBusy(false); }
   }
   return (

@@ -13,6 +13,7 @@ import { Upload, Loader2, X, Plus, Link2, Trash2, AlertTriangle } from "lucide-r
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { previewStatement, importStatement, matchLine, unmatchEntry, deleteStatement } from "@/app/actions/bank";
 import { fmtMoney, EPS } from "@/lib/money";
+import { notify, notifyResult } from "@/components/ui/toast";
 
 export type EntryOpt = { id: string; accountId: string; date: string; amount: number; label: string; href: string }; // amount: signed, account currency
 type Linked = { id: string; label: string; date: string; amount: number; href: string };
@@ -46,9 +47,10 @@ const STATUS: Record<LineRow["status"], [string, string]> = {
   UNMATCHED: ["Not in ledger", "bg-red-100 text-red-700"],
 };
 
-async function act(fn: () => Promise<{ success: boolean; message?: string }>, refresh: () => void) {
-  const res = await fn();
-  if (!res.success && res.message) alert(res.message);
+async function act(fn: () => Promise<{ success: boolean; message?: string }>, refresh: () => void, done: string) {
+  let res;
+  try { res = await fn(); } catch { notify.error("Something went wrong — please try again."); return; }
+  notifyResult(res, done);
   refresh();
 }
 
@@ -77,6 +79,8 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
       setPreview(res.preview);
       setOpening(res.preview.opening === null ? "" : String(res.preview.opening));
       setClosing(res.preview.closing === null ? "" : String(res.preview.closing));
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setBusy(false); }
   }
 
@@ -88,8 +92,11 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
       const res = await importStatement(fd);
       if (!res.success) { setErr(res.message ?? "Could not import."); return; }
       setDone(`Imported ${res.added} new line${res.added === 1 ? "" : "s"}${res.skipped ? ` · ${res.skipped} already imported, skipped` : ""}.`);
+      notify.success("Statement imported", `${res.added} new line${res.added === 1 ? "" : "s"} added${res.skipped ? `, ${res.skipped} skipped` : ""}`);
       setPreview(null);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setBusy(false); }
   }
 
@@ -189,8 +196,11 @@ function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) 
     try {
       const res = await matchLine(line.id, picked);
       if (!res.success) { setErr(res.message ?? "Could not match."); return; }
+      notify.success(line.remaining - total > tol(line.currency) ? "Bank line part matched" : "Bank line matched", `${picked.length} ${picked.length === 1 ? "entry" : "entries"} linked`);
       setOpen(false); setPicked([]);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setBusy(false); }
   }
 
@@ -243,9 +253,9 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
   const shown = view === "all" ? lines : openLines;
   const notOnStatement = summaries.filter((s) => s.notOnStatement.length > 0);
 
-  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>) {
+  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string) {
     setBusyId(id);
-    try { await act(fn, () => router.refresh()); } finally { setBusyId(null); }
+    try { await act(fn, () => router.refresh(), done); } finally { setBusyId(null); }
   }
 
   return (
@@ -313,7 +323,7 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                   </span>
                   {isAdmin && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === s.id} title="Undo this import"
-                      onClick={() => { if (confirm(`Remove this import and its ${s.added} lines?`)) run(s.id, () => deleteStatement(s.id)); }}>
+                      onClick={() => { if (confirm(`Remove this import and its ${s.added} lines?`)) run(s.id, () => deleteStatement(s.id), "Import removed"); }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
@@ -361,14 +371,14 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                           <span key={e.id} className="flex items-center gap-1 text-xs">
                             <Link href={e.href} className="text-primary hover:underline truncate max-w-[220px]" title={`${e.date} · ${e.label}`}>{e.label}</Link>
                             <button type="button" className="text-muted-foreground hover:text-destructive" title="Unmatch" disabled={busyId === e.id}
-                              onClick={() => run(e.id, () => unmatchEntry(e.id))}><X className="h-3 w-3" /></button>
+                              onClick={() => run(e.id, () => unmatchEntry(e.id), "Entry unmatched")}><X className="h-3 w-3" /></button>
                           </span>
                         ))}
                         {l.suggestion && (
                           <span className="flex items-center gap-1 text-xs">
                             <span className="text-muted-foreground truncate max-w-[180px]" title={`${l.suggestion.date} · ${l.suggestion.label}`}>Suggested: {l.suggestion.label} · {l.suggestion.date}</span>
                             <Button size="sm" variant="outline" className="h-6 px-2 text-xs text-green-700" disabled={busyId === l.id}
-                              onClick={() => run(l.id, () => matchLine(l.id, [l.suggestion!.id]))}>Match</Button>
+                              onClick={() => run(l.id, () => matchLine(l.id, [l.suggestion!.id]), "Bank line matched")}>Match</Button>
                           </span>
                         )}
                       </div>

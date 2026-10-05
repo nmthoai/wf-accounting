@@ -13,6 +13,7 @@ import { AccountSelect, type AccountOpt } from "@/components/accounts/account-se
 import { CURRENCIES, vnToday } from "@/lib/money";
 import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 import { uploadProblem } from "@/lib/upload-limit";
+import { notify, notifyResult } from "@/components/ui/toast";
 
 // One of the evidence/tax review statuses, as a dropdown.
 function StatusSelect({ id, label, options, value, onChange, disabled }: {
@@ -110,7 +111,7 @@ export function EntryForm({
   function handleFilesChosen(e: React.ChangeEvent<HTMLInputElement>) {
     const chosen = Array.from(e.target.files ?? []);
     const problem = uploadProblem([...pendingFiles, ...chosen]);
-    if (problem) alert(problem);
+    if (problem) notify.error(problem);
     else if (chosen.length) setPendingFiles((prev) => [...prev, ...chosen]);
     e.target.value = ""; // let the same file be re-picked; state is the source of truth
   }
@@ -124,8 +125,10 @@ export function EntryForm({
     setRemovingId(id);
     try {
       const res = await deleteAttachment(id);
-      if (!res.success) { alert(res.message); return; }
+      if (!notifyResult(res, "Receipt removed", "Could not remove the receipt.")) return;
       setAttachments((prev) => prev.filter((a) => a.id !== id));
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setRemovingId(null);
     }
@@ -162,13 +165,11 @@ export function EntryForm({
         res = await createTransaction(formData);
       }
 
-      if (res.success) {
+      if (notifyResult(res, isEdit ? "Entry saved" : "Entry created")) {
         router.push(bankLine ? "/bank" : costItem ? "/costs" : "/ledger");
-      } else {
-        alert(res.message);
       }
     } catch (err) {
-      alert("Something went wrong");
+      notify.error("Something went wrong");
     } finally {
       setIsSubmitting(false);
     }

@@ -9,6 +9,7 @@ import { FileText, Loader2, Trash2, UploadCloud } from "lucide-react";
 import { addProjectDocument } from "@/app/actions/projects";
 import { deleteAttachment } from "@/app/actions/ledger";
 import { uploadProblem } from "@/lib/upload-limit";
+import { notify, notifyResult } from "@/components/ui/toast";
 
 type Doc = { id: string; fileName: string; filePath: string; createdAt: string };
 
@@ -23,12 +24,18 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
     const fd = new FormData(form);
     if (!(fd.getAll("files") as File[]).some((f) => f && f.size > 0)) return;
     const tooBig = uploadProblem(fd.getAll("files") as File[]);
-    if (tooBig) { alert(tooBig); return; }
+    if (tooBig) { notify.error(tooBig); return; }
     setUploading(true);
     try {
-      await addProjectDocument(projectId, fd);
+      const res = await addProjectDocument(projectId, fd);
+      if (res.success) {
+        const n = (fd.getAll("files") as File[]).filter((f) => f && f.size > 0).length;
+        notify.success(n === 1 ? "Document uploaded" : `${n} documents uploaded`);
+      } else notify.error(res.message || "Could not upload.");
       form.reset();
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setUploading(false);
     }
@@ -39,8 +46,10 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
     setRemovingId(id);
     try {
       const res = await deleteAttachment(id);
-      if (!res.success) alert(res.message);
+      notifyResult(res, "Document removed", "Could not remove the document.");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setRemovingId(null); }
   }
 

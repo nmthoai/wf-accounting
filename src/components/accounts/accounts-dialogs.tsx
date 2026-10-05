@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { saveAccount, createLoan, recordMovement, updateMovement, createTransfer, updateTransfer } from "@/app/actions/accounts";
 import { ACCOUNT_TYPE_LABEL, TYPE_LABEL , vnToday } from "@/lib/money";
 import { AccountSelect, type AccountOpt } from "./account-select";
+import { notify } from "@/components/ui/toast";
 
 type Result = { success: boolean; message?: string };
 
@@ -32,8 +33,8 @@ export type SingleRow = Workflow & {
 
 const today = vnToday;
 
-// Shared submit plumbing: build FormData, run the action, close + refresh on success.
-function useSubmit(close: () => void) {
+// Shared submit plumbing: build FormData, run the action, confirm, close + refresh on success.
+function useSubmit(close: () => void, done: string) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -46,8 +47,11 @@ function useSubmit(close: () => void) {
     try {
       const res = await run(fd);
       if (!res.success) { setErr(res.message || "Could not save."); return; }
+      notify.success(done);
       close();
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setSaving(false);
     }
@@ -81,7 +85,7 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
   const [type, setType] = useState(account?.type ?? "BANK");
   const [currency, setCurrency] = useState(account?.currency ?? "VND");
   const [active, setActive] = useState(account?.isActive ?? true);
-  const { saving, err, submit } = useSubmit(() => setOpen(false));
+  const { saving, err, submit } = useSubmit(() => setOpen(false), account ? "Account saved" : "Account added");
   const locked = !!account && account.movementCount > 0;
 
   return (
@@ -150,7 +154,7 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
   const [toId, setToId] = useState(transfer?.toAccountId ?? "");
   const [out, setOut] = useState(transfer ? String(transfer.amountOut) : "");
   const [inn, setInn] = useState(transfer ? String(transfer.amountIn) : "");
-  const { saving, err, submit } = useSubmit(() => setOpen(false));
+  const { saving, err, submit } = useSubmit(() => setOpen(false), transfer ? "Transfer saved" : "Transfer recorded");
 
   const pick = accounts.filter((a) => a.isActive || a.id === fromId || a.id === toId);
   const from = accounts.find((a) => a.id === fromId);
@@ -216,7 +220,7 @@ export function MovementDialog({ accounts, loans, movement, trigger }: {
   const [kind, setKind] = useState(movement?.kind ?? "CAPITAL_IN");
   const [accountId, setAccountId] = useState(movement?.accountId ?? "");
   const [loanId, setLoanId] = useState(movement?.loanId ?? "");
-  const { saving, err, submit } = useSubmit(() => setOpen(false));
+  const { saving, err, submit } = useSubmit(() => setOpen(false), movement ? "Movement saved" : "Movement recorded");
 
   // Unclassified rows (e.g. carried over from the old Balance tab) can be reclassified.
   const kinds = movement?.kind.startsWith("OTHER_") ? [...BASE_KINDS, "OTHER_IN", "OTHER_OUT"] : BASE_KINDS;
@@ -280,7 +284,7 @@ export function MovementDialog({ accounts, loans, movement, trigger }: {
 export function LoanDialog({ trigger }: { trigger: React.ReactElement }) {
   const [open, setOpen] = useState(false);
   const [currency, setCurrency] = useState("VND");
-  const { saving, err, submit } = useSubmit(() => setOpen(false));
+  const { saving, err, submit } = useSubmit(() => setOpen(false), "Loan added");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />

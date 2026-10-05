@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { linkCostItem } from "@/app/actions/costs";
+import { notify, notifyResult } from "@/components/ui/toast";
 
 export type Lookalike = { id: string; date: string; label: string; amount: string };
 
@@ -18,8 +19,10 @@ export function CostDuplicates({ itemId, lookalikes }: { itemId: string; lookali
     setBusy(id);
     try {
       const res = await linkCostItem(itemId, id);
-      if (!res.success) { alert(res.message); return; }
+      if (!notifyResult(res, "Receipt linked to the expense", "Could not link.")) return;
       router.push("/costs");
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setBusy(null); }
   }
   return (

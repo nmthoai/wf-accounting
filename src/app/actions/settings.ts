@@ -12,7 +12,7 @@ export async function createCategory(formData: FormData) {
   const type = formData.get("type") as string; // "INCOME" or "EXPENSE"
   const description = formData.get("description") as string;
 
-  if (!name || !type) throw new Error("Missing required fields");
+  if (!name || !type) return { success: false, message: "Name and type are required." };
 
   await prisma.category.create({
     data: {
@@ -23,7 +23,7 @@ export async function createCategory(formData: FormData) {
   });
 
   revalidatePath("/settings");
-  return;
+  return { success: true };
 }
 
 export async function updateCategory(id: string, formData: FormData) {
@@ -72,14 +72,14 @@ export async function updateExchangeRate(formData: FormData) {
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   const rate = parseFloat(formData.get("rate") as string);
-  if (isNaN(rate) || rate <= 0) throw new Error("Invalid rate");
+  if (isNaN(rate) || rate <= 0) return { success: false, message: "Enter a rate greater than 0." };
 
   // One company-wide default: every admin account carries it.
   await prisma.user.updateMany({ where: { role: "ADMIN" }, data: { defaultUsdRate: rate } });
 
   revalidatePath("/settings");
   revalidatePath("/entry");
-  return;
+  return { success: true };
 }
 
 export async function createUnitRate(formData: FormData) {
@@ -91,7 +91,7 @@ export async function createUnitRate(formData: FormData) {
   const unit = formData.get("unit") as string;
 
   if (!description || isNaN(rate) || !unit) {
-    throw new Error("Missing required fields");
+    return { success: false, message: "All fields are required." };
   }
 
   await prisma.unitRate.create({
@@ -99,7 +99,7 @@ export async function createUnitRate(formData: FormData) {
   });
 
   revalidatePath("/settings");
-  return;
+  return { success: true };
 }
 
 export async function updateUnitRate(id: string, formData: FormData) {
@@ -129,5 +129,5 @@ export async function deleteUnitRate(id: string) {
   });
 
   revalidatePath("/settings");
-  return;
+  return { success: true };
 }

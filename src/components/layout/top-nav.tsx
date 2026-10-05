@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut, Menu, Loader2 } from "lucide-react";
+import { LogOut, Menu, Loader2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import { navigation } from "./app-sidebar";
 import { signOutAction } from "@/app/actions/auth";
 
-export function TopNav() {
+export function TopNav({ greeting }: { greeting: string | null }) {
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -66,7 +66,23 @@ export function TopNav() {
         </span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
+        {greeting && (
+          <Link
+            href="/profile"
+            title="Your profile"
+            className={cn(
+              pathname === "/profile" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              "inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors"
+            )}
+          >
+            <UserRound className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="hidden sm:inline max-w-[14rem] truncate">
+              Hello, <span className="font-medium text-foreground">{greeting}</span>
+            </span>
+            <span className="sr-only sm:hidden">Your profile</span>
+          </Link>
+        )}
         <Dialog>
           <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2" />}>
             <LogOut className="h-4 w-4" />

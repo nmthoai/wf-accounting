@@ -10,6 +10,7 @@ import { Trash2, Loader2, UserPlus, Truck } from "lucide-react";
 import { createClient, deleteClient, updateClient } from "@/app/actions/clients";
 import { createVendor, deleteVendor, updateVendor } from "@/app/actions/vendors";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
+import { notify } from "@/components/ui/toast";
 
 type ClientRow = { id: string; name: string; email: string | null; phone: string | null; projectCount: number; invoiceCount: number; revenue: number };
 type VendorRow = { id: string; name: string; email: string | null; phone: string | null; spend: number; txnCount: number };
@@ -22,12 +23,15 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
   const [addingVendor, setAddingVendor] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>) {
+  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string, detail?: string) {
     setBusyId(id);
     try {
       const res = await fn();
-      if (!res.success && res.message) alert(res.message);
+      if (res.success) notify.success(done, detail);
+      else if (res.message) notify.error(res.message);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setBusyId(null);
     }
@@ -41,9 +45,12 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
     const form = e.currentTarget;
     try {
       const res = await create(new FormData(form));
-      if (!res.success) { alert(res.message); return; }
+      if (!res.success) { notify.error(res.message || "Could not save."); return; }
+      notify.success(kind === "client" ? "Client added" : "Vendor added");
       form.reset();
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setBusy(false);
     }
@@ -85,7 +92,7 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
                   <span className="text-sm font-semibold text-green-700" title="Revenue received">{vnd(c.revenue)}</span>
                   <EditContactDialog contact={{ id: c.id, name: c.name, email: c.email, phone: c.phone }} kind="client" action={updateClient} />
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === c.id}
-                    onClick={() => { if (confirm(`Delete client ${c.name}?`)) run(c.id, () => deleteClient(c.id)); }}>
+                    onClick={() => { if (confirm(`Delete client ${c.name}?`)) run(c.id, () => deleteClient(c.id), "Client deleted", c.name); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -130,7 +137,7 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
                   <span className="text-sm font-semibold text-red-600">{vnd(v.spend)}</span>
                   <EditContactDialog contact={{ id: v.id, name: v.name, email: v.email, phone: v.phone }} kind="vendor" action={updateVendor} />
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === v.id}
-                    onClick={() => { if (confirm(`Delete vendor ${v.name}?`)) run(v.id, () => deleteVendor(v.id)); }}>
+                    onClick={() => { if (confirm(`Delete vendor ${v.name}?`)) run(v.id, () => deleteVendor(v.id), "Vendor deleted", v.name); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

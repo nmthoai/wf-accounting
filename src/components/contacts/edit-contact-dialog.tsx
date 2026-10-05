@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pencil, Loader2 } from "lucide-react";
+import { notify } from "@/components/ui/toast";
 
 type Contact = { id: string; name: string; email: string | null; phone: string | null };
 
@@ -31,8 +32,11 @@ export function EditContactDialog({
     try {
       const res = await action(contact.id, new FormData(e.currentTarget));
       if (!res.success) { setErr(res.message || "Could not save."); return; }
+      notify.success(kind === "client" ? "Client updated" : "Vendor updated");
       setOpen(false);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setSaving(false);
     }

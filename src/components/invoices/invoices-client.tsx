@@ -12,6 +12,7 @@ import { createInvoice, voidInvoice, deleteInvoice, unlinkAllocation } from "@/a
 import { uploadProblem } from "@/lib/upload-limit";
 import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
 import { RecordPaymentDialog, LinkEntryDialog, type Candidate } from "@/components/invoices/payment-dialogs";
+import { notify, notifyResult } from "@/components/ui/toast";
 import type { AccountOpt } from "@/components/accounts/account-select";
 import { EPS, fmtMoney, fmtVnd, totalsList, type Totals , vnToday } from "@/lib/money";
 
@@ -60,12 +61,14 @@ export function InvoicesClient({
   // Receivables become income; payables become an expense — show the matching categories.
   const cats = categories.filter((c) => c.type === (direction === "PAYABLE" ? "EXPENSE" : "INCOME"));
 
-  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>) {
+  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string) {
     setBusyId(id);
     try {
       const res = await fn();
-      if (!res.success && res.message) alert(res.message);
+      notifyResult(res, done);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setBusyId(null);
     }
@@ -90,7 +93,10 @@ export function InvoicesClient({
       if (!res.success) { setErr(res.message || "Could not save."); return; }
       form.reset();
       setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setShowForm(false);
+      notify.success(direction === "PAYABLE" ? "Bill created" : "Invoice created");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setCreating(false);
     }
@@ -264,13 +270,13 @@ export function InvoicesClient({
                   {i.status !== "VOID" && <LinkEntryDialog invoice={i} candidates={candidates} />}
                   {isAdmin && i.allocations.length === 0 && i.status === "OPEN" && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Void" disabled={busyId === i.id}
-                      onClick={() => { if (confirm("Void this?")) run(i.id, () => voidInvoice(i.id)); }}>
+                      onClick={() => { if (confirm("Void this?")) run(i.id, () => voidInvoice(i.id), i.direction === "PAYABLE" ? "Bill voided" : "Invoice voided"); }}>
                       <Ban className="h-4 w-4" />
                     </Button>
                   )}
                   {isAdmin && i.allocations.length === 0 && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="Delete" disabled={busyId === i.id}
-                      onClick={() => { if (confirm("Delete this?")) run(i.id, () => deleteInvoice(i.id)); }}>
+                      onClick={() => { if (confirm("Delete this?")) run(i.id, () => deleteInvoice(i.id), i.direction === "PAYABLE" ? "Bill deleted" : "Invoice deleted"); }}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
@@ -298,7 +304,7 @@ export function InvoicesClient({
                           <span className="font-medium">{fmtMoney(a.amount, i.currency)}</span>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" title="Unlink (the ledger entry stays)"
                             disabled={busyId === a.id}
-                            onClick={() => { if (confirm("Unlink this entry from the invoice? The ledger entry itself stays.")) run(a.id, () => unlinkAllocation(a.id)); }}>
+                            onClick={() => { if (confirm("Unlink this entry from the invoice? The ledger entry itself stays.")) run(a.id, () => unlinkAllocation(a.id), "Entry unlinked"); }}>
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </span>

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, KeyRound, ShieldOff, UserPlus, Loader2, LockOpen } from "lucide-react";
 import { createUser, deleteUser, setUserActive, resetUserPassword, resetUser2FA, unlockUser } from "@/app/actions/users";
+import { notify, notifyResult } from "@/components/ui/toast";
 
 type ManagedUser = {
   id: string;
@@ -33,24 +34,30 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
     setAddError("");
     const form = e.currentTarget;
     try {
-      const res = await createUser(new FormData(form));
+      const data = new FormData(form);
+      const res = await createUser(data);
       if (!res.success) {
         setAddError(res.message || "Could not create user.");
         return;
       }
+      notify.success("User created", (data.get("username") as string)?.trim());
       form.reset();
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setAdding(false);
     }
   }
 
-  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>) {
+  async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string) {
     setBusyId(id);
     try {
       const res = await fn();
-      if (!res.success && res.message) alert(res.message);
+      notifyResult(res, done, "Could not update the user.");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setBusyId(null);
     }
@@ -117,7 +124,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                 {/* Unlock (only when locked out) */}
                 {u.locked && (
                   <Button variant="outline" size="sm" className="h-8 gap-1 text-amber-700" disabled={busyId === u.id}
-                    onClick={() => run(u.id, () => unlockUser(u.id))}>
+                    onClick={() => run(u.id, () => unlockUser(u.id), `Unlocked ${u.username}`)}>
                     <LockOpen className="h-3.5 w-3.5" /> Unlock
                   </Button>
                 )}
@@ -135,7 +142,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                       onSubmit={async (e) => {
                         e.preventDefault();
                         const fd = new FormData(e.currentTarget);
-                        await run(u.id, () => resetUserPassword(u.id, fd));
+                        await run(u.id, () => resetUserPassword(u.id, fd), `Password reset for ${u.username}`);
                       }}
                       className="space-y-4 pt-2"
                     >
@@ -160,7 +167,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                   disabled={busyId === u.id}
                   onClick={() => {
                     if (confirm(`Reset 2FA for ${u.username}? They'll re-enrol on next login.`))
-                      run(u.id, () => resetUser2FA(u.id));
+                      run(u.id, () => resetUser2FA(u.id), `2FA reset for ${u.username}`);
                   }}
                 >
                   <ShieldOff className="h-4 w-4" />
@@ -172,7 +179,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                   size="sm"
                   className="h-8"
                   disabled={busyId === u.id}
-                  onClick={() => run(u.id, () => setUserActive(u.id, !u.isActive))}
+                  onClick={() => run(u.id, () => setUserActive(u.id, !u.isActive), `${u.isActive ? "Deactivated" : "Activated"} ${u.username}`)}
                 >
                   {u.isActive ? "Deactivate" : "Activate"}
                 </Button>
@@ -186,7 +193,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                   disabled={busyId === u.id}
                   onClick={() => {
                     if (confirm(`Delete ${u.username}? This cannot be undone.`))
-                      run(u.id, () => deleteUser(u.id));
+                      run(u.id, () => deleteUser(u.id), `Deleted ${u.username}`);
                   }}
                 >
                   <Trash2 className="h-4 w-4" />

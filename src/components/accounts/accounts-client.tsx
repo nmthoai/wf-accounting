@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Wallet, PiggyBank, User, Landmark, ArrowLeftRight, Plus, Pencil, Trash2, AlertTriangle, Lock, Undo2 } from "lucide-react";
 import { deleteTransaction, reverseEntry } from "@/app/actions/ledger";
+import { notify, notifyResult } from "@/components/ui/toast";
 import { ACCOUNT_TYPE_LABEL, TYPE_LABEL, fmtMoney, fmtVnd, totalsList, type Totals } from "@/lib/money";
 import {
   AccountDialog, TransferDialog, MovementDialog, LoanDialog,
@@ -55,15 +56,19 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
     setBusyId(id);
     try {
       const res = await reverseEntry(id, reason);
-      if (!res.success && res.message) alert(res.message);
+      notifyResult(res, "Movement reversed", "Could not reverse.");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally { setBusyId(null); }
   }
 
   async function remove(id: string) {
     if (!confirm("Delete this movement? A transfer deletes both sides.")) return;
     setBusyId(id);
-    try { await deleteTransaction(id); router.refresh(); } finally { setBusyId(null); }
+    try { await deleteTransaction(id); notify.success("Movement deleted"); router.refresh(); }
+    catch { notify.error("Something went wrong — please try again."); }
+    finally { setBusyId(null); }
   }
 
   const editButton = <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Edit"><Pencil className="h-4 w-4" /></Button>;

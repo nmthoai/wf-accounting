@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pencil, Loader2 } from "lucide-react";
+import { notify } from "@/components/ui/toast";
 
 type Category = { id: string; name: string; type: string; description: string | null };
 
@@ -34,7 +35,10 @@ export function EditCategoryDialog({
       const res = await action(category.id, fd);
       if (!res.success) { setErr(res.message || "Could not save."); return; }
       setOpen(false);
+      notify.success("Category saved");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setSaving(false);
     }

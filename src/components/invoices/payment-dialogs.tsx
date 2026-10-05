@@ -11,6 +11,7 @@ import { CheckCircle2, Link2, Loader2 } from "lucide-react";
 import { recordPayment, linkToInvoice } from "@/app/actions/invoices";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { fmtMoney , vnToday } from "@/lib/money";
+import { notify } from "@/components/ui/toast";
 
 type Inv = { id: string; number: string | null; direction: string; currency: string; difference: number };
 export type Candidate = {
@@ -20,7 +21,7 @@ export type Candidate = {
 
 const label = (i: Inv) => i.number || (i.direction === "PAYABLE" ? "bill" : "invoice");
 
-function useSubmit(close: () => void) {
+function useSubmit(close: () => void, done: string) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -34,7 +35,10 @@ function useSubmit(close: () => void) {
       const res = await run(fd);
       if (!res.success) { setErr(res.message || "Could not save."); return; }
       close();
+      notify.success(done);
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setSaving(false);
     }
@@ -45,7 +49,7 @@ function useSubmit(close: () => void) {
 // Record money received/paid against this invoice — all of it or part.
 export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate }: { invoice: Inv; accounts: AccountOpt[]; defaultUsdRate: number }) {
   const [open, setOpen] = useState(false);
-  const { saving, err, submit } = useSubmit(() => setOpen(false));
+  const { saving, err, submit } = useSubmit(() => setOpen(false), "Payment recorded");
   // VND invoices settle through VND accounts; foreign ones through any account.
   const usable = accounts.filter((a) => a.isActive && (invoice.currency !== "VND" || a.currency === "VND"));
   const suggested = usable.find((a) => a.type === "BANK" && a.currency === invoice.currency) ?? usable.find((a) => a.type === "BANK");
@@ -116,7 +120,7 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<"PAYMENT" | "FEE">("PAYMENT");
   const [entryId, setEntryId] = useState("");
-  const { saving, err, submit } = useSubmit(() => setOpen(false));
+  const { saving, err, submit } = useSubmit(() => setOpen(false), `${kind === "FEE" ? "Fee" : "Payment"} linked to ${invoice.direction === "PAYABLE" ? "bill" : "invoice"}`);
 
   const wanted = kind === "FEE" ? "EXPENSE" : invoice.direction === "RECEIVABLE" ? "INCOME" : "EXPENSE";
   const choices = candidates.filter((c) => c.type === wanted && c.currency === invoice.currency && !c.linkedTo.includes(invoice.id));

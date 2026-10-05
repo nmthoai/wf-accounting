@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pencil, Loader2 } from "lucide-react";
 import { updateProject } from "@/app/actions/projects";
+import { notify } from "@/components/ui/toast";
 
 type Project = {
   id: string; name: string; clientId: string | null; status: string;
@@ -34,7 +35,10 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
       const res = await updateProject(project.id, fd);
       if (!res.success) { setErr(res.message || "Could not save."); return; }
       setOpen(false);
+      notify.success("Project saved");
       router.refresh();
+    } catch {
+      notify.error("Something went wrong — please try again.");
     } finally {
       setSaving(false);
     }

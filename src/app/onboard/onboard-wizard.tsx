@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { notify } from "@/components/ui/toast";
 import { Loader2, KeyRound, ShieldCheck } from "lucide-react";
 
 type Step = "password" | "twofa";
@@ -73,13 +74,18 @@ export function OnboardWizard({
         setError(res?.message || "Could not update password.");
         return;
       }
+      notify.success("Password changed");
       // Password done. Either move to 2FA or finish.
       if (needs2FA) {
         setStep("twofa");
       } else {
         await finishOnboarding(); // signs out → /login
       }
-    } catch {
+    } catch (err: unknown) {
+      // Allow Next.js redirects (from finishOnboarding) to propagate
+      const message = (err as { message?: string; digest?: string })?.message || "";
+      const digest = (err as { digest?: string })?.digest || "";
+      if (message.includes("NEXT_REDIRECT") || digest.includes("NEXT_REDIRECT")) throw err;
       setError("Something went wrong. Please try again.");
     } finally {
       setBusy(false);
@@ -96,6 +102,7 @@ export function OnboardWizard({
         setError(res.message as string);
         return;
       }
+      notify.success("Two-factor sign-in enabled");
       await finishOnboarding(); // signs out → /login
     } catch (err: unknown) {
       // Allow Next.js redirects (from finishOnboarding) to propagate

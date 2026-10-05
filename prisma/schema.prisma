@@ -10,6 +10,7 @@ datasource db {
 model User {
   id               String   @id @default(cuid())
   username         String   @unique
+  displayName      String?                   // shown in the greeting; the username stays the login and audit name
   passwordHash     String
   twoFactorSecret  String?
   twoFactorEnabled Boolean  @default(false)
