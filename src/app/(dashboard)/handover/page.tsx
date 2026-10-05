@@ -1,19 +1,20 @@
 import Link from "next/link";
+import { requirePageSession } from "@/lib/session";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MonthPicker } from "@/components/reports/month-picker";
 import { Download, CheckCircle2, AlertTriangle } from "lucide-react";
 import { collect, questions, summarize } from "@/lib/handover";
-import { fmtMoney, fmtVnd } from "@/lib/money";
+import { fmtMoney, fmtVnd, vnToday } from "@/lib/money";
 
 // Last month by default — the one usually being handed over.
 function lastMonth() {
-  const d = new Date();
-  const m = new Date(Date.UTC(d.getFullYear(), d.getMonth() - 1, 1));
-  return m.toISOString().slice(0, 7);
+  const [y, m] = vnToday().split("-").map(Number);
+  return new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7);
 }
 
 export default async function HandoverPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  await requirePageSession(); // second line behind the proxy
   const sp = await searchParams;
   const month = sp.month && /^\d{4}-\d{2}$/.test(sp.month) ? sp.month : lastMonth();
   const data = await collect(month);

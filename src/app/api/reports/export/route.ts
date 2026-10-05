@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import * as xlsx from "xlsx";
-import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, EPS, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
+import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, EPS, BOOKED_ALLOCATIONS, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
 import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
@@ -14,7 +14,7 @@ function sheet(rows: Record<string, unknown>[], headers: string[]) {
 }
 
 export async function GET(req: Request) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) return new Response("Unauthorized", { status: 401 });
 
   const url = new URL(req.url);
@@ -83,7 +83,7 @@ export async function GET(req: Request) {
     const invoices = await prisma.invoice.findMany({
       where: { issueDate: { gte: start, lt: end } },
       orderBy: { issueDate: "asc" },
-      include: { client: true, vendor: true, project: true, category: true, allocations: true },
+      include: { client: true, vendor: true, project: true, category: true, allocations: BOOKED_ALLOCATIONS },
     });
 
     const headers = ["Issue Date", "Due Date", "Direction", "Number", "Party", "Project", "Category", "Currency",

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requirePageSession } from "@/lib/session";
 import type { Prisma } from "@prisma/client";
 import { CostsClient, type CostRow } from "@/components/costs/costs-client";
 import type { Totals } from "@/lib/money";
@@ -15,7 +15,7 @@ const VIEWS: Record<string, Prisma.CostItemWhereInput | undefined> = {
 export default async function CostsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const sp = await searchParams;
   const view = sp.view && sp.view in VIEWS ? sp.view : "pending";
-  const session = await auth();
+  const session = await requirePageSession();
   const [items, all] = await Promise.all([
     prisma.costItem.findMany({
       where: VIEWS[view],

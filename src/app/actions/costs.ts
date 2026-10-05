@@ -1,16 +1,16 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { persistUploads, removeUploadFile } from "@/lib/uploads";
 import { CURRENCIES } from "@/lib/money";
 import { DOC_STATUS } from "@/lib/review";
 import { PAYER, REIMBURSEMENT } from "@/lib/costs";
-import { convertCostItem } from "@/lib/cost-items";
+import { convertCostItem, CostItemTaken } from "@/lib/cost-items";
 
 async function currentUser() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   return { name: session.user.name ?? null, isAdmin: session.user.role === "ADMIN" };
 }
@@ -21,6 +21,22 @@ function revalidateAll() {
 
 const day = (s: string) => (/^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T00:00:00.000Z`) : null);
 
+const str = (fd: FormData, k: string) => ((fd.get(k) as string) || "").trim();
+// A value from a fixed list (own keys only — "toString" and friends don't count).
+const pick = (map: Record<string, string>, v: string, fallback: string) => (Object.hasOwn(map, v) ? v : fallback);
+
+// The review — always editable.
+function parseReview(fd: FormData) {
+  return {
+    payer: pick(PAYER, str(fd, "payer"), "UNKNOWN"),
+    reimbursement: pick(REIMBURSEMENT, str(fd, "reimbursement"), "UNRESOLVED"),
+    docStatus: pick(DOC_STATUS, str(fd, "docStatus"), "RECEIPT"),
+    renewalDate: day(str(fd, "renewalDate")),
+    reviewNote: str(fd, "reviewNote") || null,
+  };
+}
+
+// The receipt's evidence — fixed once the item is in the ledger.
 function parseItem(fd: FormData) {
   const str = (k: string) => ((fd.get(k) as string) || "").trim();
   const provider = str("provider");
@@ -31,9 +47,6 @@ function parseItem(fd: FormData) {
   if (!receiptDate) return { error: "Enter the date on the receipt." };
   if (!(amount >= 0)) return { error: "Enter the amount as printed." };
   if (!CURRENCIES.includes(currency)) return { error: "Unsupported currency." };
-  const payer = str("payer") in PAYER ? str("payer") : "UNKNOWN";
-  const reimbursement = str("reimbursement") in REIMBURSEMENT ? str("reimbursement") : "UNRESOLVED";
-  const docStatus = str("docStatus") in DOC_STATUS ? str("docStatus") : "RECEIPT";
   const from = day(str("servicePeriodFrom")), to = day(str("servicePeriodTo"));
   if (from && to && from > to) return { error: "The service period ends before it starts." };
   return {
@@ -41,7 +54,7 @@ function parseItem(fd: FormData) {
       provider, receiptDate, amount, currency, servicePeriodFrom: from, servicePeriodTo: to,
       receiptNumber: str("receiptNumber") || null, billingEntity: str("billingEntity") || null, notes: str("notes") || null,
     },
-    review: { payer, reimbursement, docStatus, renewalDate: day(str("renewalDate")), reviewNote: str("reviewNote") || null },
+    review: parseReview(fd),
   };
 }
 
@@ -61,21 +74,27 @@ async function duplicateOf(e: { provider: string; receiptNumber: string | null; 
 
 export async function saveCostItem(id: string | null, fd: FormData) {
   const me = await currentUser();
-  const parsed = parseItem(fd);
-  if ("error" in parsed) return { success: false, message: parsed.error };
-
   if (id) {
     const item = await prisma.costItem.findUnique({ where: { id } });
     if (!item) return { success: false, message: "Not found." };
-    // Once in the ledger, the receipt's evidence stays as recorded; only the review moves on.
-    const data = item.status === "CONVERTED" ? parsed.review : { ...parsed.evidence, ...parsed.review };
-    if (item.status !== "CONVERTED") {
-      const dup = await duplicateOf(parsed.evidence, id);
-      if (dup) return { success: false, message: `Already in the register: ${dup.provider} ${dup.receiptNumber ?? dup.receiptDate.toISOString().slice(0, 10)}.` };
+    // Once in the ledger, the receipt's evidence stays as recorded (the form
+    // doesn't even send it); only the review moves on, and new receipts
+    // become evidence on the expense too.
+    if (item.status === "CONVERTED") {
+      await prisma.costItem.update({ where: { id }, data: parseReview(fd) });
+      await persistUploads(fd.getAll("files") as File[], { costItemId: id, transactionId: item.transactionId ?? undefined });
+      revalidateAll();
+      return { success: true };
     }
-    await prisma.costItem.update({ where: { id }, data });
+    const parsed = parseItem(fd);
+    if ("error" in parsed) return { success: false, message: parsed.error };
+    const dup = await duplicateOf(parsed.evidence, id);
+    if (dup) return { success: false, message: `Already in the register: ${dup.provider} ${dup.receiptNumber ?? dup.receiptDate.toISOString().slice(0, 10)}.` };
+    await prisma.costItem.update({ where: { id }, data: { ...parsed.evidence, ...parsed.review } });
     await persistUploads(fd.getAll("files") as File[], { costItemId: id });
   } else {
+    const parsed = parseItem(fd);
+    if ("error" in parsed) return { success: false, message: parsed.error };
     const dup = await duplicateOf(parsed.evidence);
     if (dup) return { success: false, message: `Already in the register: ${dup.provider} ${dup.receiptNumber ?? dup.receiptDate.toISOString().slice(0, 10)}.` };
     const item = await prisma.costItem.create({ data: { ...parsed.evidence, ...parsed.review, createdBy: me.name } });
@@ -130,7 +149,12 @@ export async function linkCostItem(id: string, transactionId: string) {
   if (!t || t.type !== "EXPENSE") return { success: false, message: "Choose an expense." };
   if (t.reversalOfId || t.reversedBy) return { success: false, message: "That expense has been reversed — link its correction." };
   if (t.costItem) return { success: false, message: "That expense already comes from another register item." };
-  await convertCostItem(id, transactionId, me.name);
+  try {
+    await convertCostItem(id, transactionId, me.name);
+  } catch (e) {
+    if (e instanceof CostItemTaken) return { success: false, message: "That register item is already in the ledger or dismissed." };
+    throw e;
+  }
   revalidateAll();
   return { success: true };
 }

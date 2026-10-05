@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import { requirePageSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MonthPicker } from "@/components/reports/month-picker";
 import { ReportDownloads } from "@/components/reports/report-downloads";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
-import { toVnd, fmtMoney, totalsList, BOOKED, type Totals } from "@/lib/money";
+import { toVnd, fmtMoney, totalsList, BOOKED, vnToday, type Totals } from "@/lib/money";
 import { DOC_STATUS, DOC_OPEN, CIT_STATUS } from "@/lib/review";
 
 // P&L counts income and expenses only — transfers, capital and loans are not
@@ -32,11 +33,12 @@ function byCategory(txns: { type: string; amount: number; exchangeRate: number; 
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  await requirePageSession(); // second line behind the proxy
   const sp = await searchParams;
   const now = new Date();
   const month = sp.month && /^\d{4}-\d{2}$/.test(sp.month)
     ? sp.month
-    : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    : vnToday().slice(0, 7);
   const { start, end, prevStart } = monthBounds(month);
 
   const [txns, prevTxns, drafts] = await Promise.all([
@@ -64,12 +66,15 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   // Tax review — kept apart from the P&L: an expense is in the books once
   // recorded, but deductible or VAT-claimable only once reviewed.
   const expenses = txns.filter((t) => t.type === "EXPENSE");
+  // A reversal and the entry it cancels net to zero and need no further review.
+  const cancelled = new Set(txns.flatMap((t) => (t.reversalOfId ? [t.reversalOfId, t.id] : [])));
+  const live = (t: { id: string }) => !cancelled.has(t.id);
   const cit = Object.keys(CIT_STATUS).map((k) => [CIT_STATUS[k], expenses.filter((t) => t.citStatus === k).reduce((a, t) => a + toVnd(t), 0)] as [string, number]);
   const vatClaimable: Totals = {};
   for (const t of expenses) if (t.vatStatus === "CLAIMABLE" && t.vatAmount) vatClaimable[t.currency] = (vatClaimable[t.currency] ?? 0) + t.vatAmount;
-  const vatPending = expenses.filter((t) => t.vatStatus === "PENDING").length;
+  const vatPending = expenses.filter((t) => live(t) && t.vatStatus === "PENDING").length;
   const docsOpen = DOC_OPEN.map((k) => {
-    const rows = txns.filter((t) => t.docStatus === k);
+    const rows = txns.filter((t) => live(t) && t.docStatus === k);
     return { label: DOC_STATUS[k], count: rows.length, vnd: rows.reduce((a, t) => a + toVnd(t), 0) };
   }).filter((d) => d.count > 0);
 
@@ -81,7 +86,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const label = new Date(start).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 
   // Defaults for the Excel export range: year-to-date.
-  const exportFrom = `${now.getFullYear()}-01-01`;
+  const exportFrom = `${vnToday().slice(0, 4)}-01-01`;
   const exportTo = now.toISOString().slice(0, 10);
 
   const Lines = ({ rows, total, color }: { rows: [string, number][]; total: number; color: string }) => (

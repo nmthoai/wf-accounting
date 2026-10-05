@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { requirePageSession } from "@/lib/session";
 import { ProjectsClient } from "@/components/projects/projects-client";
-import { toVnd, settlement, totalsList, fmtMoney, BOOKED, type Totals } from "@/lib/money";
+import { toVnd, settlement, totalsList, fmtMoney, BOOKED, BOOKED_ALLOCATIONS, type Totals } from "@/lib/money";
 
 export default async function ProjectsPage() {
+  await requirePageSession(); // second line behind the proxy
   const [projects, clients, openInvoices] = await Promise.all([
     prisma.project.findMany({ orderBy: { createdAt: "desc" }, include: { client: true, transactions: { where: BOOKED }, _count: { select: { attachments: true } } } }), // drafts wait for review
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.invoice.findMany({ where: { status: { in: ["OPEN", "PARTIAL"] } }, select: { projectId: true, amount: true, currency: true, allocations: true } }),
+    prisma.invoice.findMany({ where: { status: { in: ["OPEN", "PARTIAL"] } }, select: { projectId: true, amount: true, currency: true, allocations: BOOKED_ALLOCATIONS } }),
   ]);
 
   const projectRows = projects.map((p) => {

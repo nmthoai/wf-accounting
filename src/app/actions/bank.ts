@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { parseStatement, dedupeKeys } from "@/lib/bank-statement";
@@ -18,7 +18,7 @@ function revalidateAll() {
 
 // Read the uploaded statement and find which of its lines are already imported.
 async function readUpload(fd: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   const file = fd.get("file");
   const accountId = fd.get("accountId") as string;
@@ -123,7 +123,7 @@ export async function importStatement(fd: FormData) {
 
 // Reconcile a bank line to one or more ledger entries (their total can't exceed the line).
 export async function matchLine(lineId: string, transactionIds: string[]) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   const ids = [...new Set(transactionIds)];
   if (ids.length === 0) return { success: false, message: "Choose at least one ledger entry." };
@@ -143,10 +143,11 @@ export async function matchLine(lineId: string, transactionIds: string[]) {
 }
 
 export async function unmatchEntry(transactionId: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   const t = await prisma.transaction.findUnique({ where: { id: transactionId } });
   if (!t?.bankLineId) return { success: true };
+  if (t.status === "POSTED" && session.user.role !== "ADMIN") return { success: false, message: "That entry is posted — only the owner can unmatch it." };
   await prisma.transaction.update({ where: { id: transactionId }, data: { bankLineId: null } });
   await record([{ entityId: t.id, action: "UNMATCH", field: "bankLineId", oldValue: t.bankLineId }], session.user.name);
   revalidateAll();
@@ -155,10 +156,16 @@ export async function unmatchEntry(transactionId: string) {
 
 // Undo an import (admin) — only while none of its lines are matched.
 export async function deleteStatement(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
   const matched = await prisma.transaction.count({ where: { bankLine: { statementId: id } } });
   if (matched > 0) return { success: false, message: "Some of its lines are matched to ledger entries — unmatch them first." };
+  // Lines belong to the import that brought them in first; a later, overlapping
+  // statement skipped them as duplicates and would lose them.
+  const st = await prisma.bankStatement.findUnique({ where: { id } });
+  if (!st) return { success: true };
+  const overlap = await prisma.bankStatement.count({ where: { id: { not: id }, accountId: st.accountId, periodFrom: { lte: st.periodTo }, periodTo: { gte: st.periodFrom } } });
+  if (overlap > 0) return { success: false, message: "Another imported statement overlaps this period — undo that one first." };
   await prisma.bankStatement.delete({ where: { id } });
   revalidateAll();
   return { success: true };

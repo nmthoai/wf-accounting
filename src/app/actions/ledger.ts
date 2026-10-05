@@ -1,22 +1,22 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { persistUploads, removeUploadFile } from "@/lib/uploads";
 import { resolveFx } from "@/lib/fx";
-import { CURRENCIES } from "@/lib/money";
+import { CURRENCIES, EPS } from "@/lib/money";
 import { refreshInvoiceStatus, invoicesOf } from "@/lib/invoice-status";
 import { reviewProblem } from "@/lib/review";
 import { bankLinkProblem } from "@/lib/bank-match";
 import { diff, record, snapshot, type Change } from "@/lib/history";
-import { costItemProblem, convertCostItem } from "@/lib/cost-items";
+import { costItemProblem, convertCostItem, CostItemTaken } from "@/lib/cost-items";
 
 type Decisions = { purposeStatus: string; citStatus: string; vatStatus: string };
 
 async function currentUser() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   return { name: session.user.name ?? null, isAdmin: session.user.role === "ADMIN" };
 }
@@ -121,11 +121,22 @@ export async function createTransaction(formData: FormData) {
   }
 
   // The owner's entries count as reviewed; anyone else's wait for review.
-  const transaction = await prisma.transaction.create({
-    data: { ...parsed.data, bankLineId, correctionOfId, status: me.isAdmin ? "REVIEWED" : "DRAFT", createdBy: me.name },
-  });
-  await record([{ entityId: transaction.id, action: "CREATE", newValue: snapshot(transaction), reason: correctionOfId ? "Correction of a reversed entry" : null }], me.name);
-  if (costItemId) await convertCostItem(costItemId, transaction.id, me.name);
+  // Creating the expense and converting its register item happen together, so
+  // two submits can't both turn the same receipt into an expense.
+  let transaction;
+  try {
+    transaction = await prisma.$transaction(async (tx) => {
+      const t = await tx.transaction.create({
+        data: { ...parsed.data, bankLineId, correctionOfId, status: me.isAdmin ? "REVIEWED" : "DRAFT", createdBy: me.name },
+      });
+      await record([{ entityId: t.id, action: "CREATE", newValue: snapshot(t), reason: correctionOfId ? "Correction of a reversed entry" : null }], me.name, tx);
+      if (costItemId) await convertCostItem(costItemId, t.id, me.name, tx);
+      return t;
+    });
+  } catch (e) {
+    if (e instanceof CostItemTaken) return { success: false, message: "That register item is already in the ledger or dismissed." };
+    throw e;
+  }
 
   await persistUploads(formData.getAll("files") as File[], { transactionId: transaction.id });
   revalidateAll();
@@ -161,7 +172,10 @@ export async function deleteTransaction(id: string) {
 
 export async function editTransaction(id: string, formData: FormData) {
   const me = await currentUser();
-  const existing = await prisma.transaction.findUnique({ where: { id } });
+  const existing = await prisma.transaction.findUnique({
+    where: { id },
+    include: { reversedBy: { select: { id: true } }, allocations: { include: { invoice: { select: { direction: true, currency: true } } } } },
+  });
   if (!existing) return { success: false, message: "Not found." };
   if (existing.type !== "INCOME" && existing.type !== "EXPENSE") {
     return { success: false, message: "Edit transfers, capital and loans on the Accounts page." };
@@ -171,11 +185,16 @@ export async function editTransaction(id: string, formData: FormData) {
   // Posted: the money and classification are locked — only the evidence and
   // tax review (often decided after handover) and new attachments can change.
   if (existing.status === "POSTED") {
-    if (existing.reversalOfId) return { success: false, message: "A reversal can't be changed." };
+    // A reversal and the entry it cancels must keep mirroring each other.
+    if (existing.reversalOfId || existing.reversedBy) return { success: false, message: "A reversed entry and its reversal can't change." };
     const r = parseReview(formData, existing.type, existing.amount, me.isAdmin, existing);
     if ("error" in r) return { success: false, message: r.error };
-    await prisma.transaction.update({ where: { id }, data: r.review });
-    await record(diff(id, existing, r.review, reason), me.name);
+    // The VAT on a posted expense feeds the accountant's figures — the owner's to change.
+    const review = me.isAdmin ? r.review : { ...r.review, vatAmount: existing.vatAmount };
+    const problem = reviewProblem({ type: existing.type, amount: existing.amount, ...review });
+    if (problem) return { success: false, message: problem };
+    await prisma.transaction.update({ where: { id }, data: review });
+    await record(diff(id, existing, review, reason), me.name);
     await persistUploads(formData.getAll("files") as File[], { transactionId: id });
     revalidateAll(id);
     return { success: true };
@@ -183,6 +202,19 @@ export async function editTransaction(id: string, formData: FormData) {
 
   const parsed = await parseEntry(formData, me.isAdmin, existing);
   if ("error" in parsed) return { success: false, message: parsed.error };
+  // An entry at the default rate keeps the rate it was booked at — editing it
+  // doesn't re-price it at today's default.
+  if (parsed.data.rateSource === "DEFAULT" && existing.rateSource === "DEFAULT" && parsed.data.currency === existing.currency) {
+    parsed.data.exchangeRate = existing.exchangeRate;
+  }
+  // Payments linked to invoices must still fit them.
+  if (existing.allocations.length) {
+    const d = parsed.data;
+    const allocated = existing.allocations.reduce((sum, a) => sum + a.amount, 0);
+    const fits = allocated <= d.amount + EPS && existing.allocations.every((a) =>
+      d.currency === a.invoice.currency && d.type === (a.kind === "FEE" || a.invoice.direction === "PAYABLE" ? "EXPENSE" : "INCOME"));
+    if (!fits) return { success: false, message: "This entry settles an invoice — unlink it on the Invoices page before changing its amount, currency or type." };
+  }
   if (existing.bankLineId) {
     const problem = await bankLinkProblem(existing.bankLineId, [parsed.data], [id]);
     if (problem) return { success: false, message: `This entry is matched to a bank statement line. ${problem} Unmatch it on the Bank page first.` };
@@ -214,6 +246,7 @@ export async function reviewEntries(ids: string[]) {
   const drafts = (await withLegs(ids)).filter((t) => t.status === "DRAFT");
   await prisma.transaction.updateMany({ where: { id: { in: drafts.map((t) => t.id) } }, data: { status: "REVIEWED" } });
   await record(drafts.map((t) => ({ entityId: t.id, action: "REVIEW", field: "status", oldValue: "DRAFT", newValue: "REVIEWED" })), me.name);
+  await refreshInvoiceStatus(await invoicesOf(drafts.map((t) => t.id))); // reviewed payments now settle their invoices
   revalidateAll(ids.length === 1 ? ids[0] : undefined);
   return { success: true, count: drafts.length };
 }
@@ -263,6 +296,13 @@ export async function reverseEntry(id: string, reason: string) {
       }
       await tx.paymentAllocation.deleteMany({ where: { transactionId: l.id } });
       await tx.transaction.update({ where: { id: l.id }, data: { bankLineId: null } });
+      // A register item this expense came from is pending again, for the correction.
+      const item = await tx.costItem.findUnique({ where: { transactionId: l.id } });
+      if (item) {
+        await tx.costItem.update({ where: { id: item.id }, data: { status: "PENDING", transactionId: null } });
+        await tx.attachment.updateMany({ where: { costItemId: item.id, transactionId: l.id }, data: { transactionId: null } });
+        changes.push({ entityId: l.id, action: "UNLINK", field: "costItem", oldValue: item.id, reason: why });
+      }
       const rev = await tx.transaction.create({
         data: {
           type: l.type, date: l.date, currency: l.currency, exchangeRate: l.exchangeRate, rateSource: l.rateSource,
@@ -285,15 +325,29 @@ export async function reverseEntry(id: string, reason: string) {
 }
 
 export async function deleteAttachment(id: string) {
-  await currentUser();
-  const att = await prisma.attachment.findUnique({ where: { id }, include: { transaction: { select: { status: true } } } });
+  const me = await currentUser();
+  const att = await prisma.attachment.findUnique({
+    where: { id },
+    include: {
+      transaction: { select: { status: true, _count: { select: { attachments: true } }, allocations: { where: { kind: "FEE" }, select: { id: true } } } },
+      costItem: { select: { status: true } },
+    },
+  });
   if (!att) return { success: true };
   // Evidence on a posted entry stays; more can be added.
   if (att.transaction?.status === "POSTED") return { success: false, message: "This entry is posted — its attachments are kept." };
   if (att.transactionId && att.costItemId) return { success: false, message: "This receipt belongs to a cost register item — it stays with the expense." };
+  // A fee only counts against an invoice while it's evidenced.
+  if (att.transaction?.allocations.length && att.transaction._count.attachments <= 1) {
+    return { success: false, message: "This is the evidence for a fee on an invoice — unlink the fee first." };
+  }
+  // Staff may tidy drafts and pending register receipts; other evidence is the owner's call.
+  const staffMay = att.transaction ? att.transaction.status === "DRAFT" : att.costItem?.status === "PENDING";
+  if (!me.isAdmin && !staffMay) return { success: false, message: "Only the owner can remove this document." };
 
   await prisma.attachment.delete({ where: { id } });
   await removeUploadFile(att.filePath);
+  if (att.transactionId) await record([{ entityId: att.transactionId, action: "UNLINK", field: "attachment", oldValue: att.fileName }], me.name);
 
   revalidatePath("/ledger");
   revalidatePath("/invoices");

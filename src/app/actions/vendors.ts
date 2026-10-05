@@ -1,11 +1,11 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 async function requireUser() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   return session;
 }
@@ -39,7 +39,7 @@ export async function updateVendor(id: string, formData: FormData) {
 }
 
 export async function deleteVendor(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   const txns = await prisma.transaction.count({ where: { vendorId: id } });

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createTransaction, editTransaction, deleteAttachment } from "@/app/actions/ledger";
 import { Loader2, UploadCloud, Paperclip, X } from "lucide-react";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
-import { CURRENCIES } from "@/lib/money";
+import { CURRENCIES, vnToday } from "@/lib/money";
 import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 import { uploadProblem } from "@/lib/upload-limit";
 
@@ -176,7 +176,7 @@ export function EntryForm({
 
   const defaultDate = init?.date 
     ? new Date(init.date).toISOString().split('T')[0]
-    : new Date().toISOString().split('T')[0];
+    : vnToday();
 
   return (
     <Card>

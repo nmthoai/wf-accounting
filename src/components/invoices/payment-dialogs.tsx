@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CheckCircle2, Link2, Loader2 } from "lucide-react";
 import { recordPayment, linkToInvoice } from "@/app/actions/invoices";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
-import { fmtMoney } from "@/lib/money";
+import { fmtMoney , vnToday } from "@/lib/money";
 
 type Inv = { id: string; number: string | null; direction: string; currency: string; difference: number };
 export type Candidate = {
@@ -60,7 +60,7 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate }: { inv
     ...(invoice.currency === "USD" ? [["DEFAULT", `Default (${new Intl.NumberFormat("vi-VN").format(defaultUsdRate)})`] as ["DEFAULT", string]] : []),
   ];
   const mode = modes.some(([m]) => m === rateMode) ? rateMode : modes[0][0];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = vnToday();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { EntryForm } from "./entry-form";
 import { defaultUsdRate } from "@/lib/fx";
-import { auth } from "@/auth";
+import { requirePageSession } from "@/lib/session";
 import { accountDelta, fmtMoney } from "@/lib/money";
 import { CostDuplicates, type Lookalike } from "@/components/costs/cost-duplicates";
 
@@ -10,7 +10,7 @@ const DAY = 86_400_000;
 export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ bankLine?: string; reenter?: string; costItem?: string }> }) {
   const { bankLine: lineId, reenter, costItem: itemId } = await searchParams;
   const [session, usdRate, accounts, categories, projects, vendors, line, reversed, item] = await Promise.all([
-    auth(),
+    requirePageSession(),
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),

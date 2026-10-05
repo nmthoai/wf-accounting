@@ -1,12 +1,12 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { persistUploads } from "@/lib/uploads";
 
 async function requireUser() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   return session;
 }
@@ -63,13 +63,15 @@ export async function setProjectStatus(id: string, status: string) {
 // served only through the auth-protected /api/uploads route).
 export async function addProjectDocument(projectId: string, formData: FormData) {
   await requireUser();
+  // Check first, so a bad id doesn't leave an orphan file on disk.
+  if (!(await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } }))) return { success: false, message: "Not found." };
   await persistUploads(formData.getAll("files") as File[], { projectId });
   revalidatePath(`/projects/${projectId}`);
   return { success: true };
 }
 
 export async function deleteProject(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   const txns = await prisma.transaction.count({ where: { projectId: id } });

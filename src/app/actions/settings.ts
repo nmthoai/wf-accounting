@@ -1,11 +1,11 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export async function createCategory(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   const name = formData.get("name") as string;
@@ -27,7 +27,7 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function updateCategory(id: string, formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   const name = (formData.get("name") as string)?.trim();
@@ -35,6 +35,12 @@ export async function updateCategory(id: string, formData: FormData) {
   const description = (formData.get("description") as string)?.trim() || null;
 
   if (!name || !type) return { success: false, message: "Name and type are required." };
+  const current = await prisma.category.findUnique({ where: { id }, include: { _count: { select: { transactions: true, invoices: true } } } });
+  if (!current) return { success: false, message: "Not found." };
+  // Income ↔ expense would silently reclassify every entry using it.
+  if (current.type !== type && current._count.transactions + current._count.invoices > 0) {
+    return { success: false, message: "This category is in use, so it can't switch between income and expense." };
+  }
 
   await prisma.category.update({ where: { id }, data: { name, type, description } });
 
@@ -44,29 +50,32 @@ export async function updateCategory(id: string, formData: FormData) {
 }
 
 export async function deleteCategory(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
+  // Deleting would silently strip it from entries — including posted ones.
+  const used = await prisma.category.findUnique({ where: { id }, include: { _count: { select: { transactions: true, invoices: true } } } });
+  if (used && used._count.transactions + used._count.invoices > 0) {
+    return { success: false, message: "This category is in use — rename it instead, or move its entries first." };
+  }
   await prisma.category.delete({
     where: { id },
   });
 
   revalidatePath("/settings");
-  return;
+  return { success: true };
 }
 
 
 export async function updateExchangeRate(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   const rate = parseFloat(formData.get("rate") as string);
   if (isNaN(rate) || rate <= 0) throw new Error("Invalid rate");
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { defaultUsdRate: rate },
-  });
+  // One company-wide default: every admin account carries it.
+  await prisma.user.updateMany({ where: { role: "ADMIN" }, data: { defaultUsdRate: rate } });
 
   revalidatePath("/settings");
   revalidatePath("/entry");
@@ -74,7 +83,7 @@ export async function updateExchangeRate(formData: FormData) {
 }
 
 export async function createUnitRate(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   const description = formData.get("description") as string;
@@ -94,7 +103,7 @@ export async function createUnitRate(formData: FormData) {
 }
 
 export async function updateUnitRate(id: string, formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   const description = (formData.get("description") as string)?.trim();
@@ -112,7 +121,7 @@ export async function updateUnitRate(id: string, formData: FormData) {
 }
 
 export async function deleteUnitRate(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 
   await prisma.unitRate.delete({

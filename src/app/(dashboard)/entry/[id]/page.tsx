@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { EntryForm } from "../entry-form";
 import { redirect } from "next/navigation";
 import { defaultUsdRate } from "@/lib/fx";
-import { auth } from "@/auth";
+import { requirePageSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EntryStatus } from "@/components/ledger/entry-status";
 import { STATUS_LABEL, TYPE_LABEL, fmtMoney } from "@/lib/money";
@@ -23,7 +23,7 @@ const ACTION: Record<string, string> = {
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [session, usdRate, accounts, categories, projects, vendors, transaction, history, allProjects] = await Promise.all([
-    auth(),
+    requirePageSession(),
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),

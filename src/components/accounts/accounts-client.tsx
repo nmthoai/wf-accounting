@@ -47,7 +47,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const unclassified = movements.filter((m): m is SingleRow => !m.isTransfer && m.kind.startsWith("OTHER_") && !m.reversal && !m.reversed);
+  const unclassified = movements.filter((m): m is SingleRow => !m.isTransfer && m.kind.startsWith("OTHER_") && !m.reversal && !m.reversed && m.status !== "POSTED");
 
   async function reverse(id: string) {
     const reason = prompt("Reverse this posted movement? Give the reason — then record the correct one.");

@@ -37,7 +37,11 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
   async function remove(id: string) {
     if (!confirm("Remove this document? This deletes the file.")) return;
     setRemovingId(id);
-    try { await deleteAttachment(id); router.refresh(); } finally { setRemovingId(null); }
+    try {
+      const res = await deleteAttachment(id);
+      if (!res.success) alert(res.message);
+      router.refresh();
+    } finally { setRemovingId(null); }
   }
 
   return (

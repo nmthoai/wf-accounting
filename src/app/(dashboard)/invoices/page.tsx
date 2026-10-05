@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/prisma";
+import { requirePageSession } from "@/lib/session";
 import { defaultUsdRate } from "@/lib/fx";
-import { EPS, settlement, type Totals } from "@/lib/money";
+import { EPS, settlement, type Totals , vnTodayStart } from "@/lib/money";
 import { InvoicesClient } from "@/components/invoices/invoices-client";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 export default async function InvoicesPage() {
+  const session = await requirePageSession(); // second line behind the proxy
   const [usdRate, accounts, invoices, clients, vendors, projects, categories, entries] = await Promise.all([
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
@@ -28,9 +30,9 @@ export default async function InvoicesPage() {
     }),
   ]);
 
-  const now = new Date();
+  const now = vnTodayStart(); // overdue from the day after the due date
   const rows = invoices.map((i) => {
-    const s = settlement(i.amount, i.allocations);
+    const s = settlement(i.amount, i.allocations.filter((a) => a.transaction.status !== "DRAFT"));
     const open = i.status === "OPEN" || i.status === "PARTIAL";
     return {
       id: i.id,
@@ -54,7 +56,7 @@ export default async function InvoicesPage() {
       attachment: i.attachments[0] ? i.attachments[0].filePath : null,
       ...s,
       allocations: i.allocations.map((a) => ({
-        id: a.id, kind: a.kind, amount: a.amount,
+        id: a.id, kind: a.kind, amount: a.amount, draft: a.transaction.status === "DRAFT",
         date: iso(a.transaction.date)!,
         accountName: a.transaction.account?.name ?? "—",
         description: a.transaction.description,
@@ -93,6 +95,7 @@ export default async function InvoicesPage() {
         <p className="text-muted-foreground mt-1">What clients owe you, and what you owe vendors</p>
       </div>
       <InvoicesClient
+        isAdmin={session.user.role === "ADMIN"}
         invoices={rows}
         clients={clients}
         vendors={vendors}

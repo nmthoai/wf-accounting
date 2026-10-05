@@ -228,23 +228,36 @@ function readSheet(name: string, rows: unknown[][]): ParsedStatement | null {
   };
 }
 
+// Uploads are untrusted: a file may declare an enormous sheet or carry huge
+// cells. Read at most this much — far beyond any real statement.
+const MAX_ROWS = 5000, MAX_COLS = 40, MAX_SHEETS = 5, MAX_CELL = 300;
+
 export function parseStatement(buf: Buffer): ParsedStatement | { error: string } {
   let wb: xlsx.WorkBook;
+  const unreadable = { error: "This file couldn't be read — export the statement as Excel (.xlsx) or CSV." };
   try {
     // .xlsx is a zip ("PK"), .xls an OLE file; anything else is text (CSV), read as
     // UTF-8 so Vietnamese headers survive. raw keeps CSV cells as text, so
     // "02/08/2026" is read day-first below rather than as 8 February.
     const binary = buf.subarray(0, 2).toString("latin1") === "PK" || buf.subarray(0, 4).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0]));
+    const text = binary ? "" : buf.toString("utf8").replace(/^\uFEFF/, "");
+    if (!binary && /^\s*(<|ID;|\{\\rtf)/.test(text)) return unreadable; // HTML/XML/SYLK/RTF posing as a statement
     wb = binary
-      ? xlsx.read(buf, { type: "buffer", raw: true })
-      : xlsx.read(buf.toString("utf8").replace(/^\uFEFF/, ""), { type: "string", raw: true });
+      ? xlsx.read(buf, { type: "buffer", raw: true, sheetRows: MAX_ROWS })
+      : xlsx.read(text, { type: "string", raw: true, sheetRows: MAX_ROWS });
   } catch {
-    return { error: "This file couldn't be read — export the statement as Excel (.xlsx) or CSV." };
+    return unreadable;
   }
   // The sheet with the most transaction lines.
   let best: ParsedStatement | null = null;
-  for (const name of wb.SheetNames) {
-    const rows = xlsx.utils.sheet_to_json<unknown[]>(wb.Sheets[name], { header: 1, raw: true, defval: "" });
+  for (const name of wb.SheetNames.slice(0, MAX_SHEETS)) {
+    const ws = wb.Sheets[name];
+    if (!ws?.["!ref"]) continue;
+    const range = xlsx.utils.decode_range(ws["!ref"]); // declared by the file — never trusted
+    range.e.r = Math.min(range.e.r, range.s.r + MAX_ROWS);
+    range.e.c = Math.min(range.e.c, range.s.c + MAX_COLS);
+    const rows = xlsx.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: true, defval: "", range })
+      .map((r) => r.map((v) => (typeof v === "string" ? v.slice(0, MAX_CELL) : v)));
     const parsed = readSheet(name, rows);
     if (parsed && (!best || parsed.lines.length > best.lines.length)) best = parsed;
   }

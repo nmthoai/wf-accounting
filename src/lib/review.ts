@@ -54,9 +54,10 @@ export type Review = {
 // Consistency of the decisions with the evidence. These are prerequisites, not
 // tax rules — the accountant's decision is recorded, never derived.
 export function reviewProblem(r: Review): string | null {
-  if (!(r.docStatus in DOC_STATUS)) return "Unknown document status.";
+  // Own keys only — "toString", "constructor" and the like are not statuses.
+  if (!Object.hasOwn(DOC_STATUS, r.docStatus)) return "Unknown document status.";
   if (r.type !== "EXPENSE") return null;
-  if (!(r.purposeStatus in PURPOSE_STATUS) || !(r.citStatus in CIT_STATUS) || !(r.vatStatus in VAT_STATUS)) return "Unknown review status.";
+  if (!Object.hasOwn(PURPOSE_STATUS, r.purposeStatus) || !Object.hasOwn(CIT_STATUS, r.citStatus) || !Object.hasOwn(VAT_STATUS, r.vatStatus)) return "Unknown review status.";
   if (r.vatAmount != null && (!(r.vatAmount >= 0) || r.vatAmount >= r.amount)) return "The VAT amount must be less than the entry amount.";
   if ((r.citStatus === "DEDUCTIBLE" || r.vatStatus === "CLAIMABLE") && r.purposeStatus !== "CONFIRMED") {
     return "Confirm business use before marking it deductible or its VAT claimable.";

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requirePageSession } from "@/lib/session";
 import { accountDelta, isPnl, isBooked, TYPE_LABEL } from "@/lib/money";
 import { tolerance } from "@/lib/bank-match";
 import { BankClient, type LineRow, type EntryOpt, type AccountSummary, type StatementRow } from "@/components/bank/bank-client";
@@ -9,7 +9,7 @@ const DAY = 86_400_000;
 
 export default async function BankPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const sp = await searchParams;
-  const session = await auth();
+  const session = await requirePageSession();
   const isAdmin = session?.user?.role === "ADMIN";
 
   const accounts = await prisma.account.findMany({

@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 // Change history for ledger entries: who changed what, when and why.
 
 type Db = Prisma.TransactionClient | typeof prisma;
-export type Change = { entityId: string; action: string; field?: string; oldValue?: string | null; newValue?: string | null; reason?: string | null };
+export type Change = { entity?: string; entityId: string; action: string; field?: string; oldValue?: string | null; newValue?: string | null; reason?: string | null };
 
 // Fields worth recording when an entry changes.
 export const TRACKED = [

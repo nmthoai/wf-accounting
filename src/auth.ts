@@ -27,8 +27,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Deactivated accounts cannot sign in (admin can re-enable)
         if (!user.isActive) return null;
 
-        // Account is currently locked out (5 failed attempts) — reject until it expires.
-        if (user.lockedUntil && user.lockedUntil > new Date()) return null;
+        // Locked out after 5 failed attempts. An account with 2FA can still sign
+        // in while locked — but only with the right password AND a valid code —
+        // so strangers failing on purpose can't keep its owner out. (The reply
+        // never says which part was wrong, and nginx limits attempts per IP.)
+        const locked = !!user.lockedUntil && user.lockedUntil > new Date();
+        if (locked && !user.twoFactorEnabled) return null;
 
         const passwordsMatch = await bcrypt.compare(
           credentials.password as string,
@@ -46,14 +50,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         if (!ok) {
-          // Wrong password or 2FA → count the failed attempt; lock at 5.
-          const attempts = user.failedLoginAttempts + 1;
-          await prisma.user.update({
+          // Wrong password or 2FA → count the failed attempt (in the database, so
+          // parallel guesses can't share one count); lock at 5.
+          const { failedLoginAttempts } = await prisma.user.update({
             where: { id: user.id },
-            data: attempts >= 5
-              ? { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + 15 * 60 * 1000) }
-              : { failedLoginAttempts: attempts },
+            data: { failedLoginAttempts: { increment: 1 } },
+            select: { failedLoginAttempts: true },
           });
+          if (failedLoginAttempts >= 5) {
+            await prisma.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: new Date(Date.now() + 15 * 60 * 1000) } });
+          }
           return null;
         }
 

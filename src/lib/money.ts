@@ -35,6 +35,8 @@ export const isMoneyIn = (t: { type: string; amount: number }) => isInflow(t.typ
 // Workflow. Drafts are not in the books yet: every total counts reviewed and posted entries only.
 export const STATUS_LABEL: Record<string, string> = { DRAFT: "Draft", REVIEWED: "Reviewed", POSTED: "Posted" };
 export const BOOKED = { status: { not: "DRAFT" } };
+// A payment settles an invoice once it's in the books — a draft doesn't yet.
+export const BOOKED_ALLOCATIONS = { where: { transaction: BOOKED } };
 export const isBooked = (t: { status: string }) => t.status !== "DRAFT";
 
 type Money = { amount: number; exchangeRate: number; vndAmount?: number | null };
@@ -91,6 +93,11 @@ export const fmtMoney = (n: number, currency: string) =>
 
 // Amounts within half a cent/dong are treated as equal.
 export const EPS = 0.005;
+
+// "Today" for a company in Vietnam, as YYYY-MM-DD — whatever the server's or
+// browser's own time zone. Dates are stored as UTC midnight of that day.
+export const vnToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+export const vnTodayStart = () => new Date(`${vnToday()}T00:00:00.000Z`);
 
 // How far an invoice is settled: payments received, separately evidenced fees,
 // and the unmatched difference (> 0 still open or unexplained, < 0 overpaid).

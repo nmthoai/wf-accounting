@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 // The company-wide default USD rate is the admin's setting (Settings → Global),
 // so staff entries use the same rate as the owner's.
 export async function defaultUsdRate() {
-  const admin = await prisma.user.findFirst({ where: { role: "ADMIN" }, orderBy: { createdAt: "asc" } });
+  const admin = await prisma.user.findFirst({ where: { role: "ADMIN", isActive: true }, orderBy: { createdAt: "asc" } });
   return admin?.defaultUsdRate || 25400;
 }
 

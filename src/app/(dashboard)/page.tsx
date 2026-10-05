@@ -1,18 +1,20 @@
 import { prisma } from "@/lib/prisma";
+import { requirePageSession } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { computeBalances, cashPosition, totalsList, settlement, isMoneyIn, isPnl, isBooked, toVnd, fmtMoney, TYPE_LABEL, type Totals } from "@/lib/money";
+import { computeBalances, cashPosition, totalsList, settlement, isMoneyIn, isPnl, isBooked, toVnd, fmtMoney, TYPE_LABEL, BOOKED_ALLOCATIONS, type Totals , vnTodayStart } from "@/lib/money";
 
 export default async function DashboardPage() {
+  await requirePageSession(); // second line behind the proxy
   const [transactions, accounts, openInvoices, projectList] = await Promise.all([
     prisma.transaction.findMany({ orderBy: { date: "desc" }, include: { category: true } }),
     prisma.account.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.invoice.findMany({
       where: { status: { in: ["OPEN", "PARTIAL"] } },
       orderBy: { dueDate: "asc" },
-      include: { client: true, vendor: true, project: true, allocations: true },
+      include: { client: true, vendor: true, project: true, allocations: BOOKED_ALLOCATIONS },
     }),
     prisma.project.findMany({ select: { id: true, name: true } }),
   ]);
@@ -39,20 +41,20 @@ export default async function DashboardPage() {
   const liquid = totalsList(position.liquid);
   const ownerTotals = totalsList(position.owner);
   const accountList = accounts.filter((a) => a.isActive || (balances.get(a.id) ?? 0) !== 0);
-  const unclassified = transactions.filter((t) => t.type === "OTHER_IN" || t.type === "OTHER_OUT").length;
+  const unclassified = transactions.filter((t) => (t.type === "OTHER_IN" || t.type === "OTHER_OUT") && t.status !== "POSTED" && counted(t)).length;
 
   const recentTransactions = transactions.slice(0, 5);
 
   // Coming payments: what's still open on each invoice (gross − payments − evidenced
   // fees), totalled per currency. AR = clients owe me, AP = I owe vendors.
-  const now = new Date();
+  const now = vnTodayStart(); // overdue from the day after the due date
   const comingItem = (i: typeof openInvoices[number]) => ({
     id: i.id,
     label: i.direction === "PAYABLE" ? (i.vendor?.name ?? "Vendor") : (i.client?.name ?? "Client"),
     sub: [i.number, i.project?.name, i.status === "PARTIAL" ? "part paid" : null].filter(Boolean).join(" · "),
     amount: settlement(i.amount, i.allocations).difference,
     currency: i.currency,
-    due: i.dueDate.toLocaleDateString(),
+    due: i.dueDate.toLocaleDateString(undefined, { timeZone: "UTC" }),
     overdue: i.dueDate < now,
   });
   const totalOf = (items: ReturnType<typeof comingItem>[]) => {

@@ -13,7 +13,7 @@ import { uploadProblem } from "@/lib/upload-limit";
 import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
 import { RecordPaymentDialog, LinkEntryDialog, type Candidate } from "@/components/invoices/payment-dialogs";
 import type { AccountOpt } from "@/components/accounts/account-select";
-import { EPS, fmtMoney, fmtVnd, totalsList, type Totals } from "@/lib/money";
+import { EPS, fmtMoney, fmtVnd, totalsList, type Totals , vnToday } from "@/lib/money";
 
 type Invoice = {
   id: string; number: string | null; direction: string; party: string | null; projectName: string | null; categoryName: string | null;
@@ -21,7 +21,7 @@ type Invoice = {
   issueDate: string; dueDate: string; paidDate: string | null;
   currency: string; amount: number; status: string; overdue: boolean; attachment: string | null;
   received: number; fees: number; difference: number;
-  allocations: { id: string; kind: string; amount: number; date: string; accountName: string; description: string | null }[];
+  allocations: { id: string; kind: string; amount: number; date: string; accountName: string; description: string | null; draft: boolean }[];
 };
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
@@ -35,11 +35,12 @@ const Totals = ({ t, className }: { t: Totals; className: string }) => {
 const totalsText = (t: Totals) => totalsList(t).map(([c, v]) => fmtMoney(v, c)).join(" · ");
 
 export function InvoicesClient({
-  invoices, clients, vendors, projects, categories, accounts, candidates, defaultUsdRate, summary,
+  invoices, clients, vendors, projects, categories, accounts, candidates, defaultUsdRate, summary, isAdmin,
 }: {
   invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; categories: Cat[]; accounts: AccountOpt[];
   candidates: Candidate[]; defaultUsdRate: number;
   summary: { ar: Totals; ap: Totals; arOverdue: Totals; apOverdue: Totals };
+  isAdmin: boolean; // voiding and deleting are the owner's decisions
 }) {
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
@@ -52,7 +53,7 @@ export function InvoicesClient({
   const [currency, setCurrency] = useState("VND");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [openOnly, setOpenOnly] = useState(false);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = vnToday();
   const parties = direction === "PAYABLE" ? vendors : clients;
   const [expanded, setExpanded] = useState<string | null>(null);
   const shown = openOnly ? invoices.filter((i) => i.status === "OPEN" || i.status === "PARTIAL") : invoices;
@@ -261,13 +262,13 @@ export function InvoicesClient({
                   )}
                   {(i.status === "OPEN" || i.status === "PARTIAL") && <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} />}
                   {i.status !== "VOID" && <LinkEntryDialog invoice={i} candidates={candidates} />}
-                  {i.allocations.length === 0 && i.status === "OPEN" && (
+                  {isAdmin && i.allocations.length === 0 && i.status === "OPEN" && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="Void" disabled={busyId === i.id}
                       onClick={() => { if (confirm("Void this?")) run(i.id, () => voidInvoice(i.id)); }}>
                       <Ban className="h-4 w-4" />
                     </Button>
                   )}
-                  {i.allocations.length === 0 && (
+                  {isAdmin && i.allocations.length === 0 && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title="Delete" disabled={busyId === i.id}
                       onClick={() => { if (confirm("Delete this?")) run(i.id, () => deleteInvoice(i.id)); }}>
                       <Trash2 className="h-4 w-4" />
@@ -291,6 +292,7 @@ export function InvoicesClient({
                             {a.kind === "FEE" ? "Evidenced fee" : "Payment"}
                           </span>
                           {a.date} · {a.accountName}{a.description ? ` · ${a.description}` : ""}
+                          {a.draft && <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">draft — counts once reviewed</span>}
                         </span>
                         <span className="flex items-center gap-2">
                           <span className="font-medium">{fmtMoney(a.amount, i.currency)}</span>

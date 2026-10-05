@@ -15,8 +15,8 @@ export async function authenticate(prevState: any, formData: FormData) {
         // Give a clearer message if the account is locked out.
         const username = formData.get("username") as string;
         if (username) {
-          const u = await prisma.user.findUnique({ where: { username }, select: { lockedUntil: true } });
-          if (u?.lockedUntil && u.lockedUntil > new Date()) {
+          const u = await prisma.user.findUnique({ where: { username }, select: { lockedUntil: true, twoFactorEnabled: true } });
+          if (u?.lockedUntil && u.lockedUntil > new Date() && !u.twoFactorEnabled) {
             const mins = Math.max(1, Math.ceil((u.lockedUntil.getTime() - Date.now()) / 60000));
             return `Account locked after too many attempts. Try again in ${mins} minute${mins > 1 ? "s" : ""}.`;
           }
@@ -32,7 +32,6 @@ export async function authenticate(prevState: any, formData: FormData) {
 export async function generate2FASecret() {
   try {
     const session = await auth();
-    console.log("Session in generate2FASecret:", session);
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
@@ -102,6 +101,9 @@ export async function changePassword(formData: FormData) {
 
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });
   if (!user) throw new Error("User not found");
+  // This is the onboarding step only — it doesn't ask for the current password,
+  // so it must not work for a session that has already finished onboarding.
+  if (!user.mustChangePassword) return { success: false, message: "Your password is already set — ask the owner to reset it if needed." };
 
   // Don't allow keeping the same (default) password
   const sameAsOld = await bcrypt.compare(newPassword, user.passwordHash);

@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { join } from "path";
+import { basename, join } from "path";
 import * as xlsx from "xlsx";
 import { zipSync } from "fflate";
 import { prisma } from "@/lib/prisma";
@@ -23,7 +23,7 @@ export function monthRange(month: string) {
 export async function collect(month: string) {
   const { start, end } = monthRange(month);
   const inMonth = { gte: start, lt: end };
-  const [entries, invoices, accounts, lines, statements, costItems, untilEnd] = await Promise.all([
+  const [entries, allInvoices, accounts, lines, statements, costItems, untilEnd] = await Promise.all([
     prisma.transaction.findMany({
       where: { date: inMonth },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
@@ -33,11 +33,10 @@ export async function collect(month: string) {
         reversedBy: { select: { id: true } },
       },
     }),
-    // Issued this month, paid this month, or still open at month end.
     prisma.invoice.findMany({
-      where: { OR: [{ issueDate: inMonth }, { paidDate: inMonth }, { issueDate: { lt: end }, status: { in: ["OPEN", "PARTIAL"] } }] },
+      where: { issueDate: { lt: end } },
       orderBy: { issueDate: "asc" },
-      include: { client: true, vendor: true, project: true, attachments: true, allocations: true },
+      include: { client: true, vendor: true, project: true, attachments: true, allocations: { include: { transaction: { select: { date: true, status: true } } } } },
     }),
     prisma.account.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.bankLine.findMany({ where: { txnDate: { lt: end } }, orderBy: [{ txnDate: "asc" }, { createdAt: "asc" }], include: { entries: true } }),
@@ -50,6 +49,18 @@ export async function collect(month: string) {
     orderBy: { createdAt: "asc" },
   });
   const booked = entries.filter(isBooked);
+
+  // Invoices as they stood at month end: issued this month, settled during it,
+  // or still open on its last day — counting reviewed payments made by then.
+  const invoices = allInvoices.flatMap((i) => {
+    const allocations = i.allocations.filter((a) => a.transaction.status !== "DRAFT" && a.transaction.date < end);
+    const { received, fees } = settlement(i.amount, allocations);
+    const status = i.status === "VOID" ? "VOID" : received + fees <= EPS ? "OPEN" : received + fees >= i.amount - EPS ? "PAID" : "PARTIAL";
+    const issued = i.issueDate >= start;
+    const settledNow = allocations.some((a) => a.transaction.date >= start);
+    if (!issued && !settledNow && (status === "PAID" || status === "VOID")) return [];
+    return [{ ...i, allocations, status, paidDate: i.paidDate && i.paidDate < end ? i.paidDate : null }];
+  });
   const cancelled = (t: { reversalOfId: string | null; reversedBy: { id: string } | null }) => !!t.reversalOfId || !!t.reversedBy;
 
   // Evidence: each entry's own files and those of the invoices it settles.
@@ -58,13 +69,13 @@ export async function collect(month: string) {
   for (const t of booked) {
     const paths: string[] = [];
     for (const a of t.attachments) {
-      const zipPath = `evidence/${iso(t.date)}_${t.id.slice(-6)}_${safe(a.fileName)}`;
+      const zipPath = `evidence/${iso(t.date)}_${t.id.slice(-6)}_${a.id.slice(-6)}_${safe(a.fileName)}`;
       files.set(a.id, { zipPath, filePath: a.filePath });
       paths.push(zipPath);
     }
     for (const al of t.allocations) {
       for (const a of al.invoice.attachments) {
-        const zipPath = `evidence/invoices/${safe(al.invoice.number ?? al.invoice.id.slice(-6))}_${safe(a.fileName)}`;
+        const zipPath = `evidence/invoices/${safe(al.invoice.number ?? al.invoice.id.slice(-6))}_${a.id.slice(-6)}_${safe(a.fileName)}`;
         files.set(a.id, { zipPath, filePath: a.filePath });
         paths.push(zipPath);
       }
@@ -73,16 +84,19 @@ export async function collect(month: string) {
   }
   for (const inv of invoices) {
     for (const a of inv.attachments) {
-      if (!files.has(a.id)) files.set(a.id, { zipPath: `evidence/invoices/${safe(inv.number ?? inv.id.slice(-6))}_${safe(a.fileName)}`, filePath: a.filePath });
+      if (!files.has(a.id)) files.set(a.id, { zipPath: `evidence/invoices/${safe(inv.number ?? inv.id.slice(-6))}_${a.id.slice(-6)}_${safe(a.fileName)}`, filePath: a.filePath });
     }
   }
 
   // Bank, per account with an imported statement: the month's opening and
   // closing from the statement lines, against the app's balance at month end.
   const bank = accounts.filter((a) => statements.some((s) => s.accountId === a.id)).map((a) => {
-    const first = statements.find((s) => s.accountId === a.id)!;
+    // Start from the latest statement that began by the month's first day (its
+    // stated opening), so a statement never imported earlier doesn't skew it.
+    const mine = statements.filter((s) => s.accountId === a.id);
+    const base = mine.filter((s) => s.periodFrom <= start).pop() ?? mine[0];
     const own = lines.filter((l) => l.accountId === a.id);
-    const opening = own.filter((l) => l.txnDate < start).reduce((s, l) => s + l.amount, first.openingBalance);
+    const opening = own.filter((l) => l.txnDate >= base.periodFrom && l.txnDate < start).reduce((s, l) => s + l.amount, base.openingBalance);
     const monthLines = own.filter((l) => l.txnDate >= start);
     const closing = monthLines.reduce((s, l) => s + l.amount, opening);
     const app = untilEnd
@@ -174,7 +188,7 @@ export async function pack(d: Data, user: string | null) {
   const zip: Record<string, [Uint8Array, { level: 0 }]> = {};
   const missing: string[] = [];
   for (const f of d.files.values()) {
-    try { zip[f.zipPath] = [new Uint8Array(await readFile(join(UPLOAD_DIR, f.filePath))), { level: 0 }]; }
+    try { zip[f.zipPath] = [new Uint8Array(await readFile(join(UPLOAD_DIR, basename(f.filePath)))), { level: 0 }]; }
     catch { missing.push(f.zipPath); }
   }
 
@@ -252,7 +266,7 @@ export async function pack(d: Data, user: string | null) {
 
   add("Open questions", [["Area", "Item", "Question / detail", "Amount", "Reference"], ...questions(d).map((q) => [q.area, q.item, q.detail, q.amount, q.ref])], [14, 44, 70, 18, 28]);
 
-  add("History", [
+  add("Change history", [
     ["When (UTC)", "Who", "Action", "Field", "From", "To", "Reason", "Entry ID"],
     ...d.history.map((h) => [h.createdAt.toISOString().slice(0, 16).replace("T", " "), h.user ?? "", h.action, h.field ?? "", h.oldValue ?? "", h.newValue ?? "", h.reason ?? "", h.entityId]),
   ], [17, 12, 10, 14, 30, 30, 40, 26]);

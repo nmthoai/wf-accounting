@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { persistUploads, removeUploadFile } from "@/lib/uploads";
@@ -10,7 +10,7 @@ import { refreshInvoiceStatus } from "@/lib/invoice-status";
 import { diff, record, snapshot } from "@/lib/history";
 
 async function requireUser() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   return session;
 }
@@ -138,12 +138,15 @@ export async function updateInvoice(id: string, formData: FormData) {
   // (number, project, category, vendor). Amounts are never rewritten, and
   // posted entries stay as they are.
   const own = inv.allocations.filter((a) => a.kind === "PAYMENT" && a.transaction._count.allocations === 1 && a.transaction.status !== "POSTED");
+  const isAdmin = session.user?.role === "ADMIN";
   for (const a of own) {
     const data = {
       invoiceNumber: number,
       projectId: projectId || null,
       categoryId: categoryId || null,
       vendorId: isReceivable ? null : (vendorId || null),
+      // A reviewed entry changed by anyone but the owner goes back to draft.
+      status: !isAdmin && a.transaction.status === "REVIEWED" ? "DRAFT" : a.transaction.status,
     };
     await prisma.transaction.update({ where: { id: a.transactionId }, data });
     await record(diff(a.transactionId, a.transaction, data, "Invoice details changed"), session.user?.name);
@@ -271,8 +274,9 @@ export async function linkToInvoice(id: string, formData: FormData) {
 
 export async function unlinkAllocation(allocationId: string) {
   const session = await requireUser();
-  const a = await prisma.paymentAllocation.findUnique({ where: { id: allocationId }, include: { invoice: true } });
+  const a = await prisma.paymentAllocation.findUnique({ where: { id: allocationId }, include: { invoice: true, transaction: { select: { status: true } } } });
   if (!a) return { success: false, message: "Not found." };
+  if (a.transaction.status === "POSTED" && session.user?.role !== "ADMIN") return { success: false, message: "That payment is posted — only the owner can unlink it." };
   await prisma.paymentAllocation.delete({ where: { id: allocationId } });
   await record([{ entityId: a.transactionId, action: "UNLINK", field: "invoice", oldValue: linkNote(a.invoice, a.kind, a.amount) }], session.user?.name);
   await refreshInvoiceStatus([a.invoiceId]);
@@ -281,19 +285,21 @@ export async function unlinkAllocation(allocationId: string) {
 }
 
 export async function voidInvoice(id: string) {
-  await requireUser();
+  const session = await requireUser();
+  if (session.user?.role !== "ADMIN") return { success: false, message: "Only the owner can void an invoice." };
   const inv = await prisma.invoice.findUnique({ where: { id }, include: { _count: { select: { allocations: true } } } });
   if (!inv) return { success: false, message: "Not found." };
   if (inv._count.allocations > 0) {
     return { success: false, message: "It has payments linked — unlink them first." };
   }
   await prisma.invoice.update({ where: { id }, data: { status: "VOID" } });
+  await record([{ entity: "Invoice", entityId: id, action: "UPDATE", field: "status", oldValue: inv.status, newValue: "VOID" }], session.user?.name);
   revalidateAll();
   return { success: true };
 }
 
 export async function deleteInvoice(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
   const inv = await prisma.invoice.findUnique({ where: { id }, include: { attachments: true, _count: { select: { allocations: true } } } });
   if (!inv) return { success: false, message: "Not found." };

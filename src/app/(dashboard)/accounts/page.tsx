@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requirePageSession } from "@/lib/session";
 import { computeBalances, cashPosition, isPnl, isBooked, type Totals } from "@/lib/money";
 import { AccountsClient, type MovementRow } from "@/components/accounts/accounts-client";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 export default async function AccountsPage() {
-  const session = await auth();
+  const session = await requirePageSession();
   const [accounts, txns, loans] = await Promise.all([
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, include: { _count: { select: { transactions: true } } } }),
     prisma.transaction.findMany({

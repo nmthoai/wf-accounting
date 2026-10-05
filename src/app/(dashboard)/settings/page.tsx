@@ -1,19 +1,20 @@
 import { prisma } from "@/lib/prisma";
+import { DeleteCategoryButton } from "@/components/settings/delete-category-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createCategory, updateCategory, deleteCategory, updateExchangeRate, createUnitRate, updateUnitRate, deleteUnitRate } from "@/app/actions/settings";
+import { createCategory, updateCategory, updateExchangeRate, createUnitRate, updateUnitRate, deleteUnitRate } from "@/app/actions/settings";
 import { Trash2 } from "lucide-react";
-import { auth } from "@/auth";
+import { requirePageSession } from "@/lib/session";
 
 import { UserManagement } from "@/components/settings/user-management";
 import { EditCategoryDialog } from "@/components/settings/edit-category-dialog";
 import { EditUnitRateDialog } from "@/components/settings/edit-unit-rate-dialog";
 
 export default async function SettingsPage() {
-  const session = await auth();
+  const session = await requirePageSession();
   const [currentUser, categories, unitRates, allUsers] = await Promise.all([
     prisma.user.findUnique({ where: { id: session?.user?.id } }),
     prisma.category.findMany({ orderBy: { createdAt: "desc" } }),
@@ -85,9 +86,7 @@ export default async function SettingsPage() {
                         <span className="text-sm">{c.name}</span>
                         <div className="flex items-center gap-1">
                           <EditCategoryDialog category={c} action={updateCategory} />
-                          <form action={deleteCategory.bind(null, c.id)}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                          </form>
+                          <DeleteCategoryButton id={c.id} name={c.name} />
                         </div>
                       </div>
                     ))}
@@ -103,9 +102,7 @@ export default async function SettingsPage() {
                         <span className="text-sm">{c.name}</span>
                         <div className="flex items-center gap-1">
                           <EditCategoryDialog category={c} action={updateCategory} />
-                          <form action={deleteCategory.bind(null, c.id)}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                          </form>
+                          <DeleteCategoryButton id={c.id} name={c.name} />
                         </div>
                       </div>
                     ))}

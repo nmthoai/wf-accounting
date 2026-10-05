@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { requirePageSession } from "@/lib/session";
 import { ContactsClient } from "@/components/contacts/contacts-client";
 import { toVnd, BOOKED } from "@/lib/money";
 
 export default async function ContactsPage() {
+  await requirePageSession(); // second line behind the proxy
   const [clients, vendors, projects, incomeTx] = await Promise.all([
     prisma.client.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { projects: true, invoices: true } } } }),
     prisma.vendor.findMany({ orderBy: { name: "asc" }, include: { transactions: { where: BOOKED } } }),

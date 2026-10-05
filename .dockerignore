@@ -6,3 +6,15 @@ README.md
 .next
 .git
 dev.db
+# Data and secrets never belong in an image (the app reads them from mounted volumes / env)
+data
+*.db
+*.db-journal
+.env*
+import
+public/*.xlsx
+scripts/export-db.ts
+tests
+backups
+*.log
+nginx-*.bak*

@@ -8,7 +8,8 @@ export async function refreshInvoiceStatus(invoiceIds: (string | null | undefine
   for (const id of new Set(invoiceIds.filter((x): x is string => !!x))) {
     const inv = await prisma.invoice.findUnique({
       where: { id },
-      include: { allocations: { include: { transaction: { select: { date: true } } } } },
+      // Draft payments don't settle anything until reviewed.
+      include: { allocations: { where: { transaction: { status: { not: "DRAFT" } } }, include: { transaction: { select: { date: true } } } } },
     });
     if (!inv || inv.status === "VOID") continue;
     const { received, fees } = settlement(inv.amount, inv.allocations);

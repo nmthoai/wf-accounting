@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requirePageSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { ProjectOutstanding } from "@/components/projects/project-outstanding";
 import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
 import { ProjectDocuments } from "@/components/projects/project-documents";
-import { toVnd, settlement, BOOKED } from "@/lib/money";
+import { toVnd, settlement, BOOKED, BOOKED_ALLOCATIONS , vnTodayStart , isMoneyIn } from "@/lib/money";
 import { defaultUsdRate } from "@/lib/fx";
 
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
@@ -15,6 +16,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 const fmtDate = (d: Date | null) => (d ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : null);
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requirePageSession(); // second line behind the proxy
   const { id } = await params;
   const [project, openInvoices, clients, accounts, usdRate] = await Promise.all([
     prisma.project.findUnique({
@@ -28,7 +30,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     prisma.invoice.findMany({
       where: { projectId: id, status: { in: ["OPEN", "PARTIAL"] } },
       orderBy: { dueDate: "asc" },
-      include: { client: true, vendor: true, allocations: true },
+      include: { client: true, vendor: true, allocations: BOOKED_ALLOCATIONS },
     }),
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
@@ -38,7 +40,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   const documents = project.attachments.map((a) => ({ id: a.id, fileName: a.fileName, filePath: a.filePath, createdAt: iso(a.createdAt) }));
   const dateRange = [fmtDate(project.startDate), fmtDate(project.endDate)].filter(Boolean).join(" → ");
-  const now = new Date();
+  const now = vnTodayStart(); // overdue from the day after the due date
   const outstanding = openInvoices.map((i) => ({
     id: i.id,
     number: i.number,
@@ -157,7 +159,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <TableBody>
               {txns.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell className="whitespace-nowrap">{t.date.toLocaleDateString()}</TableCell>
+                  <TableCell className="whitespace-nowrap">{t.date.toLocaleDateString(undefined, { timeZone: "UTC" })}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.type === "INCOME" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{t.type}</span>
                   </TableCell>
@@ -165,7 +167,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                   <TableCell>{t.vendor?.name || "—"}</TableCell>
                   <TableCell className="max-w-[220px] truncate" title={t.description || ""}>{t.description || "—"}</TableCell>
                   <TableCell className={`text-right font-semibold ${t.type === "INCOME" ? "text-green-600" : ""}`}>
-                    {t.type === "INCOME" ? "+" : "−"}{new Intl.NumberFormat("vi-VN").format(Math.round(toVnd(t)))}
+                    {isMoneyIn(t) ? "+" : "−"}{new Intl.NumberFormat("vi-VN").format(Math.round(Math.abs(toVnd(t))))}
                   </TableCell>
                 </TableRow>
               ))}

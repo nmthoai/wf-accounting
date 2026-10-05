@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { saveAccount, createLoan, recordMovement, updateMovement, createTransfer, updateTransfer } from "@/app/actions/accounts";
-import { ACCOUNT_TYPE_LABEL, TYPE_LABEL } from "@/lib/money";
+import { ACCOUNT_TYPE_LABEL, TYPE_LABEL , vnToday } from "@/lib/money";
 import { AccountSelect, type AccountOpt } from "./account-select";
 
 type Result = { success: boolean; message?: string };
@@ -30,7 +30,7 @@ export type SingleRow = Workflow & {
   accountId: string | null; accountName: string; amount: number; currency: string; loanId: string | null; lender: string | null;
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = vnToday;
 
 // Shared submit plumbing: build FormData, run the action, close + refresh on success.
 function useSubmit(close: () => void) {

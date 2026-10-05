@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { defaultUsdRate } from "@/lib/fx";
@@ -9,7 +9,7 @@ import { bankLinkProblem } from "@/lib/bank-match";
 import { diff, record, snapshot } from "@/lib/history";
 
 async function requireUser() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   return { name: session.user.name ?? null, isAdmin: session.user.role === "ADMIN" };
 }
@@ -22,7 +22,7 @@ const LOCKED = "This is posted — reverse it from the ledger entry instead of e
 const reasonOf = (fd: FormData) => ((fd.get("reason") as string) || "").trim() || null;
 
 async function requireAdmin() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
 }
 
@@ -66,9 +66,9 @@ export async function saveAccount(id: string | null, formData: FormData) {
   };
 
   if (id) {
-    const existing = await prisma.account.findUnique({ where: { id }, include: { _count: { select: { transactions: true } } } });
+    const existing = await prisma.account.findUnique({ where: { id }, include: { _count: { select: { transactions: true, bankLines: true } } } });
     if (!existing) return { success: false, message: "Not found." };
-    if (existing.currency !== currency && existing._count.transactions > 0) {
+    if (existing.currency !== currency && existing._count.transactions + existing._count.bankLines > 0) {
       return { success: false, message: "This account already has movements, so its currency can't change." };
     }
     await prisma.account.update({ where: { id }, data });

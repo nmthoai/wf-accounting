@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Paperclip } from "lucide-react";
 import Link from "next/link";
-import { auth } from "@/auth";
-import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, isPnl, isMoneyIn, toVnd, fmtMoney, fmtVnd } from "@/lib/money";
+import { requirePageSession } from "@/lib/session";
+import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, isPnl, isMoneyIn, toVnd, fmtMoney, fmtVnd, vnToday } from "@/lib/money";
 import { RowActions, PostThrough } from "@/components/ledger/ledger-actions";
 import { DOC_STATUS, DOC_BADGE, DOC_OPEN, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 
@@ -38,8 +38,8 @@ const VIEWS: Record<"drafts" | "docs" | "tax", Prisma.TransactionWhereInput> = {
 
 // The last day of the previous month — the usual "post through" date.
 function lastMonthEnd() {
-  const d = new Date();
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), 0)).toISOString().slice(0, 10);
+  const [y, m] = vnToday().split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, 0)).toISOString().slice(0, 10);
 }
 
 const taxTone = (s: string, good: string) => (s === "PENDING" ? "text-amber-700" : s === good ? "text-green-700" : "text-muted-foreground");
@@ -47,7 +47,7 @@ const taxTone = (s: string, good: string) => (s === "PENDING" ? "text-amber-700"
 export default async function LedgerPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const sp = await searchParams;
   const view = sp.view === "drafts" || sp.view === "docs" || sp.view === "tax" ? sp.view : null;
-  const session = await auth();
+  const session = await requirePageSession();
   const isAdmin = session?.user?.role === "ADMIN";
   const [draftCount, docsCount, taxCount, reviewedCount] = await Promise.all([
     prisma.transaction.count({ where: VIEWS.drafts }),
@@ -110,7 +110,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
             <TableBody>
               {transactions.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell className="font-medium whitespace-nowrap">{t.date.toLocaleDateString()}</TableCell>
+                  <TableCell className="font-medium whitespace-nowrap">{t.date.toLocaleDateString(undefined, { timeZone: "UTC" })}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1 items-start">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badge[t.type] ?? "bg-slate-200 text-slate-700"}`}>
