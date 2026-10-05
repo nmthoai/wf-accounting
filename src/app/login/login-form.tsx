@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
-  const t = useTranslations("Auth");
+  const t = useTranslations("auth");
   const params = useSearchParams();
   const justOnboarded = params.get("onboarded") === "1";
   const timedOut = params.get("timeout") === "1";
@@ -33,14 +33,14 @@ export function LoginForm() {
         callbackUrl: "/",
       });
       if (!res || res.error) {
-        setError("Invalid username, password, or 2FA code. (5 failed tries locks the account for 15 minutes.)");
+        setError(t("loginForm.invalid"));
         setLoading(false);
         return;
       }
       // Full navigation = clean dashboard load, no stale client state.
       window.location.href = res.url || "/";
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("loginForm.failed"));
       setLoading(false);
     }
   }
@@ -49,12 +49,12 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className="space-y-6">
       {justOnboarded && (
         <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700 text-center">
-          Setup complete — sign in with your new password and 2FA code.
+          {t("loginForm.onboarded")}
         </div>
       )}
       {timedOut && (
         <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700 text-center">
-          Signed out due to inactivity. Please sign in again.
+          {t("loginForm.timedOut")}
         </div>
       )}
       <div className="space-y-4">

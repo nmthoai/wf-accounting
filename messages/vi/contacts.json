@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "Khách hàng & nhà cung cấp",
+    "subtitle": "Các đối tượng được công ty lập hóa đơn và thanh toán"
+  },
+  "form": {
+    "name": "Tên",
+    "email": "Email",
+    "phone": "Điện thoại",
+    "emailOptional": "Email (không bắt buộc)",
+    "phoneOptional": "Điện thoại (không bắt buộc)"
+  },
+  "clients": {
+    "title": "Khách hàng",
+    "description": "Công ty lập hóa đơn và thực hiện dự án cho các khách hàng này. Doanh thu là tổng các khoản thu đã nhận từ khách hàng.",
+    "namePlaceholder": "Ví dụ: Acme Co",
+    "meta": "{contact} · {projects} dự án · {invoices} hóa đơn",
+    "revenueTitle": "Doanh thu (đã thu tiền)",
+    "confirmDelete": "Xóa khách hàng {name}?",
+    "empty": "Chưa có khách hàng nào."
+  },
+  "vendors": {
+    "title": "Nhà cung cấp",
+    "description": "Công ty thanh toán cho các nhà cung cấp này (ví dụ: nhà thầu phụ, dịch vụ). Số đã chi là tổng các khoản chi gắn với nhà cung cấp.",
+    "namePlaceholder": "Ví dụ: ZDN",
+    "meta": "{contact} · {payments} lần thanh toán",
+    "confirmDelete": "Xóa nhà cung cấp {name}?",
+    "empty": "Chưa có nhà cung cấp nào."
+  },
+  "edit": {
+    "clientTitle": "Sửa khách hàng",
+    "vendorTitle": "Sửa nhà cung cấp",
+    "save": "Lưu thay đổi"
+  },
+  "toast": {
+    "clientAdded": "Đã thêm khách hàng",
+    "vendorAdded": "Đã thêm nhà cung cấp",
+    "clientUpdated": "Đã cập nhật khách hàng",
+    "vendorUpdated": "Đã cập nhật nhà cung cấp",
+    "clientDeleted": "Đã xóa khách hàng",
+    "vendorDeleted": "Đã xóa nhà cung cấp"
+  },
+  "errors": {
+    "clientNameRequired": "Tên khách hàng không được để trống.",
+    "clientHasLinks": "Gỡ các dự án/hóa đơn bán ra đang gắn với khách hàng này trước khi xóa.",
+    "vendorNameRequired": "Tên nhà cung cấp không được để trống.",
+    "vendorHasLinks": "Gỡ các bút toán/hóa đơn mua vào đang gắn với nhà cung cấp này trước khi xóa."
+  }
+}

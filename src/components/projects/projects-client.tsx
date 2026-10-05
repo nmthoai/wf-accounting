@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,8 @@ type ClientOpt = { id: string; name: string };
 const vnd = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " ₫";
 
 export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; clients: ClientOpt[] }) {
+  const t = useTranslations("projects");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [addingProject, setAddingProject] = useState(false);
   const [projectClientId, setProjectClientId] = useState("");
@@ -36,7 +39,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
       else if (res.message) notify.error(res.message);
       router.refresh();
     } catch {
-      notify.error("Something went wrong — please try again.");
+      notify.error(tc("errors.somethingWrong"));
     } finally {
       setBusyId(null);
     }
@@ -51,13 +54,13 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
     fd.set("clientId", projectClientId);
     try {
       const res = await createProject(fd);
-      if (!res.success) { setErr(res.message || "Could not create project."); return; }
-      notify.success("Project created", (fd.get("name") as string).trim());
+      if (!res.success) { setErr(res.message || t("errors.couldNotCreate")); return; }
+      notify.success(t("toast.created"), (fd.get("name") as string).trim());
       form.reset();
       setProjectClientId("");
       router.refresh();
     } catch {
-      notify.error("Something went wrong — please try again.");
+      notify.error(tc("errors.somethingWrong"));
     } finally {
       setAddingProject(false);
     }
@@ -71,38 +74,35 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
       DONE: "bg-blue-100 text-blue-700",
       ARCHIVED: "bg-gray-200 text-gray-600",
     };
-    const label: Record<string, string> = {
-      NOT_STARTED: "Not Started", ACTIVE: "Active", PENDING: "Pending", DONE: "Done", ARCHIVED: "Archived",
-    };
-    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[s] || ""}`}>{label[s] || s}</span>;
+    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[s] || ""}`}>{t.has(`status.${s}`) ? t(`status.${s}`) : s}</span>;
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Project profitability</CardTitle>
-        <CardDescription>Net = income − expenses from transactions tagged to each project (actual cash). Click a project for its cost breakdown.</CardDescription>
+        <CardTitle>{t("list.title")}</CardTitle>
+        <CardDescription>{t("list.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <form onSubmit={handleAddProject} className="flex gap-3 items-end flex-wrap">
           <div className="space-y-2 flex-1 min-w-[160px]">
-            <Label htmlFor="name">New project</Label>
-            <Input id="name" name="name" placeholder="e.g. AI Character Dev" required />
+            <Label htmlFor="name">{t("list.newProject")}</Label>
+            <Input id="name" name="name" placeholder={t("list.namePlaceholder")} required />
           </div>
           <div className="space-y-2 w-44">
-            <Label>Client</Label>
+            <Label>{t("list.client")}</Label>
             <Select value={projectClientId} onValueChange={(v) => setProjectClientId(v === "none" ? "" : v || "")}>
               <SelectTrigger>
-                {projectClientId ? <span>{clients.find(c => c.id === projectClientId)?.name}</span> : <span className="text-muted-foreground">No client</span>}
+                {projectClientId ? <span>{clients.find(c => c.id === projectClientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No client</SelectItem>
+                <SelectItem value="none">{t("noClient")}</SelectItem>
                 {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <Button type="submit" disabled={addingProject} className="gap-2">
-            {addingProject ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />} Add
+            {addingProject ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />} {tc("actions.add")}
           </Button>
         </form>
         {err && <p className="text-sm text-destructive">{err}</p>}
@@ -114,17 +114,17 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                 <Link href={`/projects/${p.id}`} className="text-sm font-medium flex items-center gap-2 hover:text-primary hover:underline">
                   {p.name} {statusBadge(p.status)}
                   {p.openCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700" title={`${p.openCount} unpaid invoice/bill · ${p.openLabel}`}>
-                      {p.openCount} unpaid
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700" title={t("list.unpaidTitle", { count: p.openCount, amounts: p.openLabel })}>
+                      {t("list.unpaid", { count: p.openCount })}
                     </span>
                   )}
                   {p.attachmentCount > 0 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600" title={`${p.attachmentCount} attached document${p.attachmentCount > 1 ? "s" : ""}`}>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600" title={t("list.attachmentsTitle", { count: p.attachmentCount })}>
                       <Paperclip className="h-3 w-3" /> {p.attachmentCount}
                     </span>
                   )}
                 </Link>
-                <span className="text-xs text-muted-foreground">{p.clientName || "No client"} · {p.txnCount} txns</span>
+                <span className="text-xs text-muted-foreground">{p.clientName || t("noClient")} · {t("list.txnCount", { count: p.txnCount })}</span>
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-green-600">{vnd(p.income)}</span>
@@ -132,23 +132,23 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                 <span className={`font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{vnd(p.net)}</span>
                 {p.status !== "ARCHIVED" ? (
                   <Button variant="outline" size="sm" className="h-8" disabled={busyId === p.id}
-                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ARCHIVED"), "Project archived", p.name)}>
-                    Archive
+                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ARCHIVED"), t("toast.archived"), p.name)}>
+                    {t("list.archive")}
                   </Button>
                 ) : (
                   <Button variant="outline" size="sm" className="h-8" disabled={busyId === p.id}
-                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ACTIVE"), "Project reactivated", p.name)}>
-                    Reactivate
+                    onClick={() => run(p.id, () => setProjectStatus(p.id, "ACTIVE"), t("toast.reactivated"), p.name)}>
+                    {t("list.reactivate")}
                   </Button>
                 )}
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === p.id}
-                  onClick={() => { if (confirm(`Delete project ${p.name}?`)) run(p.id, () => deleteProject(p.id), "Project deleted", p.name); }}>
+                  onClick={() => { if (confirm(t("list.confirmDelete", { name: p.name }))) run(p.id, () => deleteProject(p.id), t("toast.deleted"), p.name); }}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           ))}
-          {projects.length === 0 && <p className="text-sm text-muted-foreground">No projects yet.</p>}
+          {projects.length === 0 && <p className="text-sm text-muted-foreground">{t("list.empty")}</p>}
         </div>
       </CardContent>
     </Card>

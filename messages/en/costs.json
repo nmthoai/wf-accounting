@@ -1,0 +1,108 @@
+{
+  "page": {
+    "title": "Cost register",
+    "subtitle": "Cloud services and costs the owner paid — pending until reviewed, then into the ledger once"
+  },
+  "payer": {
+    "COMPANY": "Company",
+    "OWNER": "Owner, personally",
+    "UNKNOWN": "Not established"
+  },
+  "reimbursement": {
+    "UNRESOLVED": "Unresolved",
+    "NOT_NEEDED": "Not needed — company paid",
+    "OWED": "Company owes the owner",
+    "REIMBURSED": "Reimbursed"
+  },
+  "status": {
+    "PENDING": "Pending review",
+    "CONVERTED": "In the ledger",
+    "DISMISSED": "Not a company cost"
+  },
+  "summary": {
+    "pendingTitle": "Pending review",
+    "pendingNote": "{count} receipts — evidence, not yet expenses",
+    "owedTitle": "Owed to the owner",
+    "owedNote": "Owner-paid costs not yet reimbursed",
+    "renewalsTitle": "Renewals in the next 30 days",
+    "renewalsNote": "From the renewal dates recorded"
+  },
+  "views": {
+    "pending": "Pending ({count})",
+    "converted": "In the ledger ({count})",
+    "dismissed": "Not company costs ({count})",
+    "all": "All ({count})"
+  },
+  "list": {
+    "addReceipt": "Add receipt",
+    "service": "service {period}",
+    "number": "#{number}",
+    "billedTo": "billed to {name}",
+    "paidBy": "Paid by {payer}",
+    "renews": "renews {date}",
+    "toLedgerTitle": "Review and add to the ledger (once)",
+    "toLedger": "To ledger",
+    "expense": "Expense",
+    "dismissTitle": "Not a company cost",
+    "dismissPrompt": "Why is this not a company cost?",
+    "reopenTitle": "Back to pending",
+    "deleteTitle": "Delete (entered by mistake)",
+    "deleteConfirm": "Delete {provider} {date}? Its receipt files go too.",
+    "empty": "Nothing here."
+  },
+  "toast": {
+    "saved": "Receipt saved",
+    "added": "Receipt added to the register",
+    "dismissed": "Marked as not a company cost",
+    "reopened": "Moved back to pending",
+    "deleted": "Receipt deleted",
+    "linked": "Receipt linked to the expense",
+    "couldNotLink": "Could not link."
+  },
+  "form": {
+    "addTitle": "Add a receipt to the register",
+    "locked": "In the ledger — the receipt's details stay as recorded; the review fields can still change.",
+    "provider": "Provider",
+    "providerPlaceholder": "e.g. Google Workspace, OpenAI, Contabo",
+    "receiptDate": "Receipt date",
+    "amount": "Amount as printed",
+    "periodFrom": "Service period from",
+    "periodTo": "to",
+    "receiptNumber": "Invoice / receipt number",
+    "billedTo": "Billed to",
+    "billedToPlaceholder": "As printed — the company, or a person",
+    "notes": "Evidence notes",
+    "notesPlaceholder": "Payment method, where the receipt is, anything unusual",
+    "payer": "Paid by",
+    "reimbursement": "Reimbursement",
+    "document": "Document",
+    "renewal": "Next renewal",
+    "reviewNote": "Review notes",
+    "reviewNotePlaceholder": "Business use, the accountant's view, open questions",
+    "files": "Receipt files",
+    "alreadyAttached": "{count} already attached",
+    "submitAdd": "Add to register"
+  },
+  "duplicates": {
+    "intro": "Already in the ledger? These expenses look like the same payment:",
+    "link": "Link this one",
+    "otherwise": "Otherwise, fill in the form below to add it as a new expense."
+  },
+  "errors": {
+    "providerRequired": "Who is the provider?",
+    "dateRequired": "Enter the date on the receipt.",
+    "amountRequired": "Enter the amount as printed.",
+    "unsupportedCurrency": "Unsupported currency.",
+    "periodReversed": "The service period ends before it starts.",
+    "duplicate": "Already in the register: {provider} {ref}.",
+    "reasonRequired": "Give the reason.",
+    "onlyPendingDismiss": "Only pending items can be dismissed.",
+    "ledgerItemsNoDelete": "Items in the ledger can't be deleted.",
+    "onlyPendingLink": "Only pending items can be linked.",
+    "chooseExpense": "Choose an expense.",
+    "expenseReversed": "That expense has been reversed — link its correction.",
+    "expenseTaken": "That expense already comes from another register item.",
+    "itemTaken": "That register item is already in the ledger or dismissed.",
+    "itemGone": "That register item no longer exists."
+  }
+}

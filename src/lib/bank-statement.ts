@@ -1,4 +1,5 @@
 import * as xlsx from "xlsx";
+import { translator, type Translate } from "@/i18n/server";
 
 // Reads a bank statement export (XLSX/CSV). The transaction table is found by
 // its column headers (Vietnamese or English), so the column order doesn't
@@ -160,7 +161,7 @@ const OPENING = ["so du dau ky", "so du dau", "opening balance", "beginning bala
 const CLOSING = ["so du cuoi ky", "so du cuoi", "closing balance", "ending balance"];
 const EPS = 0.005;
 
-function readSheet(name: string, rows: unknown[][]): ParsedStatement | null {
+function readSheet(name: string, rows: unknown[][], t: Translate): ParsedStatement | null {
   const head = findHeader(rows);
   if (!head) return null;
   const { cols } = head;
@@ -197,14 +198,14 @@ function readSheet(name: string, rows: unknown[][]): ParsedStatement | null {
   const flows = (ls: StatementLine[]) => ls.every((l, i) => i === 0 || l.balance === null || ls[i - 1].balance === null || Math.abs(ls[i - 1].balance! + l.amount - l.balance!) < EPS);
   const last = lines[lines.length - 1];
   if (lines[0].txnDate > last.txnDate || (+lines[0].txnDate === +last.txnDate && !flows(lines) && flows([...lines].reverse()))) lines = lines.reverse();
-  if (!flows(lines)) warnings.push("The running balance doesn't follow the line order everywhere — check the totals below against the bank.");
+  if (!flows(lines)) warnings.push(t("statement.warnings.order"));
 
   const derivedOpening = lines[0].balance !== null ? Math.round((lines[0].balance - lines[0].amount) * 100) / 100 : null;
   const derivedClosing = lines[lines.length - 1].balance;
   const statedOpening = labelled(rows, OPENING);
   const statedClosing = labelled(rows, CLOSING);
-  if (statedOpening !== null && derivedOpening !== null && Math.abs(statedOpening - derivedOpening) > EPS) warnings.push("The stated opening balance differs from the running balance.");
-  if (statedClosing !== null && derivedClosing !== null && Math.abs(statedClosing - derivedClosing) > EPS) warnings.push("The stated closing balance differs from the running balance.");
+  if (statedOpening !== null && derivedOpening !== null && Math.abs(statedOpening - derivedOpening) > EPS) warnings.push(t("statement.warnings.opening"));
+  if (statedClosing !== null && derivedClosing !== null && Math.abs(statedClosing - derivedClosing) > EPS) warnings.push(t("statement.warnings.closing"));
 
   const stated = statedPeriod(rows.slice(0, head.start));
   const inPeriod = stated && lines.every((l) => l.txnDate >= stated.from && l.txnDate <= stated.to);
@@ -232,9 +233,11 @@ function readSheet(name: string, rows: unknown[][]): ParsedStatement | null {
 // cells. Read at most this much — far beyond any real statement.
 const MAX_ROWS = 5000, MAX_COLS = 40, MAX_SHEETS = 5, MAX_CELL = 300;
 
-export function parseStatement(buf: Buffer): ParsedStatement | { error: string } {
+// Messages (errors, warnings) come from `t`, the "bank" translator — English
+// unless the caller passes the user's.
+export function parseStatement(buf: Buffer, t: Translate = translator("en", "bank")): ParsedStatement | { error: string } {
   let wb: xlsx.WorkBook;
-  const unreadable = { error: "This file couldn't be read — export the statement as Excel (.xlsx) or CSV." };
+  const unreadable = { error: t("statement.unreadable") };
   try {
     // .xlsx is a zip ("PK"), .xls an OLE file; anything else is text (CSV), read as
     // UTF-8 so Vietnamese headers survive. raw keeps CSV cells as text, so
@@ -258,11 +261,11 @@ export function parseStatement(buf: Buffer): ParsedStatement | { error: string }
     range.e.c = Math.min(range.e.c, range.s.c + MAX_COLS);
     const rows = xlsx.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: true, defval: "", range })
       .map((r) => r.map((v) => (typeof v === "string" ? v.slice(0, MAX_CELL) : v)));
-    const parsed = readSheet(name, rows);
+    const parsed = readSheet(name, rows, t);
     if (parsed && (!best || parsed.lines.length > best.lines.length)) best = parsed;
   }
   if (!best) {
-    return { error: "No transaction table found — the file needs a header row with a date column and debit/credit (or amount) columns." };
+    return { error: t("statement.noTable") };
   }
   return best;
 }

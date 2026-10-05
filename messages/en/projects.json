@@ -1,0 +1,104 @@
+{
+  "status": {
+    "NOT_STARTED": "Not Started",
+    "ACTIVE": "Active",
+    "PENDING": "Pending",
+    "DONE": "Done",
+    "ARCHIVED": "Archived"
+  },
+  "noClient": "No client",
+  "page": {
+    "title": "Projects",
+    "subtitle": "Per-project profitability — click in for the cost breakdown"
+  },
+  "list": {
+    "title": "Project profitability",
+    "description": "Net = income − expenses from transactions tagged to each project (actual cash). Click a project for its cost breakdown.",
+    "newProject": "New project",
+    "namePlaceholder": "e.g. AI Character Dev",
+    "client": "Client",
+    "unpaidTitle": "{count} unpaid invoice/bill · {amounts}",
+    "unpaid": "{count} unpaid",
+    "attachmentsTitle": "{count, plural, one {# attached document} other {# attached documents}}",
+    "txnCount": "{count} txns",
+    "archive": "Archive",
+    "reactivate": "Reactivate",
+    "confirmDelete": "Delete project {name}?",
+    "empty": "No projects yet."
+  },
+  "toast": {
+    "created": "Project created",
+    "archived": "Project archived",
+    "reactivated": "Project reactivated",
+    "deleted": "Project deleted",
+    "saved": "Project saved",
+    "documentsUploaded": "{count, plural, =1 {Document uploaded} other {# documents uploaded}}",
+    "documentRemoved": "Document removed"
+  },
+  "edit": {
+    "title": "Edit project",
+    "name": "Name",
+    "client": "Client",
+    "status": "Status",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "description": "Description",
+    "descriptionPlaceholder": "Scope, deliverables, terms…",
+    "saveChanges": "Save changes"
+  },
+  "detail": {
+    "income": "Income",
+    "expenses": "Expenses",
+    "netProfit": "Net Profit",
+    "outstandingTitle": "Outstanding (unpaid)",
+    "outstandingDescription": "Invoices & bills on this project awaiting payment.",
+    "documentsTitle": "Documents",
+    "documentsDescription": "Contracts & reference files — stored privately, only viewable while signed in.",
+    "costBreakdown": "Cost breakdown by category",
+    "uncategorized": "Uncategorized",
+    "noCosts": "No costs tagged to this project yet.",
+    "transactions": "Transactions",
+    "noTransactions": "No transactions tagged to this project yet.",
+    "typeBadge": {
+      "INCOME": "INCOME",
+      "EXPENSE": "EXPENSE",
+      "TRANSFER_IN": "TRANSFER_IN",
+      "TRANSFER_OUT": "TRANSFER_OUT",
+      "CAPITAL_IN": "CAPITAL_IN",
+      "LOAN_IN": "LOAN_IN",
+      "LOAN_REPAY": "LOAN_REPAY",
+      "OTHER_IN": "OTHER_IN",
+      "OTHER_OUT": "OTHER_OUT"
+    },
+    "table": {
+      "date": "Date",
+      "type": "Type",
+      "category": "Category",
+      "vendor": "Vendor",
+      "description": "Description",
+      "amountVnd": "Amount (VND)"
+    }
+  },
+  "outstanding": {
+    "empty": "Nothing outstanding — all invoices & bills on this project are settled.",
+    "youOwe": "You owe",
+    "owedToYou": "Owed to you",
+    "overdue": "Overdue",
+    "unpaid": "Unpaid",
+    "due": "{ref} · due {date}",
+    "openOf": "open of {amount}"
+  },
+  "documents": {
+    "add": "Add document(s)",
+    "upload": "Upload",
+    "hint": "PDF, Word, Excel or images. Stored privately — only viewable while signed in.",
+    "confirmRemove": "Remove this document? This deletes the file.",
+    "couldNotUpload": "Could not upload.",
+    "couldNotRemove": "Could not remove the document."
+  },
+  "errors": {
+    "couldNotCreate": "Could not create project.",
+    "nameRequired": "Project name is required.",
+    "hasLinked": "This project has linked transactions/invoices. Archive it instead."
+  }
+}

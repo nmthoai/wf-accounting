@@ -1,0 +1,145 @@
+{
+  "page": {
+    "title": "Đối chiếu ngân hàng",
+    "subtitle": "Dòng sao kê ngân hàng được khớp với sổ thu chi",
+    "draftLabel": "{label} (nháp)"
+  },
+  "summary": {
+    "statementTo": "{currency} · sao kê đến ngày {date}",
+    "noStatement": "Chưa nhập sao kê nào.",
+    "bankStatement": "Sao kê ngân hàng",
+    "inApp": "Theo sổ",
+    "difference": "Chênh lệch",
+    "agrees": "Khớp ✓",
+    "toReconcile": "{open}/{lines} dòng sao kê cần đối chiếu",
+    "toReconcileNotOnStatement": "{open}/{lines} dòng sao kê cần đối chiếu · {count, plural, other {# bút toán trên sổ}} chưa có trên sao kê",
+    "drafts": "{count, plural, other {# bút toán nháp}} chỉ được tính vào số dư theo sổ khi đã duyệt"
+  },
+  "tabs": {
+    "open": "Cần đối chiếu ({count})",
+    "all": "Tất cả ({count})",
+    "imports": "Lần nhập ({count})"
+  },
+  "import": {
+    "trigger": "Nhập sao kê",
+    "title": "Nhập sao kê ngân hàng",
+    "account": "Tài khoản",
+    "file": "Tệp sao kê (.xlsx hoặc .csv)",
+    "read": "Đọc sao kê",
+    "summary": "<b>{count} dòng</b> · {from} → {to} · trang tính “{sheet}”",
+    "summaryWithDuplicates": "<b>{count} dòng</b> · {from} → {to} · trang tính “{sheet}”<muted> · {duplicates} dòng đã nhập trước đó</muted>",
+    "columnsRead": "Các cột đã đọc: {columns}",
+    "opening": "Số dư đầu kỳ ({currency})",
+    "closing": "Số dư cuối kỳ ({currency})",
+    "balancePlaceholder": "Theo số ghi trên sao kê",
+    "check": {
+      "matches": "Đầu kỳ {opening} + tiền vào {inflows} − tiền ra {outflows} = {expected} — khớp với số dư cuối kỳ ✓",
+      "off": "Đầu kỳ {opening} + tiền vào {inflows} − tiền ra {outflows} = {expected} — số dư cuối kỳ là {closing}, chênh lệch {diff}",
+      "incomplete": "Đầu kỳ {opening} + tiền vào {inflows} − tiền ra {outflows} = {expected} — nhập cả hai số dư"
+    },
+    "firstLines": "Các dòng đầu",
+    "nothingNew": "Không có dòng mới để nhập",
+    "submit": "{count, plural, other {Nhập # dòng mới}}",
+    "done": "{added, plural, other {Đã nhập # dòng mới.}}",
+    "doneSkipped": "{added, plural, other {Đã nhập # dòng mới}} · {skipped} dòng đã nhập trước đó, bỏ qua.",
+    "couldNotRead": "Không thể đọc tệp.",
+    "couldNotImport": "Không thể nhập.",
+    "toast": {
+      "title": "Đã nhập sao kê",
+      "added": "{added, plural, other {Đã thêm # dòng mới}}",
+      "addedSkipped": "{added, plural, other {Đã thêm # dòng mới}}, bỏ qua {skipped} dòng"
+    }
+  },
+  "fields": {
+    "txnDate": "Ngày giao dịch",
+    "postingDate": "Ngày hạch toán NH",
+    "reference": "Số tham chiếu",
+    "debit": "Tiền ra",
+    "credit": "Tiền vào",
+    "amount": "Số tiền",
+    "balance": "Số dư",
+    "counterparty": "Đối tác",
+    "description": "Nội dung"
+  },
+  "status": {
+    "MATCHED": "Đã khớp",
+    "PARTIAL": "Khớp 1 phần",
+    "UNMATCHED": "Chưa có trên sổ",
+    "partialLeft": "Khớp 1 phần · còn lại {amount}"
+  },
+  "match": {
+    "trigger": "Khớp với bút toán trên sổ",
+    "title": "Khớp dòng sao kê — {amount} ngày {date}",
+    "help": "Chọn các bút toán trên sổ của tài khoản {account} tạo nên dòng này — chọn nhiều bút toán nếu dòng gồm nhiều khoản. Chuyển tiền, vốn góp và vay được ghi nhận trước tại trang Tài khoản tiền.",
+    "noneIn": "Tài khoản {account} không có bút toán tiền vào nào chưa khớp.",
+    "noneOut": "Tài khoản {account} không có bút toán tiền ra nào chưa khớp.",
+    "selected": "Đã chọn {total} trong số {remaining} còn chưa khớp",
+    "selectedOver": "Đã chọn {total} trong số {remaining} còn chưa khớp<over> — vượt quá số tiền của dòng</over>",
+    "submit": "{count, plural, =0 {Khớp bút toán} other {Khớp # bút toán}}",
+    "couldNotMatch": "Không thể khớp.",
+    "toast": {
+      "matched": "Đã khớp dòng sao kê",
+      "partMatched": "Đã khớp một phần dòng sao kê",
+      "linked": "{count, plural, other {# bút toán đã khớp}}"
+    }
+  },
+  "imports": {
+    "title": "Sao kê đã nhập",
+    "description": "Mỗi tệp chỉ được chấp nhận khi số dư đầu kỳ + tiền vào − tiền ra bằng số dư cuối kỳ của tệp đó.",
+    "meta": "{file} · {lines} dòng, {added} dòng mới · nhập ngày {date}",
+    "metaBy": "{file} · {lines} dòng, {added} dòng mới · {name} nhập ngày {date}",
+    "undo": "Hủy lần nhập này",
+    "confirmUndo": "Hủy lần nhập này cùng {count} dòng sao kê?",
+    "removed": "Đã hủy lần nhập",
+    "empty": "Chưa nhập sao kê nào."
+  },
+  "lines": {
+    "date": "Ngày",
+    "account": "Tài khoản",
+    "bankDetails": "Nội dung",
+    "amount": "Số tiền",
+    "inLedger": "Trên sổ",
+    "posted": "hạch toán ngày {date}",
+    "noReference": "không có số tham chiếu",
+    "unmatch": "Bỏ khớp",
+    "unmatched": "Đã bỏ khớp bút toán",
+    "suggested": "Gợi ý: {label} · {date}",
+    "match": "Khớp",
+    "newEntry": "Thêm bút toán thu/chi từ dòng này",
+    "empty": "Chưa có dòng sao kê — nhập sao kê để bắt đầu.",
+    "allMatched": "Mọi dòng sao kê đều đã khớp với sổ thu chi."
+  },
+  "notOnStatement": {
+    "title": "Có trên sổ nhưng không có trên sao kê",
+    "description": "Các bút toán của tài khoản ngân hàng trong kỳ sao kê mà chưa có dòng sao kê nào tương ứng — kiểm tra lại tài khoản và ngày, hoặc khớp chúng ở phía trên."
+  },
+  "statement": {
+    "unreadable": "Không thể đọc tệp này — hãy xuất sao kê dạng Excel (.xlsx) hoặc CSV.",
+    "noTable": "Không tìm thấy bảng giao dịch — tệp cần có dòng tiêu đề gồm cột ngày và các cột ghi Nợ/ghi Có (hoặc số tiền).",
+    "warnings": {
+      "order": "Ở một số chỗ, số dư lũy kế không theo đúng thứ tự các dòng — hãy đối chiếu các số tổng bên trên với ngân hàng.",
+      "opening": "Số dư đầu kỳ ghi trên sao kê khác với số dư lũy kế.",
+      "closing": "Số dư cuối kỳ ghi trên sao kê khác với số dư lũy kế."
+    }
+  },
+  "errors": {
+    "chooseFile": "Chọn tệp sao kê.",
+    "chooseAccount": "Chọn tài khoản cho sao kê này.",
+    "wrongCurrency": "Sao kê này bằng {statementCurrency}, nhưng tài khoản {account} dùng {accountCurrency}.",
+    "enterBalances": "Nhập số dư đầu kỳ và cuối kỳ của sao kê.",
+    "doesNotAddUp": "Số liệu sao kê không cân: đầu kỳ {opening} + tiền vào {inflows} − tiền ra {outflows} = {expected}, nhưng số dư cuối kỳ là {closing}. Không có dòng nào được nhập.",
+    "chooseEntry": "Chọn ít nhất một bút toán trên sổ.",
+    "entryGone": "Có bút toán không còn tồn tại — hãy tải lại trang.",
+    "reversed": "Không thể khớp bút toán đã đảo — hãy khớp bút toán điều chỉnh tương ứng.",
+    "alreadyMatched": "“{name}” đã được khớp với một dòng sao kê khác.",
+    "alreadyMatchedUnnamed": "“Bút toán đó” đã được khớp với một dòng sao kê khác.",
+    "postedUnmatch": "Bút toán này đã ghi sổ — chỉ chủ doanh nghiệp mới được bỏ khớp.",
+    "statementMatched": "Một số dòng của sao kê này đã khớp với bút toán trên sổ — hãy bỏ khớp các dòng đó trước.",
+    "statementOverlaps": "Một sao kê đã nhập khác có kỳ trùng với kỳ này — hãy hủy lần nhập đó trước.",
+    "lineGone": "Dòng sao kê đó không còn tồn tại.",
+    "otherAccount": "Dòng sao kê thuộc tài khoản {account} — bút toán cũng phải thuộc tài khoản này.",
+    "lineInEntryOut": "Dòng sao kê là tiền vào; bút toán này là tiền ra.",
+    "lineOutEntryIn": "Dòng sao kê là tiền ra; bút toán này là tiền vào.",
+    "moreThanLine": "Vượt quá số tiền của dòng sao kê ({amount})."
+  }
+}

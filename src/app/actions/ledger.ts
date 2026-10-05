@@ -8,7 +8,8 @@ import { persistUploads, removeUploadFile } from "@/lib/uploads";
 import { resolveFx } from "@/lib/fx";
 import { CURRENCIES, EPS } from "@/lib/money";
 import { refreshInvoiceStatus, invoicesOf } from "@/lib/invoice-status";
-import { reviewProblem } from "@/lib/review";
+import { reviewProblem, type ReviewProblem } from "@/lib/review";
+import { getT } from "@/i18n/server";
 import { bankLinkProblem } from "@/lib/bank-match";
 import { diff, record, snapshot, type Change } from "@/lib/history";
 import { costItemProblem, convertCostItem, CostItemTaken } from "@/lib/cost-items";
@@ -44,6 +45,11 @@ function parseReview(formData: FormData, type: string, amount: number, isAdmin: 
   return problem ? { error: problem } : { review };
 }
 
+// A review problem as a message in the user's language.
+async function problemText(problem: ReviewProblem) {
+  return (await getT("common"))(`review.problem.${problem}`);
+}
+
 // Shared parsing for the income/expense form. Other movement kinds (transfers,
 // capital, loans) are recorded on the Accounts page.
 async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions) {
@@ -52,22 +58,23 @@ async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions
   const currency = (formData.get("currency") as string) || "VND";
   const dateStr = formData.get("date") as string;
   const accountId = formData.get("accountId") as string;
+  const t = await getT("ledger");
 
-  if (type !== "INCOME" && type !== "EXPENSE") return { error: "Invalid entry type." };
-  if (!(amount > 0) || !dateStr) return { error: "Enter a valid amount and date." };
-  if (!CURRENCIES.includes(currency)) return { error: "Unsupported currency." };
-  if (!accountId) return { error: "Choose the account the money moved through." };
+  if (type !== "INCOME" && type !== "EXPENSE") return { error: t("errors.invalidType") };
+  if (!(amount > 0) || !dateStr) return { error: t("errors.amountDate") };
+  if (!CURRENCIES.includes(currency)) return { error: t("errors.currency") };
+  if (!accountId) return { error: t("errors.chooseAccount") };
 
   const account = await prisma.account.findUnique({ where: { id: accountId } });
-  if (!account) return { error: "Unknown account." };
+  if (!account) return { error: t("errors.unknownAccount") };
   // A USD account only holds USD; a VND account can settle VND or USD amounts.
-  if (account.currency === "USD" && currency !== "USD") return { error: `${account.name} is a USD account — enter the amount in USD.` };
+  if (account.currency === "USD" && currency !== "USD") return { error: t("errors.usdAccount", { name: account.name }) };
 
   const fx = await resolveFx(currency, amount, formData);
   if (!fx.ok) return { error: fx.message };
 
   const r = parseReview(formData, type, amount, isAdmin, prev);
-  if ("error" in r) return { error: r.error };
+  if ("error" in r) return { error: await problemText(r.error as ReviewProblem) };
 
   const description = formData.get("description") as string;
   const invoiceNumber = formData.get("invoiceNumber") as string;
@@ -99,6 +106,7 @@ export async function createTransaction(formData: FormData) {
   const me = await currentUser();
   const parsed = await parseEntry(formData, me.isAdmin);
   if ("error" in parsed) return { success: false, message: parsed.error };
+  const t = await getT("ledger");
 
   // Created from a bank statement line: it must fit that line.
   const bankLineId = (formData.get("bankLineId") as string) || null;
@@ -109,7 +117,7 @@ export async function createTransaction(formData: FormData) {
   // Converted from a cost register item: once only.
   const costItemId = (formData.get("costItemId") as string) || null;
   if (costItemId) {
-    if (parsed.data.type !== "EXPENSE") return { success: false, message: "A register item becomes an expense." };
+    if (parsed.data.type !== "EXPENSE") return { success: false, message: t("errors.registerItemExpense") };
     const problem = await costItemProblem(costItemId);
     if (problem) return { success: false, message: problem };
   }
@@ -117,7 +125,7 @@ export async function createTransaction(formData: FormData) {
   const correctionOfId = (formData.get("correctionOfId") as string) || null;
   if (correctionOfId) {
     const orig = await prisma.transaction.findUnique({ where: { id: correctionOfId }, include: { reversedBy: true } });
-    if (!orig?.reversedBy) return { success: false, message: "Only a reversed entry can be re-entered as a correction." };
+    if (!orig?.reversedBy) return { success: false, message: t("errors.correctionNeedsReversal") };
   }
 
   // The owner's entries count as reviewed; anyone else's wait for review.
@@ -134,7 +142,7 @@ export async function createTransaction(formData: FormData) {
       return t;
     });
   } catch (e) {
-    if (e instanceof CostItemTaken) return { success: false, message: "That register item is already in the ledger or dismissed." };
+    if (e instanceof CostItemTaken) return { success: false, message: t("errors.registerItemTaken") };
     throw e;
   }
 
@@ -176,9 +184,13 @@ export async function editTransaction(id: string, formData: FormData) {
     where: { id },
     include: { reversedBy: { select: { id: true } }, allocations: { include: { invoice: { select: { direction: true, currency: true } } } } },
   });
-  if (!existing) return { success: false, message: "Not found." };
+  if (!existing) {
+    const tc = await getT("common");
+    return { success: false, message: tc("errors.notFound") };
+  }
+  const t = await getT("ledger");
   if (existing.type !== "INCOME" && existing.type !== "EXPENSE") {
-    return { success: false, message: "Edit transfers, capital and loans on the Accounts page." };
+    return { success: false, message: t("errors.editOnAccounts") };
   }
   const reason = ((formData.get("reason") as string) || "").trim() || null;
 
@@ -186,13 +198,13 @@ export async function editTransaction(id: string, formData: FormData) {
   // tax review (often decided after handover) and new attachments can change.
   if (existing.status === "POSTED") {
     // A reversal and the entry it cancels must keep mirroring each other.
-    if (existing.reversalOfId || existing.reversedBy) return { success: false, message: "A reversed entry and its reversal can't change." };
+    if (existing.reversalOfId || existing.reversedBy) return { success: false, message: t("errors.reversedLocked") };
     const r = parseReview(formData, existing.type, existing.amount, me.isAdmin, existing);
-    if ("error" in r) return { success: false, message: r.error };
+    if ("error" in r) return { success: false, message: await problemText(r.error as ReviewProblem) };
     // The VAT on a posted expense feeds the accountant's figures — the owner's to change.
     const review = me.isAdmin ? r.review : { ...r.review, vatAmount: existing.vatAmount };
     const problem = reviewProblem({ type: existing.type, amount: existing.amount, ...review });
-    if (problem) return { success: false, message: problem };
+    if (problem) return { success: false, message: await problemText(problem) };
     await prisma.transaction.update({ where: { id }, data: review });
     await record(diff(id, existing, review, reason), me.name);
     await persistUploads(formData.getAll("files") as File[], { transactionId: id });
@@ -213,11 +225,11 @@ export async function editTransaction(id: string, formData: FormData) {
     const allocated = existing.allocations.reduce((sum, a) => sum + a.amount, 0);
     const fits = allocated <= d.amount + EPS && existing.allocations.every((a) =>
       d.currency === a.invoice.currency && d.type === (a.kind === "FEE" || a.invoice.direction === "PAYABLE" ? "EXPENSE" : "INCOME"));
-    if (!fits) return { success: false, message: "This entry settles an invoice — unlink it on the Invoices page before changing its amount, currency or type." };
+    if (!fits) return { success: false, message: t("errors.settlesInvoice") };
   }
   if (existing.bankLineId) {
     const problem = await bankLinkProblem(existing.bankLineId, [parsed.data], [id]);
-    if (problem) return { success: false, message: `This entry is matched to a bank statement line. ${problem} Unmatch it on the Bank page first.` };
+    if (problem) return { success: false, message: t("errors.bankLineMatched", { problem }) };
   }
 
   // A reviewed entry changed by anyone but the owner goes back to draft.
@@ -259,7 +271,10 @@ export async function postEntries(ids: string[] | null, through?: string) {
   let entries;
   if (ids) entries = (await withLegs(ids)).filter((t) => t.status === "REVIEWED");
   else {
-    if (!through || !/^\d{4}-\d{2}-\d{2}$/.test(through)) return { success: false, message: "Choose the date to post through.", count: 0 };
+    if (!through || !/^\d{4}-\d{2}-\d{2}$/.test(through)) {
+      const t = await getT("ledger");
+      return { success: false, message: t("errors.postThroughDate"), count: 0 };
+    }
     const end = new Date(`${through}T00:00:00.000Z`);
     end.setUTCDate(end.getUTCDate() + 1);
     entries = await prisma.transaction.findMany({ where: { status: "REVIEWED", date: { lt: end } } });
@@ -275,12 +290,13 @@ export async function postEntries(ids: string[] | null, through?: string) {
 export async function reverseEntry(id: string, reason: string) {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  const tl = await getT("ledger"); // `t` is the entry below
   const why = reason?.trim();
-  if (!why) return { success: false, message: "Give the reason for the correction." };
+  if (!why) return { success: false, message: tl("errors.reasonRequired") };
   const t = await prisma.transaction.findUnique({ where: { id }, include: { reversedBy: true } });
-  if (!t || t.status !== "POSTED") return { success: false, message: "Only posted entries are reversed — change drafts and reviewed entries directly." };
-  if (t.reversalOfId) return { success: false, message: "This is itself a reversal." };
-  if (t.reversedBy) return { success: false, message: "This entry has already been reversed." };
+  if (!t || t.status !== "POSTED") return { success: false, message: tl("errors.onlyPostedReversed") };
+  if (t.reversalOfId) return { success: false, message: tl("errors.isReversal") };
+  if (t.reversedBy) return { success: false, message: tl("errors.alreadyReversed") };
 
   const legs = t.transferId ? await prisma.transaction.findMany({ where: { transferId: t.transferId } }) : [t];
   const invoices = await invoicesOf(legs.map((l) => l.id));
@@ -309,7 +325,7 @@ export async function reverseEntry(id: string, reason: string) {
           amount: -l.amount, vndAmount: l.vndAmount === null ? null : -l.vndAmount,
           accountId: l.accountId, loanId: l.loanId, categoryId: l.categoryId, projectId: l.projectId, vendorId: l.vendorId,
           invoiceNumber: l.invoiceNumber, transferId,
-          description: `Reversal: ${l.description ?? ""}`.trim(),
+          description: tl("reverse.descPrefix", { description: l.description ?? "" }).trim(),
           docStatus: l.docStatus, purposeStatus: l.purposeStatus, citStatus: l.citStatus, vatStatus: l.vatStatus,
           vatAmount: l.vatAmount === null ? null : -l.vatAmount, reviewNote: why,
           status: "POSTED", createdBy: me.name, reversalOfId: l.id,
@@ -334,16 +350,17 @@ export async function deleteAttachment(id: string) {
     },
   });
   if (!att) return { success: true };
+  const t = await getT("ledger");
   // Evidence on a posted entry stays; more can be added.
-  if (att.transaction?.status === "POSTED") return { success: false, message: "This entry is posted — its attachments are kept." };
-  if (att.transactionId && att.costItemId) return { success: false, message: "This receipt belongs to a cost register item — it stays with the expense." };
+  if (att.transaction?.status === "POSTED") return { success: false, message: t("errors.attachmentPosted") };
+  if (att.transactionId && att.costItemId) return { success: false, message: t("errors.attachmentCostItem") };
   // A fee only counts against an invoice while it's evidenced.
   if (att.transaction?.allocations.length && att.transaction._count.attachments <= 1) {
-    return { success: false, message: "This is the evidence for a fee on an invoice — unlink the fee first." };
+    return { success: false, message: t("errors.attachmentFeeEvidence") };
   }
   // Staff may tidy drafts and pending register receipts; other evidence is the owner's call.
   const staffMay = att.transaction ? att.transaction.status === "DRAFT" : att.costItem?.status === "PENDING";
-  if (!me.isAdmin && !staffMay) return { success: false, message: "Only the owner can remove this document." };
+  if (!me.isAdmin && !staffMay) return { success: false, message: t("errors.attachmentOwnerOnly") };
 
   await prisma.attachment.delete({ where: { id } });
   await removeUploadFile(att.filePath);

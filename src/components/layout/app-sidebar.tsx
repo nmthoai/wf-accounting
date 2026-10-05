@@ -15,30 +15,34 @@ import {
   PackageCheck,
   BarChart3
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Ledger", href: "/ledger", icon: BookOpen },
-  { name: "Invoices", href: "/invoices", icon: FileText },
-  { name: "Projects", href: "/projects", icon: Briefcase },
-  { name: "Clients & Vendors", href: "/contacts", icon: Users },
-  { name: "Accounts", href: "/accounts", icon: Wallet },
-  { name: "Bank", href: "/bank", icon: Landmark },
-  { name: "Costs", href: "/costs", icon: ReceiptText },
-  { name: "Reports", href: "/reports", icon: BarChart3 },
-  { name: "Handover", href: "/handover", icon: PackageCheck },
-  { name: "Settings", href: "/settings", icon: Settings },
+  // key: the label under common "nav"
+  { key: "dashboard", href: "/", icon: LayoutDashboard },
+  { key: "ledger", href: "/ledger", icon: BookOpen },
+  { key: "invoices", href: "/invoices", icon: FileText },
+  { key: "projects", href: "/projects", icon: Briefcase },
+  { key: "contacts", href: "/contacts", icon: Users },
+  { key: "accounts", href: "/accounts", icon: Wallet },
+  { key: "bank", href: "/bank", icon: Landmark },
+  { key: "costs", href: "/costs", icon: ReceiptText },
+  { key: "reports", href: "/reports", icon: BarChart3 },
+  { key: "handover", href: "/handover", icon: PackageCheck },
+  { key: "settings", href: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const t = useTranslations("common.nav");
+  const tApp = useTranslations("common.app");
 
   return (
     <div className="hidden md:flex md:w-72 md:flex-col border-r bg-card shadow-sm z-20 relative">
       <div className="flex min-h-[4rem] py-4 shrink-0 items-center px-6 border-b">
         <Link href="/" className="flex items-center gap-3 font-serif text-3xl font-black text-primary tracking-tight">
-          <img src="/logo.svg" alt="Logo" className="w-10 h-10 object-contain" />
+          <img src="/logo.svg" alt={tApp("logoAlt")} className="w-10 h-10 object-contain" />
           <span>WorkFactory</span>
         </Link>
       </div>
@@ -48,7 +52,7 @@ export function AppSidebar() {
             const isActive = pathname === item.href;
             return (
               <Link
-                key={item.name}
+                key={item.key}
                 href={item.href}
                 className={cn(
                   isActive
@@ -64,7 +68,7 @@ export function AppSidebar() {
                   )}
                   aria-hidden="true"
                 />
-                {item.name}
+                {t(item.key)}
               </Link>
             );
           })}

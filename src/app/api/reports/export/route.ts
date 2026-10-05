@@ -1,8 +1,9 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import * as xlsx from "xlsx";
-import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, EPS, BOOKED_ALLOCATIONS, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
-import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
+import { EPS, BOOKED_ALLOCATIONS, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
+import { resolveLocale } from "@/i18n/locale";
+import { translator } from "@/i18n/server";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 
@@ -29,6 +30,14 @@ export async function GET(req: Request) {
   const end = new Date(`${to}T00:00:00.000Z`);
   end.setUTCDate(end.getUTCDate() + 1); // make `to` inclusive
 
+  // Sheet names, headers and labels follow the user's language.
+  const locale = await resolveLocale();
+  const tr = translator(locale, "reports");
+  const tc = translator(locale, "common");
+  // A stored value we have a label for is shown translated; anything else as stored.
+  const known = tc as typeof tc & { has: (key: string) => boolean };
+  const label = (group: string, value: string) => (known.has(`${group}.${value}`) ? tc(`${group}.${value}`) : value);
+
   const wb = xlsx.utils.book_new();
   let filename = "";
 
@@ -39,32 +48,40 @@ export async function GET(req: Request) {
       include: { category: true, project: true, vendor: true, account: true, _count: { select: { attachments: true } } },
     });
 
-    const headers = ["Date", "Status", "Type", "Account", "Description", "Category", "Project", "Vendor", "Invoice #", "Currency", "Amount", "Rate", "Rate source", "Amount (VND)", "Attachments",
-      "Document", "Business purpose", "CIT", "Input VAT", "VAT amount", "Review note"];
+    const col = (key: string) => tr(`export.entries.columns.${key}`);
+    const c = {
+      date: col("date"), status: col("status"), type: col("type"), account: col("account"), description: col("description"),
+      category: col("category"), project: col("project"), vendor: col("vendor"), invoiceNumber: col("invoiceNumber"),
+      currency: col("currency"), amount: col("amount"), rate: col("rate"), rateSource: col("rateSource"), amountVnd: col("amountVnd"),
+      attachments: col("attachments"), document: col("document"), purpose: col("purpose"), cit: col("cit"), inputVat: col("inputVat"),
+      vatAmount: col("vatAmount"), reviewNote: col("reviewNote"),
+    };
+    const headers = [c.date, c.status, c.type, c.account, c.description, c.category, c.project, c.vendor, c.invoiceNumber, c.currency, c.amount, c.rate, c.rateSource, c.amountVnd, c.attachments,
+      c.document, c.purpose, c.cit, c.inputVat, c.vatAmount, c.reviewNote];
     const expense = (t: { type: string }) => t.type === "EXPENSE";
     const rows: Record<string, unknown>[] = txns.map((t) => ({
-      "Date": iso(t.date),
-      "Status": `${STATUS_LABEL[t.status] ?? t.status}${t.reversalOfId ? " (reversal)" : ""}`,
-      "Type": TYPE_LABEL[t.type] ?? t.type,
-      "Account": t.account?.name ?? "",
-      "Description": t.description ?? "",
-      "Category": isPnl(t.type) ? t.category?.name ?? "Uncategorized" : "",
-      "Project": t.project?.name ?? "",
-      "Vendor": t.vendor?.name ?? "",
-      "Invoice #": t.invoiceNumber ?? "",
-      "Currency": t.currency,
-      "Amount": t.amount,
-      "Rate": t.exchangeRate,
-      "Rate source": t.rateSource ? RATE_SOURCE_LABEL[t.rateSource] ?? t.rateSource : "",
-      "Amount (VND)": Math.round(toVnd(t)),
-      "Attachments": t._count.attachments,
+      [c.date]: iso(t.date),
+      [c.status]: t.reversalOfId ? tr("export.entries.reversal", { status: label("status", t.status) }) : label("status", t.status),
+      [c.type]: label("type", t.type),
+      [c.account]: t.account?.name ?? "",
+      [c.description]: t.description ?? "",
+      [c.category]: isPnl(t.type) ? t.category?.name ?? tr("uncategorized") : "",
+      [c.project]: t.project?.name ?? "",
+      [c.vendor]: t.vendor?.name ?? "",
+      [c.invoiceNumber]: t.invoiceNumber ?? "",
+      [c.currency]: t.currency,
+      [c.amount]: t.amount,
+      [c.rate]: t.exchangeRate,
+      [c.rateSource]: t.rateSource ? label("rateSource", t.rateSource) : "",
+      [c.amountVnd]: Math.round(toVnd(t)),
+      [c.attachments]: t._count.attachments,
       // Review status sits beside the bookkeeping, never folded into it.
-      "Document": isPnl(t.type) ? DOC_STATUS[t.docStatus] ?? t.docStatus : "",
-      "Business purpose": expense(t) ? PURPOSE_STATUS[t.purposeStatus] ?? t.purposeStatus : "",
-      "CIT": expense(t) ? CIT_STATUS[t.citStatus] ?? t.citStatus : "",
-      "Input VAT": expense(t) ? VAT_STATUS[t.vatStatus] ?? t.vatStatus : "",
-      "VAT amount": expense(t) && t.vatAmount != null ? t.vatAmount : "",
-      "Review note": t.reviewNote ?? "",
+      [c.document]: isPnl(t.type) ? label("review.doc", t.docStatus) : "",
+      [c.purpose]: expense(t) ? label("review.purpose", t.purposeStatus) : "",
+      [c.cit]: expense(t) ? label("review.cit", t.citStatus) : "",
+      [c.inputVat]: expense(t) ? label("review.vat", t.vatStatus) : "",
+      [c.vatAmount]: expense(t) && t.vatAmount != null ? t.vatAmount : "",
+      [c.reviewNote]: t.reviewNote ?? "",
     }));
 
     // Totals are profit & loss only — transfers, capital and loans are listed but
@@ -73,11 +90,11 @@ export async function GET(req: Request) {
     const totalExpense = txns.filter((t) => t.type === "EXPENSE" && isBooked(t)).reduce((a, t) => a + Math.round(toVnd(t)), 0);
     const blank = Object.fromEntries(headers.map((h) => [h, ""]));
     rows.push({ ...blank });
-    rows.push({ ...blank, "Type": "TOTAL Income", "Amount (VND)": totalIncome });
-    rows.push({ ...blank, "Type": "TOTAL Expense", "Amount (VND)": totalExpense });
-    rows.push({ ...blank, "Type": "NET", "Amount (VND)": totalIncome - totalExpense });
+    rows.push({ ...blank, [c.type]: tr("export.entries.totalIncome"), [c.amountVnd]: totalIncome });
+    rows.push({ ...blank, [c.type]: tr("export.entries.totalExpense"), [c.amountVnd]: totalExpense });
+    rows.push({ ...blank, [c.type]: tr("export.entries.net"), [c.amountVnd]: totalIncome - totalExpense });
 
-    xlsx.utils.book_append_sheet(wb, sheet(rows, headers), "Ledger Entries");
+    xlsx.utils.book_append_sheet(wb, sheet(rows, headers), tr("export.entries.sheet"));
     filename = `wf-ledger_${from}_${to}.xlsx`;
   } else {
     const invoices = await prisma.invoice.findMany({
@@ -86,8 +103,14 @@ export async function GET(req: Request) {
       include: { client: true, vendor: true, project: true, category: true, allocations: BOOKED_ALLOCATIONS },
     });
 
-    const headers = ["Issue Date", "Due Date", "Direction", "Number", "Party", "Project", "Category", "Currency",
-      "Gross", "Received", "Evidenced fees", "Unmatched difference", "Status", "Paid Date", "Notes"];
+    const col = (key: string) => tr(`export.invoices.columns.${key}`);
+    const c = {
+      issueDate: col("issueDate"), dueDate: col("dueDate"), direction: col("direction"), number: col("number"), party: col("party"),
+      project: col("project"), category: col("category"), currency: col("currency"), gross: col("gross"), received: col("received"),
+      fees: col("fees"), difference: col("difference"), status: col("status"), paidDate: col("paidDate"), notes: col("notes"),
+    };
+    const headers = [c.issueDate, c.dueDate, c.direction, c.number, c.party, c.project, c.category, c.currency,
+      c.gross, c.received, c.fees, c.difference, c.status, c.paidDate, c.notes];
     const open: Record<string, Record<string, number>> = { RECEIVABLE: {}, PAYABLE: {} };
     const rows: Record<string, unknown>[] = invoices.map((i) => {
       const s = settlement(i.amount, i.allocations);
@@ -95,34 +118,34 @@ export async function GET(req: Request) {
         open[i.direction][i.currency] = (open[i.direction][i.currency] ?? 0) + s.difference;
       }
       return {
-        "Issue Date": iso(i.issueDate),
-        "Due Date": iso(i.dueDate),
-        "Direction": i.direction === "RECEIVABLE" ? "Receivable (AR)" : "Payable (AP)",
-        "Number": i.number ?? "",
-        "Party": i.direction === "RECEIVABLE" ? (i.client?.name ?? "") : (i.vendor?.name ?? ""),
-        "Project": i.project?.name ?? "",
-        "Category": i.category?.name ?? "",
-        "Currency": i.currency,
-        "Gross": i.amount,
-        "Received": s.received,
-        "Evidenced fees": s.fees,
-        "Unmatched difference": Math.abs(s.difference) > EPS ? s.difference : 0,
-        "Status": i.status,
-        "Paid Date": iso(i.paidDate),
-        "Notes": i.notes ?? "",
+        [c.issueDate]: iso(i.issueDate),
+        [c.dueDate]: iso(i.dueDate),
+        [c.direction]: i.direction === "RECEIVABLE" ? tr("export.invoices.receivable") : tr("export.invoices.payable"),
+        [c.number]: i.number ?? "",
+        [c.party]: i.direction === "RECEIVABLE" ? (i.client?.name ?? "") : (i.vendor?.name ?? ""),
+        [c.project]: i.project?.name ?? "",
+        [c.category]: i.category?.name ?? "",
+        [c.currency]: i.currency,
+        [c.gross]: i.amount,
+        [c.received]: s.received,
+        [c.fees]: s.fees,
+        [c.difference]: Math.abs(s.difference) > EPS ? s.difference : 0,
+        [c.status]: tc(`invoiceStatus.${i.status}`),
+        [c.paidDate]: iso(i.paidDate),
+        [c.notes]: i.notes ?? "",
       };
     });
 
     // Open totals per currency — currencies are never added together.
     const blank = Object.fromEntries(headers.map((h) => [h, ""]));
     rows.push({ ...blank });
-    for (const [dir, label] of [["RECEIVABLE", "Open AR (owed to you)"], ["PAYABLE", "Open AP (you owe)"]] as const) {
+    for (const [dir, openLabel] of [["RECEIVABLE", tr("export.invoices.openAr")], ["PAYABLE", tr("export.invoices.openAp")]] as const) {
       const lines = Object.entries(open[dir]);
-      if (lines.length === 0) rows.push({ ...blank, "Direction": label, "Unmatched difference": 0 });
-      for (const [cur, v] of lines) rows.push({ ...blank, "Direction": label, "Currency": cur, "Unmatched difference": v });
+      if (lines.length === 0) rows.push({ ...blank, [c.direction]: openLabel, [c.difference]: 0 });
+      for (const [cur, v] of lines) rows.push({ ...blank, [c.direction]: openLabel, [c.currency]: cur, [c.difference]: v });
     }
 
-    xlsx.utils.book_append_sheet(wb, sheet(rows, headers), "Invoices & Bills");
+    xlsx.utils.book_append_sheet(wb, sheet(rows, headers), tr("export.invoices.sheet"));
     filename = `wf-invoices_${from}_${to}.xlsx`;
   }
 

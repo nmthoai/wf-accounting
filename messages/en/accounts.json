@@ -1,0 +1,159 @@
+{
+  "page": {
+    "title": "Accounts",
+    "subtitle": "Where the money sits — bank, cash, owner-paid, deposits — plus transfers, capital and loans"
+  },
+  "stats": {
+    "cashBank": "Cash & bank",
+    "cashBankSub": "Per currency — never converted or added together",
+    "termDeposits": "Term deposits",
+    "termDepositsSub": "Parked, not spendable",
+    "ownerPosition": "Owner position",
+    "companyOwesOwner": "Company owes the owner",
+    "ownerHoldsMoney": "Owner holds this company money",
+    "nothingOwed": "Nothing owed either way",
+    "capital": "Capital contributed",
+    "capitalSub": "All capital contributions"
+  },
+  "actions": {
+    "transfer": "Transfer",
+    "capitalOrLoan": "Capital or loan",
+    "newLoan": "New loan",
+    "newAccount": "New account",
+    "classify": "Classify",
+    "reverse": "Reverse (correct a posted movement)"
+  },
+  "unclassified": {
+    "title": "{count, plural, one {# movement need classifying} other {# movements need classifying}}",
+    "description": "Money moved but we don't know why yet — mark it as capital, a loan, or a repayment."
+  },
+  "account": {
+    "meta": "{type} · {currency}",
+    "metaInactive": "{type} · {currency} · inactive",
+    "companyOwes": "Company owes the owner {amount}",
+    "ownerHolds": "Owner holds {amount} of company money",
+    "opening": "Opening {amount} as of {date}",
+    "openingNoDate": "Opening {amount} (no date set)",
+    "empty": "No accounts yet.",
+    "emptyAdmin": "No accounts yet. Add your first one above."
+  },
+  "loans": {
+    "title": "Loans",
+    "description": "Money lent to the company. Outstanding = received − repaid.",
+    "received": "Received {amount}",
+    "repaid": "Repaid {amount}",
+    "outstanding": "Outstanding {amount}",
+    "empty": "No loans recorded."
+  },
+  "movements": {
+    "title": "Transfers, capital & loans",
+    "description": "Money moving between accounts or financing the company. None of it touches profit & loss.",
+    "transfer": "Transfer",
+    "draft": "draft",
+    "reversal": "reversal",
+    "reversed": "reversed",
+    "postedLocked": "Posted — locked",
+    "empty": "Nothing yet. Record a transfer, capital contribution or loan above.",
+    "reversePrompt": "Reverse this posted movement? Give the reason — then record the correct one.",
+    "deleteConfirm": "Delete this movement? A transfer deletes both sides."
+  },
+  "toast": {
+    "movementReversed": "Movement reversed",
+    "couldNotReverse": "Could not reverse.",
+    "movementDeleted": "Movement deleted",
+    "accountSaved": "Account saved",
+    "accountAdded": "Account added",
+    "transferSaved": "Transfer saved",
+    "transferRecorded": "Transfer recorded",
+    "movementSaved": "Movement saved",
+    "movementRecorded": "Movement recorded",
+    "loanAdded": "Loan added"
+  },
+  "form": {
+    "name": "Name",
+    "type": "Type",
+    "currency": "Currency",
+    "date": "Date",
+    "account": "Account",
+    "loan": "Loan",
+    "noteOptional": "Note (optional)",
+    "notesOptional": "Notes (optional)"
+  },
+  "accountDialog": {
+    "editTitle": "Edit {name}",
+    "newTitle": "New account",
+    "namePlaceholder": "e.g. MB VND",
+    "currencyFixed": "Fixed — account has movements.",
+    "openingBalance": "Opening balance ({currency})",
+    "asOfDate": "As of date",
+    "openingHelp": "The balance on that date. Movements dated before it are treated as already included.",
+    "openingHelpOwner": "For an owner account: negative = the company owes the owner; positive = the owner holds company money.",
+    "notesPlaceholder": "e.g. account number ending 1234",
+    "active": "Active (inactive accounts are hidden from pickers but keep their history)",
+    "save": "Save account",
+    "add": "Add account"
+  },
+  "transferDialog": {
+    "editTitle": "Edit transfer",
+    "newTitle": "Transfer between accounts",
+    "intro": "Moves money between your own accounts. It never counts as income or expense.",
+    "from": "From",
+    "to": "To",
+    "amountSent": "Amount sent",
+    "amountSentIn": "Amount sent ({currency})",
+    "amountReceived": "Amount received ({currency})",
+    "exactFigures": "Use the exact figures from the bank statement.",
+    "rate": "Rate for this transfer: <b>{rate} VND/USD</b>",
+    "notePlaceholder": "e.g. USD → VND conversion",
+    "save": "Save transfer",
+    "record": "Record transfer"
+  },
+  "movementDialog": {
+    "editTitle": "Edit movement",
+    "newTitle": "Record capital or loan",
+    "whatIsIt": "What is it?",
+    "financingHelp": "Financing — not income or expense. It changes the account balance but never your profit.",
+    "chooseLoan": "Choose loan",
+    "noLoans": "No {currency} loans — add one with “New loan”",
+    "amount": "Amount",
+    "amountIn": "Amount ({currency})",
+    "save": "Save movement",
+    "record": "Record"
+  },
+  "loanDialog": {
+    "title": "New loan",
+    "lender": "Lender",
+    "lenderPlaceholder": "e.g. Owner — Thoai Nguyen",
+    "notesPlaceholder": "Terms, interest, agreement reference…",
+    "help": "Then record money received and repayments against it — the outstanding amount is calculated for you.",
+    "add": "Add loan"
+  },
+  "select": {
+    "placeholder": "Choose account",
+    "inactiveOption": "{name} · {currency} (inactive)",
+    "empty": "No accounts — an admin adds them on the Accounts page"
+  },
+  "errors": {
+    "locked": "This is posted — reverse it from the ledger entry instead of editing.",
+    "bankMatched": "This is matched to a bank statement line. {problem} Unmatch it on the Bank page first.",
+    "nameRequired": "Account name is required.",
+    "chooseType": "Choose an account type.",
+    "invalidOpeningBalance": "Enter a valid opening balance.",
+    "currencyLocked": "This account already has movements, so its currency can't change.",
+    "lenderRequired": "Who is the lender?",
+    "chooseMovementKind": "Choose what kind of movement this is.",
+    "invalidAmountDate": "Enter a valid amount and date.",
+    "chooseAccount": "Choose an account.",
+    "chooseLoan": "Choose which loan this belongs to.",
+    "loanCurrency": "That loan is in {currency} — use a {currency} account.",
+    "chooseTwoAccounts": "Choose two different accounts.",
+    "unknownAccount": "Unknown account.",
+    "amountArrived": "Enter the {currency} amount that arrived.",
+    "transferNotFound": "Transfer not found."
+  },
+  "fx": {
+    "vndSettled": "Enter the VND amount actually settled.",
+    "invalidRate": "Enter a valid exchange rate.",
+    "noDefaultRate": "There is no default {currency} rate — enter the VND actually settled, or the rate."
+  }
+}

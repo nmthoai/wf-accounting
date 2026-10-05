@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { defaultUsdRate } from "@/lib/fx";
 import { bankLinkProblem } from "@/lib/bank-match";
 import { diff, record, snapshot } from "@/lib/history";
+import { getT, type Translate } from "@/i18n/server";
 
 async function requireUser() {
   const session = await getSession();
@@ -18,7 +19,6 @@ async function requireUser() {
 const startStatus = (me: { isAdmin: boolean }) => (me.isAdmin ? "REVIEWED" : "DRAFT");
 // A reviewed entry changed by anyone but the owner goes back to draft.
 const nextStatus = (me: { isAdmin: boolean }, status: string) => (!me.isAdmin && status === "REVIEWED" ? "DRAFT" : status);
-const LOCKED = "This is posted — reverse it from the ledger entry instead of editing.";
 const reasonOf = (fd: FormData) => ((fd.get("reason") as string) || "").trim() || null;
 
 async function requireAdmin() {
@@ -37,7 +37,9 @@ function revalidateAll() {
 async function stillFits(leg: { id: string; bankLineId: string | null }, data: Parameters<typeof bankLinkProblem>[1][number]) {
   if (!leg.bankLineId) return null;
   const problem = await bankLinkProblem(leg.bankLineId, [data], [leg.id]);
-  return problem ? `This is matched to a bank statement line. ${problem} Unmatch it on the Bank page first.` : null;
+  if (!problem) return null;
+  const t = await getT("accounts");
+  return t("errors.bankMatched", { problem });
 }
 
 const ACCOUNT_TYPES = ["BANK", "CASH", "OWNER", "TERM_DEPOSIT"];
@@ -48,6 +50,7 @@ const LOAN_TYPES = ["LOAN_IN", "LOAN_REPAY"];
 
 export async function saveAccount(id: string | null, formData: FormData) {
   await requireAdmin();
+  const t = await getT("accounts");
   const name = (formData.get("name") as string)?.trim();
   const type = formData.get("type") as string;
   const currency = formData.get("currency") === "USD" ? "USD" : "VND";
@@ -55,9 +58,9 @@ export async function saveAccount(id: string | null, formData: FormData) {
   const openingStr = formData.get("openingDate") as string;
   const notes = (formData.get("notes") as string)?.trim() || null;
 
-  if (!name) return { success: false, message: "Account name is required." };
-  if (!ACCOUNT_TYPES.includes(type)) return { success: false, message: "Choose an account type." };
-  if (isNaN(openingBalance)) return { success: false, message: "Enter a valid opening balance." };
+  if (!name) return { success: false, message: t("errors.nameRequired") };
+  if (!ACCOUNT_TYPES.includes(type)) return { success: false, message: t("errors.chooseType") };
+  if (isNaN(openingBalance)) return { success: false, message: t("errors.invalidOpeningBalance") };
 
   const data = {
     name, type, currency, openingBalance, notes,
@@ -67,9 +70,9 @@ export async function saveAccount(id: string | null, formData: FormData) {
 
   if (id) {
     const existing = await prisma.account.findUnique({ where: { id }, include: { _count: { select: { transactions: true, bankLines: true } } } });
-    if (!existing) return { success: false, message: "Not found." };
+    if (!existing) return { success: false, message: (await getT("common"))("errors.notFound") };
     if (existing.currency !== currency && existing._count.transactions + existing._count.bankLines > 0) {
-      return { success: false, message: "This account already has movements, so its currency can't change." };
+      return { success: false, message: t("errors.currencyLocked") };
     }
     await prisma.account.update({ where: { id }, data });
   } else {
@@ -83,10 +86,11 @@ export async function saveAccount(id: string | null, formData: FormData) {
 
 export async function createLoan(formData: FormData) {
   await requireUser();
+  const t = await getT("accounts");
   const lender = (formData.get("lender") as string)?.trim();
   const currency = formData.get("currency") === "USD" ? "USD" : "VND";
   const notes = (formData.get("notes") as string)?.trim() || null;
-  if (!lender) return { success: false, message: "Who is the lender?" };
+  if (!lender) return { success: false, message: t("errors.lenderRequired") };
 
   await prisma.loan.create({ data: { lender, currency, notes } });
   revalidateAll();
@@ -95,7 +99,7 @@ export async function createLoan(formData: FormData) {
 
 // ---- Capital, loan and unclassified movements -------------------------------
 
-async function parseMovement(formData: FormData) {
+async function parseMovement(formData: FormData, t: Translate) {
   const type = formData.get("type") as string;
   const accountId = formData.get("accountId") as string;
   const amount = parseFloat(formData.get("amount") as string);
@@ -103,16 +107,16 @@ async function parseMovement(formData: FormData) {
   const loanId = (formData.get("loanId") as string) || null;
   const description = (formData.get("description") as string)?.trim() || null;
 
-  if (!MOVEMENT_TYPES.includes(type)) return { error: "Choose what kind of movement this is." };
-  if (!(amount > 0) || !dateStr) return { error: "Enter a valid amount and date." };
+  if (!MOVEMENT_TYPES.includes(type)) return { error: t("errors.chooseMovementKind") };
+  if (!(amount > 0) || !dateStr) return { error: t("errors.invalidAmountDate") };
   const account = accountId ? await prisma.account.findUnique({ where: { id: accountId } }) : null;
-  if (!account) return { error: "Choose an account." };
+  if (!account) return { error: t("errors.chooseAccount") };
 
   const isLoan = LOAN_TYPES.includes(type);
   if (isLoan) {
     const loan = loanId ? await prisma.loan.findUnique({ where: { id: loanId } }) : null;
-    if (!loan) return { error: "Choose which loan this belongs to." };
-    if (loan.currency !== account.currency) return { error: `That loan is in ${loan.currency} — use a ${loan.currency} account.` };
+    if (!loan) return { error: t("errors.chooseLoan") };
+    if (loan.currency !== account.currency) return { error: t("errors.loanCurrency", { currency: loan.currency }) };
   }
 
   // Financing movements stay in the account's own currency (USD valued at the default rate).
@@ -132,7 +136,7 @@ async function parseMovement(formData: FormData) {
 
 export async function recordMovement(formData: FormData) {
   const me = await requireUser();
-  const parsed = await parseMovement(formData);
+  const parsed = await parseMovement(formData, await getT("accounts"));
   if ("error" in parsed) return { success: false, message: parsed.error };
   const t = await prisma.transaction.create({ data: { ...parsed.data, status: startStatus(me), createdBy: me.name } });
   await record([{ entityId: t.id, action: "CREATE", newValue: snapshot(t) }], me.name);
@@ -142,10 +146,11 @@ export async function recordMovement(formData: FormData) {
 
 export async function updateMovement(id: string, formData: FormData) {
   const me = await requireUser();
+  const t = await getT("accounts");
   const existing = await prisma.transaction.findUnique({ where: { id } });
-  if (!existing || !MOVEMENT_TYPES.includes(existing.type)) return { success: false, message: "Not found." };
-  if (existing.status === "POSTED") return { success: false, message: LOCKED };
-  const parsed = await parseMovement(formData);
+  if (!existing || !MOVEMENT_TYPES.includes(existing.type)) return { success: false, message: (await getT("common"))("errors.notFound") };
+  if (existing.status === "POSTED") return { success: false, message: t("errors.locked") };
+  const parsed = await parseMovement(formData, t);
   if ("error" in parsed) return { success: false, message: parsed.error };
   const problem = await stillFits(existing, parsed.data);
   if (problem) return { success: false, message: problem };
@@ -158,24 +163,24 @@ export async function updateMovement(id: string, formData: FormData) {
 
 // ---- Internal transfers (two linked legs) -----------------------------------
 
-async function parseTransfer(formData: FormData) {
+async function parseTransfer(formData: FormData, t: Translate) {
   const fromId = formData.get("fromAccountId") as string;
   const toId = formData.get("toAccountId") as string;
   const amountOut = parseFloat(formData.get("amountOut") as string);
   const dateStr = formData.get("date") as string;
   const description = (formData.get("description") as string)?.trim() || null;
 
-  if (!fromId || !toId || fromId === toId) return { error: "Choose two different accounts." };
+  if (!fromId || !toId || fromId === toId) return { error: t("errors.chooseTwoAccounts") };
   const [from, to] = await Promise.all([
     prisma.account.findUnique({ where: { id: fromId } }),
     prisma.account.findUnique({ where: { id: toId } }),
   ]);
-  if (!from || !to) return { error: "Unknown account." };
-  if (!(amountOut > 0) || !dateStr) return { error: "Enter a valid amount and date." };
+  if (!from || !to) return { error: t("errors.unknownAccount") };
+  if (!(amountOut > 0) || !dateStr) return { error: t("errors.invalidAmountDate") };
 
   const sameCurrency = from.currency === to.currency;
   const amountIn = sameCurrency ? amountOut : parseFloat(formData.get("amountIn") as string);
-  if (!(amountIn > 0)) return { error: `Enter the ${to.currency} amount that arrived.` };
+  if (!(amountIn > 0)) return { error: t("errors.amountArrived", { currency: to.currency }) };
 
   // A cross-currency transfer carries its own rate, implied by the two sides
   // (e.g. 1,100 USD → 28,374,500 VND = 25,795 VND/USD), never the global default.
@@ -206,7 +211,8 @@ async function parseTransfer(formData: FormData) {
 
 export async function createTransfer(formData: FormData) {
   const me = await requireUser();
-  const parsed = await parseTransfer(formData);
+  const t = await getT("accounts");
+  const parsed = await parseTransfer(formData, t);
   if ("error" in parsed) return { success: false, message: parsed.error };
   const transferId = randomUUID();
   const extra = { transferId, status: startStatus(me), createdBy: me.name };
@@ -221,13 +227,14 @@ export async function createTransfer(formData: FormData) {
 
 export async function updateTransfer(transferId: string, formData: FormData) {
   const me = await requireUser();
+  const t = await getT("accounts");
   const legs = await prisma.transaction.findMany({ where: { transferId } });
   const outLeg = legs.find((l) => l.type === "TRANSFER_OUT");
   const inLeg = legs.find((l) => l.type === "TRANSFER_IN");
-  if (!outLeg || !inLeg) return { success: false, message: "Transfer not found." };
-  if (outLeg.status === "POSTED" || inLeg.status === "POSTED") return { success: false, message: LOCKED };
+  if (!outLeg || !inLeg) return { success: false, message: t("errors.transferNotFound") };
+  if (outLeg.status === "POSTED" || inLeg.status === "POSTED") return { success: false, message: t("errors.locked") };
 
-  const parsed = await parseTransfer(formData);
+  const parsed = await parseTransfer(formData, t);
   if ("error" in parsed) return { success: false, message: parsed.error };
   const problem = (await stillFits(outLeg, parsed.out)) ?? (await stillFits(inLeg, parsed.in));
   if (problem) return { success: false, message: problem };

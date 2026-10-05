@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ type Project = {
 };
 
 export function EditProjectDialog({ project, clients }: { project: Project; clients: { id: string; name: string }[] }) {
+  const t = useTranslations("projects");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -33,75 +36,73 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
     fd.set("status", status);
     try {
       const res = await updateProject(project.id, fd);
-      if (!res.success) { setErr(res.message || "Could not save."); return; }
+      if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       setOpen(false);
-      notify.success("Project saved");
+      notify.success(t("toast.saved"));
       router.refresh();
     } catch {
-      notify.error("Something went wrong — please try again.");
+      notify.error(tc("errors.somethingWrong"));
     } finally {
       setSaving(false);
     }
   }
 
-  const statusLabel: Record<string, string> = { NOT_STARTED: "Not Started", ACTIVE: "Active", PENDING: "Pending", DONE: "Done", ARCHIVED: "Archived" };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2" />}>
-        <Pencil className="h-4 w-4" /> Edit
+        <Pencil className="h-4 w-4" /> {tc("actions.edit")}
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Edit project</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("edit.title")}</DialogTitle></DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">{t("edit.name")}</Label>
             <Input id="name" name="name" defaultValue={project.name} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Client</Label>
+              <Label>{t("edit.client")}</Label>
               <Select value={clientId} onValueChange={(v) => setClientId(v === "none" ? "" : v || "")}>
-                <SelectTrigger>{clientId ? <span>{clients.find(c => c.id === clientId)?.name}</span> : <span className="text-muted-foreground">No client</span>}</SelectTrigger>
+                <SelectTrigger>{clientId ? <span>{clients.find(c => c.id === clientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}</SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No client</SelectItem>
+                  <SelectItem value="none">{t("noClient")}</SelectItem>
                   {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t("edit.status")}</Label>
               <Select value={status} onValueChange={(v) => setStatus(v || "ACTIVE")}>
-                <SelectTrigger><span>{statusLabel[status] || status}</span></SelectTrigger>
+                <SelectTrigger><span>{t.has(`status.${status}`) ? t(`status.${status}`) : status}</span></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NOT_STARTED">Not Started</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="DONE">Done</SelectItem>
-                  <SelectItem value="ARCHIVED">Archived</SelectItem>
+                  <SelectItem value="NOT_STARTED">{t("status.NOT_STARTED")}</SelectItem>
+                  <SelectItem value="ACTIVE">{t("status.ACTIVE")}</SelectItem>
+                  <SelectItem value="PENDING">{t("status.PENDING")}</SelectItem>
+                  <SelectItem value="DONE">{t("status.DONE")}</SelectItem>
+                  <SelectItem value="ARCHIVED">{t("status.ARCHIVED")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start date</Label>
+              <Label htmlFor="startDate">{t("edit.startDate")}</Label>
               <Input id="startDate" name="startDate" type="date" defaultValue={project.startDate ?? ""} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="endDate">End date</Label>
+              <Label htmlFor="endDate">{t("edit.endDate")}</Label>
               <Input id="endDate" name="endDate" type="date" defaultValue={project.endDate ?? ""} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t("edit.description")}</Label>
             <textarea id="description" name="description" defaultValue={project.description ?? ""} rows={3}
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              placeholder="Scope, deliverables, terms…" />
+              placeholder={t("edit.descriptionPlaceholder")} />
           </div>
           {err && <p className="text-sm text-destructive">{err}</p>}
           <Button type="submit" className="w-full" disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save changes"}
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("edit.saveChanges")}
           </Button>
         </form>
       </DialogContent>

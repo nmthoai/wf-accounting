@@ -1,0 +1,159 @@
+{
+  "page": {
+    "title": "Tài khoản tiền",
+    "subtitle": "Tiền đang nằm ở đâu — ngân hàng, tiền mặt, chủ DN chi hộ, tiền gửi có kỳ hạn — cùng các khoản chuyển tiền, vốn góp và vay"
+  },
+  "stats": {
+    "cashBank": "Tiền mặt & ngân hàng",
+    "cashBankSub": "Theo từng loại tiền — không quy đổi, không cộng gộp",
+    "termDeposits": "Tiền gửi có kỳ hạn",
+    "termDepositsSub": "Đang gửi có kỳ hạn, chưa chi được",
+    "ownerPosition": "Công nợ với chủ DN",
+    "companyOwesOwner": "Phải trả chủ DN (công ty nợ chủ DN)",
+    "ownerHoldsMoney": "Phải thu chủ DN (chủ DN đang giữ khoản tiền này của công ty)",
+    "nothingOwed": "Không bên nào nợ bên nào",
+    "capital": "Vốn đã góp",
+    "capitalSub": "Tất cả các lần nhận vốn góp"
+  },
+  "actions": {
+    "transfer": "Chuyển tiền",
+    "capitalOrLoan": "Vốn góp / vay",
+    "newLoan": "Thêm khoản vay",
+    "newAccount": "Thêm tài khoản",
+    "classify": "Phân loại",
+    "reverse": "Đảo (điều chỉnh bút toán đã ghi sổ)"
+  },
+  "unclassified": {
+    "title": "{count, plural, other {# bút toán cần phân loại}}",
+    "description": "Đã có tiền vào hoặc ra nhưng chưa rõ lý do — hãy phân loại thành vốn góp, tiền vay hoặc trả nợ gốc vay."
+  },
+  "account": {
+    "meta": "{type} · {currency}",
+    "metaInactive": "{type} · {currency} · ngừng sử dụng",
+    "companyOwes": "Công ty nợ chủ DN {amount}",
+    "ownerHolds": "Chủ DN đang giữ {amount} tiền của công ty",
+    "opening": "Số dư đầu kỳ {amount} tính đến ngày {date}",
+    "openingNoDate": "Số dư đầu kỳ {amount} (chưa đặt ngày chốt)",
+    "empty": "Chưa có tài khoản tiền nào.",
+    "emptyAdmin": "Chưa có tài khoản tiền nào. Thêm tài khoản đầu tiên ở phía trên."
+  },
+  "loans": {
+    "title": "Khoản vay",
+    "description": "Các khoản tiền cho công ty vay. Dư nợ gốc = gốc đã nhận − gốc đã trả.",
+    "received": "Gốc đã nhận {amount}",
+    "repaid": "Gốc đã trả {amount}",
+    "outstanding": "Dư nợ gốc {amount}",
+    "empty": "Chưa ghi nhận khoản vay nào."
+  },
+  "movements": {
+    "title": "Chuyển tiền, vốn góp và vay",
+    "description": "Tiền chuyển giữa các tài khoản hoặc các khoản vốn góp và vay của công ty. Không khoản nào ảnh hưởng đến lãi lỗ.",
+    "transfer": "Chuyển tiền",
+    "draft": "nháp",
+    "reversal": "đảo",
+    "reversed": "đã đảo",
+    "postedLocked": "Đã ghi sổ — đã khóa",
+    "empty": "Chưa có bút toán nào. Ghi nhận chuyển tiền, vốn góp hoặc khoản vay ở phía trên.",
+    "reversePrompt": "Đảo bút toán đã ghi sổ này? Nhập lý do — sau đó ghi nhận lại bút toán đúng.",
+    "deleteConfirm": "Xóa bút toán này? Với chuyển tiền, cả bên chuyển và bên nhận đều bị xóa."
+  },
+  "toast": {
+    "movementReversed": "Đã đảo bút toán",
+    "couldNotReverse": "Không thể đảo bút toán.",
+    "movementDeleted": "Đã xóa bút toán",
+    "accountSaved": "Đã lưu tài khoản",
+    "accountAdded": "Đã thêm tài khoản",
+    "transferSaved": "Đã lưu bút toán chuyển tiền",
+    "transferRecorded": "Đã ghi nhận chuyển tiền",
+    "movementSaved": "Đã lưu bút toán",
+    "movementRecorded": "Đã ghi nhận bút toán",
+    "loanAdded": "Đã thêm khoản vay"
+  },
+  "form": {
+    "name": "Tên",
+    "type": "Loại tài khoản",
+    "currency": "Loại tiền",
+    "date": "Ngày giao dịch",
+    "account": "Tài khoản tiền",
+    "loan": "Khoản vay",
+    "noteOptional": "Ghi chú (không bắt buộc)",
+    "notesOptional": "Ghi chú (không bắt buộc)"
+  },
+  "accountDialog": {
+    "editTitle": "Sửa {name}",
+    "newTitle": "Tài khoản mới",
+    "namePlaceholder": "Ví dụ: MB VND",
+    "currencyFixed": "Cố định — tài khoản đã có bút toán.",
+    "openingBalance": "Số dư đầu kỳ ({currency})",
+    "asOfDate": "Tính đến ngày",
+    "openingHelp": "Số dư tại ngày đó. Các bút toán có ngày trước ngày này được coi là đã tính vào số dư.",
+    "openingHelpOwner": "Với tài khoản chủ DN: số âm = công ty nợ chủ DN; số dương = chủ DN đang giữ tiền công ty.",
+    "notesPlaceholder": "Ví dụ: số tài khoản có đuôi 1234",
+    "active": "Đang sử dụng (tài khoản ngừng sử dụng bị ẩn khỏi danh sách chọn nhưng vẫn giữ lịch sử)",
+    "save": "Lưu tài khoản",
+    "add": "Thêm tài khoản"
+  },
+  "transferDialog": {
+    "editTitle": "Sửa chuyển tiền",
+    "newTitle": "Chuyển tiền giữa các tài khoản",
+    "intro": "Chuyển tiền giữa các tài khoản của chính công ty. Khoản chuyển này không bao giờ được tính là doanh thu hay chi phí.",
+    "from": "Từ tài khoản",
+    "to": "Đến tài khoản",
+    "amountSent": "Số tiền chuyển đi",
+    "amountSentIn": "Số tiền chuyển đi ({currency})",
+    "amountReceived": "Số tiền nhận được ({currency})",
+    "exactFigures": "Nhập đúng số liệu theo sao kê ngân hàng.",
+    "rate": "Tỷ giá của lần chuyển tiền này: <b>{rate} VND/USD</b>",
+    "notePlaceholder": "Ví dụ: đổi USD → VND",
+    "save": "Lưu bút toán chuyển tiền",
+    "record": "Ghi nhận chuyển tiền"
+  },
+  "movementDialog": {
+    "editTitle": "Sửa bút toán",
+    "newTitle": "Ghi nhận vốn góp hoặc vay",
+    "whatIsIt": "Đây là khoản gì?",
+    "financingHelp": "Vốn góp và vay — không phải doanh thu hay chi phí. Khoản này làm thay đổi số dư tài khoản nhưng không bao giờ ảnh hưởng đến lợi nhuận.",
+    "chooseLoan": "Chọn khoản vay",
+    "noLoans": "Chưa có khoản vay {currency} — thêm bằng nút “Thêm khoản vay”",
+    "amount": "Số tiền",
+    "amountIn": "Số tiền ({currency})",
+    "save": "Lưu bút toán",
+    "record": "Ghi nhận"
+  },
+  "loanDialog": {
+    "title": "Khoản vay mới",
+    "lender": "Bên cho vay",
+    "lenderPlaceholder": "Ví dụ: Chủ DN — Thoai Nguyen",
+    "notesPlaceholder": "Điều khoản, lãi suất, số hợp đồng…",
+    "help": "Sau đó ghi nhận tiền vay nhận được và các lần trả nợ gốc cho khoản vay này — dư nợ gốc được tính tự động.",
+    "add": "Thêm khoản vay"
+  },
+  "select": {
+    "placeholder": "Chọn tài khoản",
+    "inactiveOption": "{name} · {currency} (ngừng sử dụng)",
+    "empty": "Chưa có tài khoản tiền — quản trị viên thêm tại trang Tài khoản tiền"
+  },
+  "errors": {
+    "locked": "Bút toán này đã ghi sổ — hãy đảo bút toán tại sổ thu chi thay vì sửa.",
+    "bankMatched": "Bút toán này đã khớp với một dòng sao kê ngân hàng. {problem} Hãy bỏ khớp ở trang Đối chiếu ngân hàng trước.",
+    "nameRequired": "Tên tài khoản không được để trống.",
+    "chooseType": "Chọn loại tài khoản.",
+    "invalidOpeningBalance": "Nhập số dư đầu kỳ hợp lệ.",
+    "currencyLocked": "Tài khoản này đã có bút toán nên không thể đổi loại tiền.",
+    "lenderRequired": "Bên cho vay là ai?",
+    "chooseMovementKind": "Chọn loại nghiệp vụ cho bút toán này.",
+    "invalidAmountDate": "Nhập số tiền và ngày hợp lệ.",
+    "chooseAccount": "Chọn tài khoản tiền.",
+    "chooseLoan": "Chọn khoản vay tương ứng.",
+    "loanCurrency": "Khoản vay đó bằng {currency} — hãy dùng tài khoản {currency}.",
+    "chooseTwoAccounts": "Chọn hai tài khoản khác nhau.",
+    "unknownAccount": "Không tìm thấy tài khoản tiền.",
+    "amountArrived": "Nhập số tiền {currency} đã nhận được.",
+    "transferNotFound": "Không tìm thấy bút toán chuyển tiền."
+  },
+  "fx": {
+    "vndSettled": "Nhập số VND thực tế ngân hàng ghi nhận.",
+    "invalidRate": "Nhập tỷ giá hợp lệ.",
+    "noDefaultRate": "Không có tỷ giá {currency} mặc định — hãy nhập số VND thực tế ngân hàng ghi nhận, hoặc tỷ giá."
+  }
+}

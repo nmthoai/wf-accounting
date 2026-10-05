@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { ContactsClient } from "@/components/contacts/contacts-client";
@@ -5,6 +6,7 @@ import { toVnd, BOOKED } from "@/lib/money";
 
 export default async function ContactsPage() {
   await requirePageSession(); // second line behind the proxy
+  const t = await getTranslations("contacts");
   const [clients, vendors, projects, incomeTx] = await Promise.all([
     prisma.client.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { projects: true, invoices: true } } } }),
     prisma.vendor.findMany({ orderBy: { name: "asc" }, include: { transactions: { where: BOOKED } } }),
@@ -35,8 +37,8 @@ export default async function ContactsPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Clients &amp; Vendors</h1>
-        <p className="text-muted-foreground mt-1">The parties you invoice and pay</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
       </div>
       <ContactsClient clients={clientRows} vendors={vendorRows} />
     </div>

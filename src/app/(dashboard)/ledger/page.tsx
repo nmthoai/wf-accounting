@@ -1,3 +1,4 @@
+import { getTranslations, getLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Paperclip } from "lucide-react";
 import Link from "next/link";
 import { requirePageSession } from "@/lib/session";
-import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, isPnl, isMoneyIn, toVnd, fmtMoney, fmtVnd, vnToday } from "@/lib/money";
+import { isPnl, isMoneyIn, toVnd, fmtMoney, fmtVnd, vnToday } from "@/lib/money";
 import { RowActions, PostThrough } from "@/components/ledger/ledger-actions";
-import { DOC_STATUS, DOC_BADGE, DOC_OPEN, CIT_STATUS, VAT_STATUS } from "@/lib/review";
+import { DOC_BADGE, DOC_OPEN } from "@/lib/review";
+import { fmtDate } from "@/lib/format";
 
 const badge: Record<string, string> = {
   INCOME: "bg-green-100 text-green-700",
@@ -49,6 +51,11 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
   const view = sp.view === "drafts" || sp.view === "docs" || sp.view === "tax" ? sp.view : null;
   const session = await requirePageSession();
   const isAdmin = session?.user?.role === "ADMIN";
+  const tl = await getTranslations("ledger"); // `t` is a transaction below
+  const tc = await getTranslations("common");
+  const locale = await getLocale();
+  // A stored code's label, or the code itself if it has none.
+  const label = (key: string, raw: string) => (tc.has(key) ? tc(key) : raw);
   const [draftCount, docsCount, taxCount, reviewedCount] = await Promise.all([
     prisma.transaction.count({ where: VIEWS.drafts }),
     prisma.transaction.count({ where: VIEWS.docs }),
@@ -73,17 +80,17 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">Ledger</h1>
-          <p className="text-muted-foreground mt-1">All recorded transactions</p>
+          <h1 className="text-3xl font-serif font-bold text-primary">{tl("page.title")}</h1>
+          <p className="text-muted-foreground mt-1">{tl("page.subtitle")}</p>
         </div>
         <Link href="/entry">
-          <Button>New Entry</Button>
+          <Button>{tl("page.newEntry")}</Button>
         </Link>
       </div>
 
       <div className="flex justify-between items-center gap-3 flex-wrap">
         <div className="flex bg-muted p-1 rounded-lg text-sm w-fit flex-wrap">
-          {([[null, "All"], ["drafts", `Drafts (${draftCount})`], ["docs", `Documents to find (${docsCount})`], ["tax", `Tax review pending (${taxCount})`]] as const).map(([v, text]) => (
+          {([[null, tl("tabs.all")], ["drafts", tl("tabs.drafts", { count: draftCount })], ["docs", tl("tabs.docs", { count: docsCount })], ["tax", tl("tabs.tax", { count: taxCount })]] as const).map(([v, text]) => (
             <Link key={text} href={v ? `/ledger?view=${v}` : "/ledger"}
               className={`px-3 py-1 rounded-md font-medium transition-all ${view === v ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</Link>
           ))}
@@ -96,35 +103,37 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Evidence</TableHead>
-                <TableHead className="text-right">Amount (VND)</TableHead>
+                <TableHead>{tl("table.date")}</TableHead>
+                <TableHead>{tl("table.type")}</TableHead>
+                <TableHead>{tl("table.account")}</TableHead>
+                <TableHead>{tl("table.category")}</TableHead>
+                <TableHead>{tl("table.description")}</TableHead>
+                <TableHead>{tl("table.invoiceNumber")}</TableHead>
+                <TableHead>{tl("table.evidence")}</TableHead>
+                <TableHead className="text-right">{tl("table.amountVnd")}</TableHead>
                 <TableHead className="w-[110px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell className="font-medium whitespace-nowrap">{t.date.toLocaleDateString(undefined, { timeZone: "UTC" })}</TableCell>
+                  <TableCell className="font-medium whitespace-nowrap">{fmtDate(t.date, locale)}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1 items-start">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badge[t.type] ?? "bg-slate-200 text-slate-700"}`}>
-                        {TYPE_LABEL[t.type] ?? t.type}
+                        {label(`type.${t.type}`, t.type)}
                       </span>
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${STATUS_BADGE[t.status] ?? ""}`}>
-                        {STATUS_LABEL[t.status] ?? t.status}{t.reversalOfId ? " · reversal" : t.reversedBy ? " · reversed" : ""}
+                        {t.reversalOfId ? tl("row.reversal", { status: label(`status.${t.status}`, t.status) })
+                          : t.reversedBy ? tl("row.reversed", { status: label(`status.${t.status}`, t.status) })
+                          : label(`status.${t.status}`, t.status)}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{t.account?.name ?? <span className="text-amber-700">— none —</span>}</TableCell>
+                  <TableCell className="whitespace-nowrap">{t.account?.name ?? <span className="text-amber-700">{tl("row.noAccount")}</span>}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <span>{isPnl(t.type) ? (t.category?.name || "Uncategorized") : <span className="text-muted-foreground">—</span>}</span>
+                      <span>{isPnl(t.type) ? (t.category?.name || tl("row.uncategorized")) : <span className="text-muted-foreground">—</span>}</span>
                       {t.project && <span className="text-xs text-muted-foreground">{t.project.name}</span>}
                     </div>
                   </TableCell>
@@ -133,13 +142,13 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                       <span className="truncate" title={t.description || ""}>{t.description}</span>
                       {t.allocations.map((a) => (
                         <span key={a.id} className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700"
-                          title={a.kind === "FEE" ? "Evidenced fee linked to this invoice/bill" : "Settles this invoice/bill — don't add a manual duplicate"}>
-                          {a.kind === "FEE" ? "fee → " : "→ "}{a.invoice.number || (a.invoice.direction === "PAYABLE" ? "bill" : "invoice")}
+                          title={a.kind === "FEE" ? tl("row.feeTitle") : tl("row.settlesTitle")}>
+                          {tl(a.kind === "FEE" ? "row.feeLink" : "row.settlesLink", { ref: a.invoice.number || (a.invoice.direction === "PAYABLE" ? tl("row.bill") : tl("row.invoice")) })}
                         </span>
                       ))}
                       {t.type === "INCOME" && t.allocations.length === 0 && (
-                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700" title="Not matched to any invoice yet — link it from the Invoices page">
-                          not matched
+                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700" title={tl("row.notMatchedTitle")}>
+                          {tl("row.notMatched")}
                         </span>
                       )}
                     </div>
@@ -159,21 +168,23 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                         <span className="text-muted-foreground">-</span>
                       )}
                       {t.bankLineId && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap bg-green-50 text-green-700 border border-green-200" title="Matched to a bank statement line">
-                          on statement
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap bg-green-50 text-green-700 border border-green-200" title={tl("row.onStatementTitle")}>
+                          {tl("row.onStatement")}
                         </span>
                       )}
                       {isPnl(t.type) && (
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${DOC_BADGE[t.docStatus] ?? ""}`} title={t.reviewNote ?? undefined}>
-                          {DOC_STATUS[t.docStatus] ?? t.docStatus}
+                          {label(`review.doc.${t.docStatus}`, t.docStatus)}
                         </span>
                       )}
                       {t.type === "EXPENSE" && (
                         <span className="text-[10px] whitespace-nowrap">
-                          <span className={taxTone(t.citStatus, "DEDUCTIBLE")} title="CIT deductibility">CIT: {CIT_STATUS[t.citStatus] ?? t.citStatus}</span>
+                          <span className={taxTone(t.citStatus, "DEDUCTIBLE")} title={tl("row.citTitle")}>{tl("row.cit", { status: label(`review.cit.${t.citStatus}`, t.citStatus) })}</span>
                           <span className="text-muted-foreground"> · </span>
-                          <span className={taxTone(t.vatStatus, "CLAIMABLE")} title="Input VAT">
-                            VAT: {VAT_STATUS[t.vatStatus] ?? t.vatStatus}{t.vatStatus === "CLAIMABLE" && t.vatAmount ? ` ${fmtMoney(t.vatAmount, t.currency)}` : ""}
+                          <span className={taxTone(t.vatStatus, "CLAIMABLE")} title={tl("row.vatTitle")}>
+                            {t.vatStatus === "CLAIMABLE" && t.vatAmount
+                              ? tl("row.vatWithAmount", { status: label(`review.vat.${t.vatStatus}`, t.vatStatus), amount: fmtMoney(t.vatAmount, t.currency) })
+                              : tl("row.vat", { status: label(`review.vat.${t.vatStatus}`, t.vatStatus) })}
                           </span>
                         </span>
                       )}
@@ -187,7 +198,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                       {t.currency !== "VND" && (
                         <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">
                           {fmtVnd(Math.abs(toVnd(t)))} · @{new Intl.NumberFormat("vi-VN").format(Math.round(t.exchangeRate * 100) / 100)}
-                          {t.rateSource && ` ${RATE_SOURCE_LABEL[t.rateSource] ?? t.rateSource}`}
+                          {t.rateSource && ` ${label(`rateSource.${t.rateSource}`, t.rateSource)}`}
                         </span>
                       )}
                     </div>
@@ -201,7 +212,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
               {transactions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    {view ? "Nothing here — all clear." : 'No transactions found. Click "New Entry" to add one.'}
+                    {view ? tl("page.emptyView") : tl("page.empty")}
                   </TableCell>
                 </TableRow>
               )}

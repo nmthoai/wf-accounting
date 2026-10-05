@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,8 @@ import { notify, notifyResult } from "@/components/ui/toast";
 type Doc = { id: string; fileName: string; filePath: string; createdAt: string };
 
 export function ProjectDocuments({ projectId, documents }: { projectId: string; documents: Doc[] }) {
+  const t = useTranslations("projects");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -23,33 +26,33 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
     const form = e.currentTarget;
     const fd = new FormData(form);
     if (!(fd.getAll("files") as File[]).some((f) => f && f.size > 0)) return;
-    const tooBig = uploadProblem(fd.getAll("files") as File[]);
+    const tooBig = uploadProblem(fd.getAll("files") as File[], tc);
     if (tooBig) { notify.error(tooBig); return; }
     setUploading(true);
     try {
       const res = await addProjectDocument(projectId, fd);
       if (res.success) {
         const n = (fd.getAll("files") as File[]).filter((f) => f && f.size > 0).length;
-        notify.success(n === 1 ? "Document uploaded" : `${n} documents uploaded`);
-      } else notify.error(res.message || "Could not upload.");
+        notify.success(t("toast.documentsUploaded", { count: n }));
+      } else notify.error(res.message || t("documents.couldNotUpload"));
       form.reset();
       router.refresh();
     } catch {
-      notify.error("Something went wrong — please try again.");
+      notify.error(tc("errors.somethingWrong"));
     } finally {
       setUploading(false);
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Remove this document? This deletes the file.")) return;
+    if (!confirm(t("documents.confirmRemove"))) return;
     setRemovingId(id);
     try {
       const res = await deleteAttachment(id);
-      notifyResult(res, "Document removed", "Could not remove the document.");
+      notifyResult(res, t("toast.documentRemoved"), t("documents.couldNotRemove"));
       router.refresh();
     } catch {
-      notify.error("Something went wrong — please try again.");
+      notify.error(tc("errors.somethingWrong"));
     } finally { setRemovingId(null); }
   }
 
@@ -66,7 +69,7 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
                 <span className="text-xs text-muted-foreground shrink-0">· {d.createdAt}</span>
               </a>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
-                disabled={removingId === d.id} onClick={() => remove(d.id)} title="Remove">
+                disabled={removingId === d.id} onClick={() => remove(d.id)} title={tc("actions.remove")}>
                 {removingId === d.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               </Button>
             </div>
@@ -76,14 +79,14 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
 
       <form onSubmit={onUpload} className="flex items-end gap-3 flex-wrap">
         <div className="space-y-2 flex-1 min-w-[220px]">
-          <Label htmlFor="files" className="flex items-center gap-2"><UploadCloud className="h-4 w-4" /> Add document(s)</Label>
+          <Label htmlFor="files" className="flex items-center gap-2"><UploadCloud className="h-4 w-4" /> {t("documents.add")}</Label>
           <Input id="files" name="files" type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" />
         </div>
         <Button type="submit" disabled={uploading}>
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload"}
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("documents.upload")}
         </Button>
       </form>
-      <p className="text-xs text-muted-foreground">PDF, Word, Excel or images. Stored privately — only viewable while signed in.</p>
+      <p className="text-xs text-muted-foreground">{t("documents.hint")}</p>
     </div>
   );
 }

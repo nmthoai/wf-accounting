@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import type { Prisma } from "@prisma/client";
+import { getTranslations } from "next-intl/server";
 import { CostsClient, type CostRow } from "@/components/costs/costs-client";
 import type { Totals } from "@/lib/money";
 
@@ -16,6 +17,7 @@ export default async function CostsPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const view = sp.view && sp.view in VIEWS ? sp.view : "pending";
   const session = await requirePageSession();
+  const t = await getTranslations("costs");
   const [items, all] = await Promise.all([
     prisma.costItem.findMany({
       where: VIEWS[view],
@@ -51,8 +53,8 @@ export default async function CostsPage({ searchParams }: { searchParams: Promis
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Cost register</h1>
-        <p className="text-muted-foreground mt-1">Cloud services and costs the owner paid — pending until reviewed, then into the ledger once</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
       </div>
       <CostsClient
         isAdmin={session?.user?.role === "ADMIN"}

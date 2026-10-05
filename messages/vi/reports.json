@@ -1,0 +1,112 @@
+{
+  "uncategorized": "Chưa có khoản mục",
+  "noProject": "(Không thuộc dự án)",
+  "page": {
+    "title": "Báo cáo lãi lỗ",
+    "subtitle": "{month} · theo cơ sở tiền (doanh thu đã thu, chi phí đã chi) · bút toán đã duyệt và đã ghi sổ",
+    "draftsNotIncluded": "{count, plural, other {# bút toán nháp}} trong tháng này chưa được tính — đang chờ duyệt →"
+  },
+  "lines": {
+    "empty": "Không có bút toán nào trong tháng này.",
+    "total": "Tổng cộng"
+  },
+  "cards": {
+    "income": "Doanh thu",
+    "expenses": "Chi phí",
+    "netProfit": "Lợi nhuận",
+    "vsLastMonth": "{arrow} {amount} so với tháng trước"
+  },
+  "byCategory": {
+    "income": "Doanh thu theo khoản mục",
+    "expenses": "Chi phí theo khoản mục"
+  },
+  "byProject": {
+    "title": "Lãi lỗ theo dự án",
+    "project": "Dự án",
+    "income": "Doanh thu",
+    "expenses": "Chi phí",
+    "net": "Lãi/lỗ",
+    "empty": "Không có bút toán nào trong tháng này."
+  },
+  "tax": {
+    "title": "Rà soát thuế",
+    "intro": "Tách riêng khỏi lãi lỗ: ghi nhận một khoản chi không có nghĩa là khoản chi đó được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT. Đây là các quyết định đã ghi nhận đến nay.",
+    "citTitle": "Chi phí trong tháng theo tình trạng được trừ khi tính thuế TNDN",
+    "inputVat": "Thuế GTGT đầu vào",
+    "claimable": "Được khấu trừ (đã có hóa đơn)",
+    "vatPending": "Khoản chi chưa rà soát thuế GTGT",
+    "docsTitle": "Chứng từ cần bổ sung",
+    "entryCount": "{count, plural, other {# bút toán}}",
+    "allDocs": "Mọi bút toán trong tháng này đều đã có hóa đơn hoặc biên lai.",
+    "openLedger": "Mở trong sổ thu chi →"
+  },
+  "monthPicker": {
+    "previous": "Tháng trước",
+    "next": "Tháng sau"
+  },
+  "downloads": {
+    "title": "Tải về tệp Excel",
+    "description": "Xuất dữ liệu gốc theo khoảng thời gian. Sổ thu chi lấy theo ngày giao dịch; hóa đơn lấy theo ngày lập hóa đơn.",
+    "from": "Từ ngày",
+    "to": "Đến ngày",
+    "invalidRange": "Chọn khoảng thời gian hợp lệ (Từ ngày không được sau Đến ngày).",
+    "entries": "Sổ thu chi (.xlsx)",
+    "invoices": "Hóa đơn bán ra & mua vào (.xlsx)"
+  },
+  "export": {
+    "entries": {
+      "sheet": "Sổ thu chi",
+      "columns": {
+        "date": "Ngày giao dịch",
+        "status": "Trạng thái",
+        "type": "Loại nghiệp vụ",
+        "account": "Tài khoản tiền",
+        "description": "Diễn giải",
+        "category": "Khoản mục",
+        "project": "Dự án",
+        "vendor": "Nhà cung cấp",
+        "invoiceNumber": "Số hóa đơn",
+        "currency": "Loại tiền",
+        "amount": "Số tiền (nguyên tệ)",
+        "rate": "Tỷ giá",
+        "rateSource": "Nguồn tỷ giá",
+        "amountVnd": "Số tiền quy đổi (VND)",
+        "attachments": "Tệp đính kèm",
+        "document": "Tình trạng chứng từ",
+        "purpose": "Mục đích phục vụ sản xuất, kinh doanh",
+        "cit": "Thuế TNDN",
+        "inputVat": "Thuế GTGT đầu vào",
+        "vatAmount": "Tiền thuế GTGT",
+        "reviewNote": "Ghi chú rà soát"
+      },
+      "reversal": "{status} (bút toán đảo)",
+      "totalIncome": "TỔNG DOANH THU",
+      "totalExpense": "TỔNG CHI PHÍ",
+      "net": "LÃI (LỖ)"
+    },
+    "invoices": {
+      "sheet": "HĐ bán ra & mua vào",
+      "columns": {
+        "issueDate": "Ngày lập hóa đơn",
+        "dueDate": "Hạn thanh toán",
+        "direction": "Loại công nợ",
+        "number": "Số hóa đơn",
+        "party": "Đối tượng công nợ",
+        "project": "Dự án",
+        "category": "Khoản mục",
+        "currency": "Loại tiền",
+        "gross": "Tổng tiền thanh toán (gồm thuế)",
+        "received": "Đã thanh toán",
+        "fees": "Phí có chứng từ",
+        "difference": "Chênh lệch chưa giải trình",
+        "status": "Trạng thái",
+        "paidDate": "Ngày thanh toán đủ",
+        "notes": "Ghi chú"
+      },
+      "receivable": "Phải thu",
+      "payable": "Phải trả",
+      "openAr": "Còn phải thu",
+      "openAp": "Còn phải trả"
+    }
+  }
+}

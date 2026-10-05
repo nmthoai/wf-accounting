@@ -1,0 +1,108 @@
+{
+  "page": {
+    "title": "Bảng kê chi phí",
+    "subtitle": "Dịch vụ đám mây và chi phí do chủ DN chi hộ — chờ đến khi được rà soát, sau đó hạch toán vào sổ một lần duy nhất"
+  },
+  "payer": {
+    "COMPANY": "Công ty",
+    "OWNER": "Chủ DN chi hộ",
+    "UNKNOWN": "Chưa xác định"
+  },
+  "reimbursement": {
+    "UNRESOLVED": "Chưa xử lý",
+    "NOT_NEEDED": "Không cần — công ty đã trả",
+    "OWED": "Công ty còn nợ chủ DN",
+    "REIMBURSED": "Đã hoàn trả"
+  },
+  "status": {
+    "PENDING": "Chờ hạch toán",
+    "CONVERTED": "Đã hạch toán",
+    "DISMISSED": "Không phải CP công ty"
+  },
+  "summary": {
+    "pendingTitle": "Chờ hạch toán",
+    "pendingNote": "{count} chứng từ — mới là chứng từ, chưa phải khoản chi",
+    "owedTitle": "Phải trả chủ DN",
+    "owedNote": "Chi phí chủ DN đã chi hộ, chưa được hoàn trả",
+    "renewalsTitle": "Gia hạn trong 30 ngày tới",
+    "renewalsNote": "Theo các ngày gia hạn đã ghi nhận"
+  },
+  "views": {
+    "pending": "Chờ hạch toán ({count})",
+    "converted": "Đã hạch toán ({count})",
+    "dismissed": "Không phải CP công ty ({count})",
+    "all": "Tất cả ({count})"
+  },
+  "list": {
+    "addReceipt": "Thêm chứng từ",
+    "service": "kỳ dịch vụ {period}",
+    "number": "số {number}",
+    "billedTo": "người mua {name}",
+    "paidBy": "Người thanh toán: {payer}",
+    "renews": "gia hạn ngày {date}",
+    "toLedgerTitle": "Rà soát và hạch toán vào sổ (chỉ một lần)",
+    "toLedger": "Hạch toán",
+    "expense": "Khoản chi",
+    "dismissTitle": "Không phải chi phí công ty",
+    "dismissPrompt": "Vì sao đây không phải chi phí công ty?",
+    "reopenTitle": "Chuyển lại chờ hạch toán",
+    "deleteTitle": "Xóa (nhập nhầm)",
+    "deleteConfirm": "Xóa {provider} {date}? Các tệp chứng từ đi kèm cũng sẽ bị xóa.",
+    "empty": "Không có gì ở đây."
+  },
+  "toast": {
+    "saved": "Đã lưu chứng từ",
+    "added": "Đã thêm chứng từ vào bảng kê",
+    "dismissed": "Đã đánh dấu không phải chi phí công ty",
+    "reopened": "Đã chuyển lại chờ hạch toán",
+    "deleted": "Đã xóa chứng từ",
+    "linked": "Đã liên kết chứng từ với khoản chi",
+    "couldNotLink": "Không thể liên kết."
+  },
+  "form": {
+    "addTitle": "Thêm chứng từ vào bảng kê",
+    "locked": "Đã hạch toán — thông tin trên chứng từ giữ nguyên như đã ghi nhận; các trường rà soát vẫn có thể thay đổi.",
+    "provider": "Nhà cung cấp dịch vụ",
+    "providerPlaceholder": "Ví dụ: Google Workspace, OpenAI, Contabo",
+    "receiptDate": "Ngày chứng từ",
+    "amount": "Số tiền ghi trên chứng từ",
+    "periodFrom": "Kỳ dịch vụ từ ngày",
+    "periodTo": "đến ngày",
+    "receiptNumber": "Số hóa đơn, chứng từ",
+    "billedTo": "Tên người mua trên chứng từ",
+    "billedToPlaceholder": "Như ghi trên chứng từ — công ty hoặc một cá nhân",
+    "notes": "Ghi chú chứng từ",
+    "notesPlaceholder": "Phương thức thanh toán, nơi lưu chứng từ, điểm bất thường",
+    "payer": "Người thanh toán",
+    "reimbursement": "Hoàn trả",
+    "document": "Tình trạng chứng từ",
+    "renewal": "Ngày gia hạn tiếp theo",
+    "reviewNote": "Ghi chú rà soát",
+    "reviewNotePlaceholder": "Mục đích phục vụ SXKD, ý kiến của kế toán, vấn đề cần làm rõ",
+    "files": "Tệp chứng từ",
+    "alreadyAttached": "{count} tệp đã đính kèm",
+    "submitAdd": "Thêm vào bảng kê"
+  },
+  "duplicates": {
+    "intro": "Đã có trên sổ? Các khoản chi sau có vẻ là cùng một khoản thanh toán:",
+    "link": "Liên kết",
+    "otherwise": "Nếu không, điền biểu mẫu bên dưới để hạch toán thành khoản chi mới."
+  },
+  "errors": {
+    "providerRequired": "Nhà cung cấp dịch vụ là ai?",
+    "dateRequired": "Nhập ngày ghi trên chứng từ.",
+    "amountRequired": "Nhập số tiền ghi trên chứng từ.",
+    "unsupportedCurrency": "Loại tiền không được hỗ trợ.",
+    "periodReversed": "Kỳ dịch vụ có ngày kết thúc trước ngày bắt đầu.",
+    "duplicate": "Đã có trong bảng kê: {provider} {ref}.",
+    "reasonRequired": "Nhập lý do.",
+    "onlyPendingDismiss": "Chỉ chứng từ đang chờ hạch toán mới có thể đánh dấu không phải chi phí công ty.",
+    "ledgerItemsNoDelete": "Không thể xóa chứng từ đã hạch toán.",
+    "onlyPendingLink": "Chỉ chứng từ đang chờ hạch toán mới có thể liên kết.",
+    "chooseExpense": "Chọn một khoản chi.",
+    "expenseReversed": "Khoản chi này đã bị đảo — hãy liên kết bút toán điều chỉnh tương ứng.",
+    "expenseTaken": "Khoản chi này đã được tạo từ một chứng từ khác trong bảng kê.",
+    "itemTaken": "Chứng từ này trong bảng kê đã có trên sổ thu chi hoặc đã được đánh dấu không phải chi phí công ty.",
+    "itemGone": "Chứng từ này không còn trong bảng kê."
+  }
+}

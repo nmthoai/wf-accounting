@@ -5,7 +5,7 @@ import { LoginForm } from "./login-form";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default function LoginPage() {
-  const t = useTranslations("Auth");
+  const t = useTranslations("auth");
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 relative">
@@ -15,7 +15,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8 bg-card/50 backdrop-blur-sm p-8 rounded-2xl border shadow-lg">
         <div className="text-center space-y-4">
           <div className="flex justify-center mb-6">
-            <Image src="/logo.svg" alt="WorkFactory AI Logo" width={80} height={50} priority unoptimized className="dark:brightness-150" />
+            <Image src="/logo.svg" alt={t("logoAlt")} width={80} height={50} priority unoptimized className="dark:brightness-150" />
           </div>
           <h2 className="font-serif text-4xl font-bold tracking-tight">
             <span className="text-primary">Work</span>

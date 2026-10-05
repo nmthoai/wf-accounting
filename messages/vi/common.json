@@ -1,0 +1,132 @@
+{
+  "app": {
+    "title": "Quản lý thu chi kế toán",
+    "metaTitle": "Quản lý thu chi kế toán Workfactory",
+    "metaDescription": "Công cụ kế toán của nền tảng Agentic AI",
+    "logoAlt": "Logo"
+  },
+  "nav": {
+    "dashboard": "Tổng quan",
+    "ledger": "Sổ thu chi",
+    "invoices": "Hóa đơn",
+    "projects": "Dự án",
+    "contacts": "Khách hàng & NCC",
+    "accounts": "Tài khoản",
+    "bank": "Ngân hàng",
+    "costs": "Chi phí",
+    "reports": "Báo cáo",
+    "handover": "Bàn giao",
+    "settings": "Cài đặt",
+    "openSidebar": "Mở thanh bên",
+    "menu": "Menu điều hướng"
+  },
+  "header": {
+    "hello": "Xin chào, <b>{name}</b>",
+    "profile": "Hồ sơ của bạn",
+    "signOut": "Đăng xuất",
+    "signOutTitle": "Đăng xuất?",
+    "signOutBody": "Để đăng nhập lại, bạn sẽ cần mật khẩu và mã xác thực 2FA.",
+    "signOutConfirm": "Có, đăng xuất"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "en": "English",
+    "vi": "Tiếng Việt"
+  },
+  "actions": {
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "add": "Thêm",
+    "close": "Đóng",
+    "confirm": "Xác nhận",
+    "back": "Quay lại",
+    "dismiss": "Đóng",
+    "open": "Mở",
+    "remove": "Xóa",
+    "update": "Cập nhật",
+    "yes": "Có",
+    "no": "Không"
+  },
+  "errors": {
+    "somethingWrong": "Đã xảy ra lỗi — vui lòng thử lại.",
+    "couldNotSave": "Không thể lưu.",
+    "notFound": "Không tìm thấy."
+  },
+  "type": {
+    "INCOME": "Thu",
+    "EXPENSE": "Chi",
+    "TRANSFER_IN": "Chuyển vào",
+    "TRANSFER_OUT": "Chuyển ra",
+    "CAPITAL_IN": "Nhận vốn góp",
+    "LOAN_IN": "Nhận tiền vay",
+    "LOAN_REPAY": "Trả gốc vay",
+    "OTHER_IN": "Vào – chưa phân loại",
+    "OTHER_OUT": "Ra – chưa phân loại"
+  },
+  "accountType": {
+    "BANK": "Ngân hàng",
+    "CASH": "Tiền mặt",
+    "OWNER": "Chủ DN",
+    "TERM_DEPOSIT": "Tiền gửi có kỳ hạn"
+  },
+  "rateSource": {
+    "BANK": "ngân hàng",
+    "MANUAL": "nhập tay",
+    "DEFAULT": "mặc định"
+  },
+  "status": {
+    "DRAFT": "Nháp",
+    "REVIEWED": "Đã duyệt",
+    "POSTED": "Đã ghi sổ"
+  },
+  "invoiceStatus": {
+    "OPEN": "Chưa thanh toán",
+    "PARTIAL": "Thanh toán một phần",
+    "PAID": "Đã thanh toán",
+    "VOID": "Đã hủy ghi nhận"
+  },
+  "direction": {
+    "RECEIVABLE": "Hóa đơn bán ra",
+    "PAYABLE": "Hóa đơn mua vào"
+  },
+  "review": {
+    "doc": {
+      "PENDING": "Chưa kiểm tra",
+      "INVOICE": "Đã có hóa đơn",
+      "RECEIPT": "Chỉ có biên lai",
+      "PAYMENT_ONLY": "Chỉ có chứng từ thanh toán",
+      "MISSING": "Thiếu hóa đơn"
+    },
+    "purpose": {
+      "PENDING": "Chưa xác nhận",
+      "CONFIRMED": "Đã xác nhận phục vụ SXKD",
+      "PERSONAL": "Chi cá nhân — không phải của công ty"
+    },
+    "cit": {
+      "PENDING": "Chờ rà soát",
+      "DEDUCTIBLE": "Được trừ",
+      "NON_DEDUCTIBLE": "Không được trừ"
+    },
+    "vat": {
+      "PENDING": "Chờ rà soát",
+      "CLAIMABLE": "Được khấu trừ",
+      "NOT_CLAIMABLE": "Không được khấu trừ",
+      "NO_VAT": "Chứng từ không có thuế GTGT"
+    },
+    "problem": {
+      "unknownDoc": "Tình trạng chứng từ không xác định.",
+      "unknownStatus": "Tình trạng rà soát không xác định.",
+      "vatTooHigh": "Tiền thuế GTGT phải nhỏ hơn số tiền của bút toán.",
+      "confirmPurpose": "Xác nhận khoản chi phục vụ SXKD trước khi đánh dấu là được trừ hoặc thuế GTGT là được khấu trừ.",
+      "needBasis": "Chưa có hóa đơn hoặc biên lai — ghi chú rà soát cần nêu căn cứ để kế toán dịch vụ tính khoản chi này vào chi phí được trừ.",
+      "vatNeedsInvoice": "Thuế GTGT đầu vào chỉ được khấu trừ khi đã có hóa đơn.",
+      "vatAmountMissing": "Nhập tiền thuế GTGT ghi trên hóa đơn."
+    }
+  },
+  "upload": {
+    "tooBig": "Mỗi lần lưu chỉ được đính kèm tối đa {max} MB — các tệp này có tổng dung lượng {mb} MB. Hãy chia nhỏ và lưu làm nhiều lần."
+  }
+}

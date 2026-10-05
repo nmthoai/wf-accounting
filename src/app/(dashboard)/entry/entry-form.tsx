@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,6 +60,8 @@ export function EntryForm({
   costItem?: { id: string; label: string }; // the cost register receipt this expense records
   locked?: boolean; // posted: only evidence, tax review and new attachments can change
 }) {
+  const t = useTranslations("ledger");
+  const tc = useTranslations("common");
   const router = useRouter();
   const init = initialData ?? prefill;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,6 +81,9 @@ export function EntryForm({
   const [purposeStatus, setPurposeStatus] = useState<string>(init?.purposeStatus || "PENDING");
   const [citStatus, setCitStatus] = useState<string>(init?.citStatus || "PENDING");
   const [vatStatus, setVatStatus] = useState<string>(init?.vatStatus || "PENDING");
+  // A review status dropdown's choices, in the order the statuses are defined.
+  const reviewOptions = (group: string, statuses: Record<string, string>) =>
+    Object.fromEntries(Object.keys(statuses).map((k) => [k, tc(`review.${group}.${k}`)]));
 
   function chooseAccount(id: string) {
     setAccountId(id);
@@ -110,7 +116,7 @@ export function EntryForm({
 
   function handleFilesChosen(e: React.ChangeEvent<HTMLInputElement>) {
     const chosen = Array.from(e.target.files ?? []);
-    const problem = uploadProblem([...pendingFiles, ...chosen]);
+    const problem = uploadProblem([...pendingFiles, ...chosen], tc);
     if (problem) notify.error(problem);
     else if (chosen.length) setPendingFiles((prev) => [...prev, ...chosen]);
     e.target.value = ""; // let the same file be re-picked; state is the source of truth
@@ -121,14 +127,14 @@ export function EntryForm({
   }
 
   async function handleRemoveAttachment(id: string) {
-    if (!confirm("Remove this receipt? This deletes the file.")) return;
+    if (!confirm(t("form.confirmRemoveReceipt"))) return;
     setRemovingId(id);
     try {
       const res = await deleteAttachment(id);
-      if (!notifyResult(res, "Receipt removed", "Could not remove the receipt.")) return;
+      if (!notifyResult(res, t("toast.receiptRemoved"), t("toast.receiptRemoveFailed"))) return;
       setAttachments((prev) => prev.filter((a) => a.id !== id));
     } catch {
-      notify.error("Something went wrong — please try again.");
+      notify.error(tc("errors.somethingWrong"));
     } finally {
       setRemovingId(null);
     }
@@ -165,11 +171,11 @@ export function EntryForm({
         res = await createTransaction(formData);
       }
 
-      if (notifyResult(res, isEdit ? "Entry saved" : "Entry created")) {
+      if (notifyResult(res, isEdit ? t("toast.saved") : t("toast.created"))) {
         router.push(bankLine ? "/bank" : costItem ? "/costs" : "/ledger");
       }
     } catch (err) {
-      notify.error("Something went wrong");
+      notify.error(t("toast.somethingWrong"));
     } finally {
       setIsSubmitting(false);
     }
@@ -185,17 +191,17 @@ export function EntryForm({
         <form onSubmit={onSubmit} className="space-y-6">
           {bankLine && (
             <p className="text-sm rounded-md border p-3 bg-muted/30">
-              From bank line <span className="font-medium">{bankLine.label}</span> — saving matches this entry to it.
+              {t.rich("form.fromBankLine", { label: bankLine.label, b: (c) => <span className="font-medium">{c}</span> })}
             </p>
           )}
           {costItem && (
             <p className="text-sm rounded-md border p-3 bg-muted/30">
-              From the cost register: <span className="font-medium">{costItem.label}</span> — saving adds it to the ledger once, with its receipt.
+              {t.rich("form.fromCostItem", { label: costItem.label, b: (c) => <span className="font-medium">{c}</span> })}
             </p>
           )}
           {correction && (
             <p className="text-sm rounded-md border p-3 bg-muted/30">
-              Correcting <span className="font-medium">{correction.label}</span>, which has been reversed — enter the right values. Saving records this as its correction.
+              {t.rich("form.correcting", { label: correction.label, b: (c) => <span className="font-medium">{c}</span> })}
             </p>
           )}
           {/* Type Toggle */}
@@ -209,7 +215,7 @@ export function EntryForm({
                 else setCategoryId("");
               }}
             >
-              Expense
+              {tc("type.EXPENSE")}
             </button>
             <button
               type="button"
@@ -220,7 +226,7 @@ export function EntryForm({
                 else setCategoryId("");
               }}
             >
-              Income
+              {tc("type.INCOME")}
             </button>
           </fieldset>
 
@@ -228,24 +234,24 @@ export function EntryForm({
             {/* Posted entries keep their money and classification. */}
             <fieldset disabled={locked} className="grid gap-6 md:grid-cols-2 md:col-span-2 min-w-0 border-0 p-0 m-0">
             <div className="space-y-2 md:col-span-2">
-              <Label>{type === "INCOME" ? "Received into" : "Paid from"}</Label>
+              <Label>{type === "INCOME" ? t("form.receivedInto") : t("form.paidFrom")}</Label>
               <AccountSelect
                 accounts={accounts.filter((a) => a.isActive || a.id === accountId)}
                 value={accountId}
                 onChange={chooseAccount}
-                placeholder="Choose the account the money moved through"
+                placeholder={t("form.accountPlaceholder")}
               />
-              <p className="text-xs text-muted-foreground">Bank, company cash, or Owner-paid if you paid it personally.</p>
+              <p className="text-xs text-muted-foreground">{t("form.accountHint")}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">{t("form.date")}</Label>
               <Input id="date" name="date" type="date" required defaultValue={defaultDate} />
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center mb-2">
-                <Label htmlFor="amount">Amount</Label>
+                <Label htmlFor="amount">{t("form.amount")}</Label>
                 <div className="flex bg-muted p-0.5 rounded text-xs font-medium cursor-pointer">
                   {CURRENCIES.map((c) => (
                     <span key={c} onClick={() => chooseCurrency(c)}
@@ -258,102 +264,102 @@ export function EntryForm({
 
             {currency !== "VND" && (
               <div className="space-y-2 md:col-span-2 rounded-md border p-3 bg-muted/30">
-                <Label>VND value</Label>
+                <Label>{t("form.vndValue")}</Label>
                 <div className="flex bg-muted p-0.5 rounded text-xs font-medium w-fit">
-                  {([["BANK", "Actual VND settled"], ["MANUAL", "Enter rate"], ...(currency === "USD" ? [["DEFAULT", `Default (${new Intl.NumberFormat("vi-VN").format(defaultUsdRate)})`]] : [])] as [ "BANK" | "MANUAL" | "DEFAULT", string][]).map(([m, label]) => (
+                  {([["BANK", t("form.rateBank")], ["MANUAL", t("form.rateManual")], ...(currency === "USD" ? [["DEFAULT", t("form.rateDefault", { rate: new Intl.NumberFormat("vi-VN").format(defaultUsdRate) })]] : [])] as [ "BANK" | "MANUAL" | "DEFAULT", string][]).map(([m, label]) => (
                     <button key={m} type="button" onClick={() => setRateMode(m)}
                       className={`px-2 py-1 rounded-sm ${rateMode === m ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{label}</button>
                   ))}
                 </div>
                 {rateMode === "BANK" && (
-                  <Input name="vndAmount" type="number" step="1" min="0" required placeholder="VND exactly as on the bank statement"
+                  <Input name="vndAmount" type="number" step="1" min="0" required placeholder={t("form.vndPlaceholder")}
                     defaultValue={init?.vndAmount ?? ""} />
                 )}
                 {rateMode === "MANUAL" && (
-                  <Input name="rate" type="number" step="any" min="0" required placeholder={`VND per ${currency}`}
+                  <Input name="rate" type="number" step="any" min="0" required placeholder={t("form.ratePlaceholder", { currency })}
                     defaultValue={init?.rateSource === "MANUAL" ? init.exchangeRate : ""} />
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {rateMode === "BANK" ? "Most accurate — the rate is worked out from what the bank actually settled."
-                    : rateMode === "MANUAL" ? "Use the rate on the receipt or the bank's rate for that day."
-                    : "Only an estimate — switch to the bank figure when you have the statement."}
+                  {rateMode === "BANK" ? t("form.rateBankHint")
+                    : rateMode === "MANUAL" ? t("form.rateManualHint")
+                    : t("form.rateDefaultHint")}
                 </p>
               </div>
             )}
 
             <div className={`space-y-2 md:col-span-2`}>
-              <Label htmlFor="categoryId">Category</Label>
+              <Label htmlFor="categoryId">{t("form.category")}</Label>
               <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "")} required>
                 <SelectTrigger id="categoryId">
                   {selectedCategory ? (
                     <span className="flex-1 text-left">{selectedCategory.name}</span>
                   ) : (
-                    <span className="flex-1 text-left text-muted-foreground">Select a category</span>
+                    <span className="flex-1 text-left text-muted-foreground">{t("form.categoryPlaceholder")}</span>
                   )}
                 </SelectTrigger>
                 <SelectContent>
                   {filteredCategories.map(c => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
-                  {filteredCategories.length === 0 && <SelectItem value="none" disabled>No categories available</SelectItem>}
+                  {filteredCategories.length === 0 && <SelectItem value="none" disabled>{t("form.noCategories")}</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="projectId">Project (Optional)</Label>
+              <Label htmlFor="projectId">{t("form.project")}</Label>
               <Select value={projectId} onValueChange={(val) => setProjectId(val === "none" ? "" : (val || ""))}>
                 <SelectTrigger id="projectId">
                   {projectId
-                    ? <span className="flex-1 text-left">{projects.find(p => p.id === projectId)?.name || "Unknown"}</span>
-                    : <span className="flex-1 text-left text-muted-foreground">No project</span>}
+                    ? <span className="flex-1 text-left">{projects.find(p => p.id === projectId)?.name || t("form.unknown")}</span>
+                    : <span className="flex-1 text-left text-muted-foreground">{t("form.noProject")}</span>}
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No project</SelectItem>
+                  <SelectItem value="none">{t("form.noProject")}</SelectItem>
                   {projects.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
-                  {projects.length === 0 && <SelectItem value="empty" disabled>No projects yet</SelectItem>}
+                  {projects.length === 0 && <SelectItem value="empty" disabled>{t("form.noProjects")}</SelectItem>}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Tag this entry to a project for per-project profit.</p>
+              <p className="text-xs text-muted-foreground">{t("form.projectHint")}</p>
             </div>
 
             {type === "EXPENSE" && (
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="vendorId">Vendor (Optional)</Label>
+                <Label htmlFor="vendorId">{t("form.vendor")}</Label>
                 <Select value={vendorId} onValueChange={(val) => setVendorId(val === "none" ? "" : (val || ""))}>
                   <SelectTrigger id="vendorId">
                     {vendorId
-                      ? <span className="flex-1 text-left">{vendors.find(v => v.id === vendorId)?.name || "Unknown"}</span>
-                      : <span className="flex-1 text-left text-muted-foreground">No vendor</span>}
+                      ? <span className="flex-1 text-left">{vendors.find(v => v.id === vendorId)?.name || t("form.unknown")}</span>
+                      : <span className="flex-1 text-left text-muted-foreground">{t("form.noVendor")}</span>}
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No vendor</SelectItem>
+                    <SelectItem value="none">{t("form.noVendor")}</SelectItem>
                     {vendors.map(v => (
                       <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
                     ))}
-                    {vendors.length === 0 && <SelectItem value="empty" disabled>No vendors yet</SelectItem>}
+                    {vendors.length === 0 && <SelectItem value="empty" disabled>{t("form.noVendors")}</SelectItem>}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Who you paid — for spend-per-vendor tracking.</p>
+                <p className="text-xs text-muted-foreground">{t("form.vendorHint")}</p>
               </div>
             )}
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="invoiceNumber">Invoice Number (Optional)</Label>
-              <Input id="invoiceNumber" name="invoiceNumber" placeholder="e.g. INV-2026-001" defaultValue={init?.invoiceNumber || ""} />
+              <Label htmlFor="invoiceNumber">{t("form.invoiceNumber")}</Label>
+              <Input id="invoiceNumber" name="invoiceNumber" placeholder={t("form.invoiceNumberPlaceholder")} defaultValue={init?.invoiceNumber || ""} />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="description">Description</Label>
-              <Input id="description" name="description" placeholder="What was this for?" required defaultValue={init?.description || ""} />
+              <Label htmlFor="description">{t("form.description")}</Label>
+              <Input id="description" name="description" placeholder={t("form.descriptionPlaceholder")} required defaultValue={init?.description || ""} />
             </div>
 
             </fieldset>
 
             <div className="space-y-2 md:col-span-2">
-              <Label>Attachments (Receipts / Invoices)</Label>
+              <Label>{t("form.attachments")}</Label>
 
               {attachments.length > 0 && (
                 <div className="space-y-2">
@@ -377,7 +383,7 @@ export function EntryForm({
                           className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
                           disabled={removingId === a.id}
                           onClick={() => handleRemoveAttachment(a.id)}
-                          title="Remove receipt"
+                          title={t("form.removeReceipt")}
                         >
                           {removingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                         </Button>
@@ -394,7 +400,7 @@ export function EntryForm({
                       <span className="flex items-center gap-2 text-sm text-foreground truncate" title={f.name}>
                         <Paperclip className="h-4 w-4 shrink-0 text-primary" />
                         <span className="truncate">{f.name}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">· to upload</span>
+                        <span className="text-xs text-muted-foreground shrink-0">{t("form.toUpload")}</span>
                       </span>
                       <Button
                         type="button"
@@ -402,7 +408,7 @@ export function EntryForm({
                         size="icon"
                         className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
                         onClick={() => removePendingFile(idx)}
-                        title="Remove"
+                        title={tc("actions.remove")}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -419,53 +425,53 @@ export function EntryForm({
                       htmlFor="files"
                       className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:text-primary/80"
                     >
-                      <span>{isEdit ? "Add more files" : "Upload files"}</span>
+                      <span>{isEdit ? t("form.addMoreFiles") : t("form.uploadFiles")}</span>
                       <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf,.zip,application/zip,application/x-zip-compressed" onChange={handleFilesChosen} />
                     </label>
-                    <p className="pl-1">or take a photo</p>
+                    <p className="pl-1">{t("form.orTakePhoto")}</p>
                   </div>
-                  <p className="text-xs leading-5 text-muted-foreground mt-2">PNG, JPG, PDF, ZIP (e.g. original e-invoice) — up to 10 MB per save</p>
+                  <p className="text-xs leading-5 text-muted-foreground mt-2">{t("form.fileTypes")}</p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4 md:col-span-2 rounded-md border p-3 bg-muted/30">
               <div>
-                <Label>Evidence &amp; tax review</Label>
+                <Label>{t("form.review")}</Label>
                 <p className="text-xs text-muted-foreground mt-1">
                   {type === "EXPENSE"
-                    ? "Kept apart from the books: recording an expense never makes it deductible or its VAT claimable — each stays pending until reviewed."
-                    : "Kept apart from the books: a payment received doesn't establish its invoice."}
+                    ? t("form.reviewHintExpense")
+                    : t("form.reviewHintIncome")}
                 </p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <StatusSelect id="docStatus" label="Document" options={DOC_STATUS} value={docStatus} onChange={setDocStatus} />
+                <StatusSelect id="docStatus" label={t("form.document")} options={reviewOptions("doc", DOC_STATUS)} value={docStatus} onChange={setDocStatus} />
                 {type === "EXPENSE" && (
                   <>
-                    <StatusSelect id="purposeStatus" label="Business purpose" options={PURPOSE_STATUS} value={purposeStatus} onChange={setPurposeStatus} disabled={!isAdmin} />
-                    <StatusSelect id="citStatus" label="CIT deductibility" options={CIT_STATUS} value={citStatus} onChange={setCitStatus} disabled={!isAdmin} />
-                    <StatusSelect id="vatStatus" label="Input VAT" options={VAT_STATUS} value={vatStatus} onChange={setVatStatus} disabled={!isAdmin} />
+                    <StatusSelect id="purposeStatus" label={t("form.purpose")} options={reviewOptions("purpose", PURPOSE_STATUS)} value={purposeStatus} onChange={setPurposeStatus} disabled={!isAdmin} />
+                    <StatusSelect id="citStatus" label={t("form.cit")} options={reviewOptions("cit", CIT_STATUS)} value={citStatus} onChange={setCitStatus} disabled={!isAdmin} />
+                    <StatusSelect id="vatStatus" label={t("form.vat")} options={reviewOptions("vat", VAT_STATUS)} value={vatStatus} onChange={setVatStatus} disabled={!isAdmin} />
                     <div className="space-y-2">
-                      <Label htmlFor="vatAmount">VAT on the invoice ({currency})</Label>
-                      <Input id="vatAmount" name="vatAmount" type="number" step="any" min="0" placeholder="As printed — blank if none" defaultValue={init?.vatAmount ?? ""} />
+                      <Label htmlFor="vatAmount">{t("form.vatAmount", { currency })}</Label>
+                      <Input id="vatAmount" name="vatAmount" type="number" step="any" min="0" placeholder={t("form.vatAmountPlaceholder")} defaultValue={init?.vatAmount ?? ""} />
                     </div>
                   </>
                 )}
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="reviewNote">Review notes</Label>
-                  <Input id="reviewNote" name="reviewNote" placeholder="Purpose evidence, the accountant's basis, open questions" defaultValue={init?.reviewNote || ""} />
+                  <Label htmlFor="reviewNote">{t("form.reviewNote")}</Label>
+                  <Input id="reviewNote" name="reviewNote" placeholder={t("form.reviewNotePlaceholder")} defaultValue={init?.reviewNote || ""} />
                 </div>
               </div>
               {type === "EXPENSE" && !isAdmin && (
-                <p className="text-xs text-muted-foreground">Business purpose, CIT and VAT are recorded by the owner after the accountant&apos;s review.</p>
+                <p className="text-xs text-muted-foreground">{t("form.ownerDecides")}</p>
               )}
             </div>
           </div>
 
           {isEdit && (
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason for the change (optional)</Label>
-              <Input id="reason" name="reason" placeholder="Kept in the entry's history" />
+              <Label htmlFor="reason">{t("form.reason")}</Label>
+              <Input id="reason" name="reason" placeholder={t("form.reasonPlaceholder")} />
             </div>
           )}
 
@@ -473,10 +479,10 @@ export function EntryForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {t("form.saving")}
               </>
             ) : (
-              locked ? "Save review" : isEdit ? "Update Transaction" : "Save Transaction"
+              locked ? t("form.saveReview") : isEdit ? t("form.update") : t("form.save")
             )}
           </Button>
         </form>

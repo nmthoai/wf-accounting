@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
-import { accountDelta, isPnl, isBooked, TYPE_LABEL } from "@/lib/money";
+import { getTranslations } from "next-intl/server";
+import { accountDelta, isPnl, isBooked } from "@/lib/money";
 import { tolerance } from "@/lib/bank-match";
 import { BankClient, type LineRow, type EntryOpt, type AccountSummary, type StatementRow } from "@/components/bank/bank-client";
 
@@ -11,6 +12,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
   const sp = await searchParams;
   const session = await requirePageSession();
   const isAdmin = session?.user?.role === "ADMIN";
+  const tb = await getTranslations("bank");
+  const tc = await getTranslations("common");
 
   const accounts = await prisma.account.findMany({
     where: { OR: [{ type: "BANK" }, { statements: { some: {} } }] },
@@ -23,8 +26,10 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
     prisma.transaction.findMany({ where: { accountId: { in: accountIds } }, orderBy: { date: "desc" } }),
   ]);
   const acc = new Map(accounts.map((a) => [a.id, a]));
-  const label = (t: { type: string; description: string | null; status: string }) =>
-    `${TYPE_LABEL[t.type] ?? t.type}${t.description ? ` · ${t.description}` : ""}${t.status === "DRAFT" ? " (draft)" : ""}`;
+  const label = (t: { type: string; description: string | null; status: string }) => {
+    const base = `${tc(`type.${t.type}`)}${t.description ? ` · ${t.description}` : ""}`;
+    return t.status === "DRAFT" ? tb("page.draftLabel", { label: base }) : base;
+  };
   // A reversal and the posted entry it cancels net to zero — neither is a bank movement.
   const cancelled = new Set(entries.map((t) => t.reversalOfId).filter(Boolean));
   const live = (t: { id: string; reversalOfId: string | null }) => !t.reversalOfId && !cancelled.has(t.id);
@@ -100,8 +105,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Bank reconciliation</h1>
-        <p className="text-muted-foreground mt-1">Bank statement lines matched to the ledger</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{tb("page.title")}</h1>
+        <p className="text-muted-foreground mt-1">{tb("page.subtitle")}</p>
       </div>
       <BankClient
         isAdmin={isAdmin}

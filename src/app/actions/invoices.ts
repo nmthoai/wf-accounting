@@ -8,6 +8,7 @@ import { defaultUsdRate, resolveFx } from "@/lib/fx";
 import { EPS, fmtMoney, settlement } from "@/lib/money";
 import { refreshInvoiceStatus } from "@/lib/invoice-status";
 import { diff, record, snapshot } from "@/lib/history";
+import { getT } from "@/i18n/server";
 
 async function requireUser() {
   const session = await getSession();
@@ -30,6 +31,7 @@ const linkNote = (inv: { number: string | null; direction: string }, kind: strin
 // Create a receivable (client owes you) or payable (you owe a vendor).
 export async function createInvoice(formData: FormData) {
   await requireUser();
+  const t = await getT("invoices");
 
   const direction = (formData.get("direction") as string) === "PAYABLE" ? "PAYABLE" : "RECEIVABLE";
   const number = (formData.get("number") as string)?.trim() || null;
@@ -43,8 +45,8 @@ export async function createInvoice(formData: FormData) {
   const amount = parseFloat(formData.get("amount") as string);
   const notes = (formData.get("notes") as string)?.trim() || null;
 
-  if (isNaN(amount) || amount <= 0) return { success: false, message: "Enter a valid amount." };
-  if (!issueStr || !dueStr) return { success: false, message: "Issue and due dates are required." };
+  if (isNaN(amount) || amount <= 0) return { success: false, message: t("errors.invalidAmount") };
+  if (!issueStr || !dueStr) return { success: false, message: t("errors.datesRequired") };
 
   let exchangeRate = 1.0;
   if (currency === "USD") {
@@ -81,12 +83,13 @@ export async function createInvoice(formData: FormData) {
 // amounts; the status is recalculated against the new gross.
 export async function updateInvoice(id: string, formData: FormData) {
   const session = await requireUser();
+  const t = await getT("invoices");
   const inv = await prisma.invoice.findUnique({
     where: { id },
     include: { allocations: { include: { transaction: { include: { _count: { select: { allocations: true } } } } } } },
   });
-  if (!inv) return { success: false, message: "Not found." };
-  if (inv.status === "VOID") return { success: false, message: "This invoice is voided." };
+  if (!inv) return { success: false, message: (await getT("common"))("errors.notFound") };
+  if (inv.status === "VOID") return { success: false, message: t("errors.invoiceVoided") };
 
   const number = (formData.get("number") as string)?.trim() || null;
   const clientId = (formData.get("clientId") as string) || null;
@@ -99,10 +102,10 @@ export async function updateInvoice(id: string, formData: FormData) {
   const amount = parseFloat(formData.get("amount") as string);
   const notes = (formData.get("notes") as string)?.trim() || null;
 
-  if (isNaN(amount) || amount <= 0) return { success: false, message: "Enter a valid amount." };
-  if (!issueStr || !dueStr) return { success: false, message: "Issue and due dates are required." };
+  if (isNaN(amount) || amount <= 0) return { success: false, message: t("errors.invalidAmount") };
+  if (!issueStr || !dueStr) return { success: false, message: t("errors.datesRequired") };
   if (currency !== inv.currency && inv.allocations.length > 0) {
-    return { success: false, message: "Payments are linked in the current currency — unlink them before changing it." };
+    return { success: false, message: t("errors.currencyLocked") };
   }
 
   const isReceivable = inv.direction === "RECEIVABLE";
@@ -161,31 +164,35 @@ export async function updateInvoice(id: string, formData: FormData) {
 // in the chosen account, allocated to this invoice/bill.
 export async function recordPayment(id: string, formData: FormData) {
   const session = await requireUser();
+  const t = await getT("invoices");
   const me = session.user?.name ?? null;
   const inv = await prisma.invoice.findUnique({ where: { id }, include: { allocations: true } });
-  if (!inv) return { success: false, message: "Not found." };
-  if (inv.status === "VOID") return { success: false, message: "This is voided." };
+  if (!inv) return { success: false, message: (await getT("common"))("errors.notFound") };
+  if (inv.status === "VOID") return { success: false, message: t("errors.voided") };
 
   const open = settlement(inv.amount, inv.allocations).difference;
-  if (open <= EPS) return { success: false, message: "Nothing left to settle." };
+  if (open <= EPS) return { success: false, message: t("errors.nothingToSettle") };
 
   const amount = parseFloat(formData.get("amount") as string);
-  if (!(amount > 0)) return { success: false, message: "Enter the amount paid." };
+  if (!(amount > 0)) return { success: false, message: t("errors.enterAmountPaid") };
   if (amount > open + EPS) {
-    return { success: false, message: `That's more than what's still open (${fmtMoney(open, inv.currency)}).` };
+    return { success: false, message: t("errors.moreThanOpen", { amount: fmtMoney(open, inv.currency) }) };
   }
 
   const dateStr = formData.get("paidDate") as string;
   const accountId = formData.get("accountId") as string;
   const account = accountId ? await prisma.account.findUnique({ where: { id: accountId } }) : null;
-  if (!account) return { success: false, message: "Choose the account the money moved through." };
+  if (!account) return { success: false, message: t("errors.chooseAccount") };
   if (account.currency === "USD" && inv.currency !== "USD") {
-    return { success: false, message: `${account.name} is a USD account — this invoice is in ${inv.currency}.` };
+    return { success: false, message: t("errors.usdAccount", { account: account.name, currency: inv.currency }) };
   }
   const fx = await resolveFx(inv.currency, amount, formData);
   if (!fx.ok) return { success: false, message: fx.message };
 
   const isReceivable = inv.direction === "RECEIVABLE";
+  const description = isReceivable
+    ? (inv.number ? t("payment.descReceivedNo", { number: inv.number }) : t("payment.descReceived"))
+    : (inv.number ? t("payment.descPaidNo", { number: inv.number }) : t("payment.descPaid"));
   await prisma.$transaction(async (tx) => {
     const t = await tx.transaction.create({
       data: {
@@ -197,9 +204,7 @@ export async function recordPayment(id: string, formData: FormData) {
         rateSource: fx.rateSource,
         accountId: account.id,
         date: dateStr ? new Date(dateStr) : new Date(),
-        description: isReceivable
-          ? `Payment received${inv.number ? ` — Invoice ${inv.number}` : ""}`
-          : `Vendor payment${inv.number ? ` — Bill ${inv.number}` : ""}`,
+        description,
         invoiceNumber: inv.number,
         projectId: inv.projectId,
         categoryId: inv.categoryId,
@@ -225,14 +230,15 @@ export async function recordPayment(id: string, formData: FormData) {
 // transfer that covers several invoices) or a separately evidenced fee.
 export async function linkToInvoice(id: string, formData: FormData) {
   const session = await requireUser();
+  const tr = await getT("invoices");
   const inv = await prisma.invoice.findUnique({ where: { id } });
-  if (!inv) return { success: false, message: "Not found." };
-  if (inv.status === "VOID") return { success: false, message: "This is voided." };
+  if (!inv) return { success: false, message: (await getT("common"))("errors.notFound") };
+  if (inv.status === "VOID") return { success: false, message: tr("errors.voided") };
 
   const kind = formData.get("kind") === "FEE" ? "FEE" : "PAYMENT";
   const transactionId = formData.get("transactionId") as string;
   const amount = parseFloat(formData.get("amount") as string);
-  if (!(amount > 0)) return { success: false, message: "Enter the amount to allocate." };
+  if (!(amount > 0)) return { success: false, message: tr("errors.enterAllocation") };
 
   const t = transactionId
     ? await prisma.transaction.findUnique({
@@ -240,29 +246,29 @@ export async function linkToInvoice(id: string, formData: FormData) {
         include: { allocations: true, reversedBy: { select: { id: true } }, _count: { select: { attachments: true } } },
       })
     : null;
-  if (!t) return { success: false, message: "Choose a ledger entry." };
-  if (t.reversalOfId || t.reversedBy) return { success: false, message: "That entry has been reversed — link its correction instead." };
+  if (!t) return { success: false, message: tr("errors.chooseEntry") };
+  if (t.reversalOfId || t.reversedBy) return { success: false, message: tr("errors.entryReversed") };
   if (t.currency !== inv.currency) {
-    return { success: false, message: `That entry is in ${t.currency}; this invoice is in ${inv.currency}.` };
+    return { success: false, message: tr("errors.currencyMismatch", { entryCurrency: t.currency, currency: inv.currency }) };
   }
 
   if (kind === "PAYMENT") {
     const expected = inv.direction === "RECEIVABLE" ? "INCOME" : "EXPENSE";
     if (t.type !== expected) {
-      return { success: false, message: inv.direction === "RECEIVABLE" ? "A receivable is settled by income." : "A bill is settled by an expense." };
+      return { success: false, message: inv.direction === "RECEIVABLE" ? tr("errors.receivableNeedsIncome") : tr("errors.billNeedsExpense") };
     }
   } else {
     // A fee only counts when it is evidenced — never inferred from a difference.
-    if (t.type !== "EXPENSE") return { success: false, message: "A fee must be an expense entry." };
+    if (t.type !== "EXPENSE") return { success: false, message: tr("errors.feeMustBeExpense") };
     if (t._count.attachments === 0) {
-      return { success: false, message: "Attach the fee evidence (bank advice or receipt) to that ledger entry first." };
+      return { success: false, message: tr("errors.feeNeedsEvidence") };
     }
   }
 
-  if (t.allocations.some((a) => a.invoiceId === id)) return { success: false, message: "Already linked to this invoice." };
+  if (t.allocations.some((a) => a.invoiceId === id)) return { success: false, message: tr("errors.alreadyLinked") };
   const free = t.amount - t.allocations.reduce((s, a) => s + a.amount, 0);
   if (amount > free + EPS) {
-    return { success: false, message: `That entry only has ${fmtMoney(Math.max(0, free), t.currency)} left to allocate.` };
+    return { success: false, message: tr("errors.notEnoughFree", { amount: fmtMoney(Math.max(0, free), t.currency) }) };
   }
 
   await prisma.paymentAllocation.create({ data: { invoiceId: id, transactionId: t.id, kind, amount } });
@@ -274,9 +280,10 @@ export async function linkToInvoice(id: string, formData: FormData) {
 
 export async function unlinkAllocation(allocationId: string) {
   const session = await requireUser();
+  const t = await getT("invoices");
   const a = await prisma.paymentAllocation.findUnique({ where: { id: allocationId }, include: { invoice: true, transaction: { select: { status: true } } } });
-  if (!a) return { success: false, message: "Not found." };
-  if (a.transaction.status === "POSTED" && session.user?.role !== "ADMIN") return { success: false, message: "That payment is posted — only the owner can unlink it." };
+  if (!a) return { success: false, message: (await getT("common"))("errors.notFound") };
+  if (a.transaction.status === "POSTED" && session.user?.role !== "ADMIN") return { success: false, message: t("errors.postedUnlink") };
   await prisma.paymentAllocation.delete({ where: { id: allocationId } });
   await record([{ entityId: a.transactionId, action: "UNLINK", field: "invoice", oldValue: linkNote(a.invoice, a.kind, a.amount) }], session.user?.name);
   await refreshInvoiceStatus([a.invoiceId]);
@@ -286,11 +293,12 @@ export async function unlinkAllocation(allocationId: string) {
 
 export async function voidInvoice(id: string) {
   const session = await requireUser();
-  if (session.user?.role !== "ADMIN") return { success: false, message: "Only the owner can void an invoice." };
+  const t = await getT("invoices");
+  if (session.user?.role !== "ADMIN") return { success: false, message: t("errors.ownerOnlyVoid") };
   const inv = await prisma.invoice.findUnique({ where: { id }, include: { _count: { select: { allocations: true } } } });
-  if (!inv) return { success: false, message: "Not found." };
+  if (!inv) return { success: false, message: (await getT("common"))("errors.notFound") };
   if (inv._count.allocations > 0) {
-    return { success: false, message: "It has payments linked — unlink them first." };
+    return { success: false, message: t("errors.hasPayments") };
   }
   await prisma.invoice.update({ where: { id }, data: { status: "VOID" } });
   await record([{ entity: "Invoice", entityId: id, action: "UPDATE", field: "status", oldValue: inv.status, newValue: "VOID" }], session.user?.name);
@@ -301,10 +309,11 @@ export async function voidInvoice(id: string) {
 export async function deleteInvoice(id: string) {
   const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+  const t = await getT("invoices");
   const inv = await prisma.invoice.findUnique({ where: { id }, include: { attachments: true, _count: { select: { allocations: true } } } });
-  if (!inv) return { success: false, message: "Not found." };
+  if (!inv) return { success: false, message: (await getT("common"))("errors.notFound") };
   if (inv._count.allocations > 0) {
-    return { success: false, message: "It has payments linked — unlink them first." };
+    return { success: false, message: t("errors.hasPayments") };
   }
   for (const a of inv.attachments) await removeUploadFile(a.filePath);
   await prisma.invoice.delete({ where: { id } });

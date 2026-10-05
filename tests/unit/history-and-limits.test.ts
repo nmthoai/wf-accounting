@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { diff, snapshot } from "@/lib/history";
 import { uploadProblem, MAX_UPLOAD_MB } from "@/lib/upload-limit";
+import { translator } from "@/i18n/server";
 
 test("history diff records only tracked fields that changed, with the reason", () => {
   const before = { amount: 100, description: "a", date: new Date("2026-06-01T00:00:00Z"), vatAmount: null, secret: "x" };
@@ -20,8 +21,9 @@ test("snapshot is a one-line picture of an entry", () => {
 
 test("uploads: 10 MB of attachments per save", () => {
   const mb = (n: number) => new File([new Uint8Array(Math.round(n * 1024 * 1024))], `f${n}.pdf`);
+  const en = translator("en", "common");
   assert.equal(MAX_UPLOAD_MB, 10);
-  assert.equal(uploadProblem([mb(4), mb(6)]), null);
-  assert.match(uploadProblem([mb(6), mb(5)])!, /10 MB per save/);
-  assert.equal(uploadProblem([]), null);
+  assert.equal(uploadProblem([mb(4), mb(6)], en), null);
+  assert.match(uploadProblem([mb(6), mb(5)], en)!, /10 MB per save — these come to 11\.0 MB/);
+  assert.equal(uploadProblem([], en), null);
 });

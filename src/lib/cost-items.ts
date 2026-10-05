@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { record } from "@/lib/history";
+import { getT } from "@/i18n/server";
 
 // A register item can become a ledger expense once, while it is pending.
 export async function costItemProblem(id: string) {
   const item = await prisma.costItem.findUnique({ where: { id } });
-  if (!item) return "That register item no longer exists.";
-  if (item.status !== "PENDING" || item.transactionId) return "That register item is already in the ledger or dismissed.";
+  const t = await getT("costs");
+  if (!item) return t("errors.itemGone");
+  if (item.status !== "PENDING" || item.transactionId) return t("errors.itemTaken");
   return null;
 }
 

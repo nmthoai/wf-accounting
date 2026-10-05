@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { defaultUsdRate } from "@/lib/fx";
@@ -8,6 +9,7 @@ const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 export default async function InvoicesPage() {
   const session = await requirePageSession(); // second line behind the proxy
+  const t = await getTranslations("invoices");
   const [usdRate, accounts, invoices, clients, vendors, projects, categories, entries] = await Promise.all([
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
@@ -91,8 +93,8 @@ export default async function InvoicesPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Invoices &amp; Bills</h1>
-        <p className="text-muted-foreground mt-1">What clients owe you, and what you owe vendors</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
       </div>
       <InvoicesClient
         isAdmin={session.user.role === "ADMIN"}

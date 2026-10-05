@@ -1,0 +1,36 @@
+{
+  "page": {
+    "title": "Hồ sơ cá nhân",
+    "subtitle": "Tên và thông tin tài khoản của bạn"
+  },
+  "name": {
+    "title": "Tên của bạn",
+    "description": "Hiển thị trong lời chào ở đầu trang. Để trống nếu muốn dùng tên đăng nhập."
+  },
+  "account": {
+    "title": "Tài khoản đăng nhập",
+    "description": "Để đổi mật khẩu hoặc đặt lại xác thực 2 bước, hãy liên hệ quản trị viên.",
+    "username": "Tên đăng nhập",
+    "role": "Vai trò",
+    "twoFactor": "Xác thực 2 bước",
+    "memberSince": "Tham gia từ",
+    "twoFactorEnabled": "Đã bật",
+    "twoFactorNotSetUp": "Chưa thiết lập"
+  },
+  "roles": {
+    "USER": "Nhân viên",
+    "ADMIN": "Quản trị viên"
+  },
+  "form": {
+    "displayName": "Tên hiển thị",
+    "displayNamePlaceholder": "Ví dụ: Nguyễn Văn A"
+  },
+  "toast": {
+    "saved": "Đã lưu hồ sơ",
+    "connectionError": "Không thể lưu — hãy kiểm tra kết nối rồi thử lại."
+  },
+  "errors": {
+    "unauthorized": "Không có quyền thực hiện",
+    "nameTooLong": "Tên không được dài quá {max} ký tự."
+  }
+}

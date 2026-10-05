@@ -3,6 +3,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getT } from "@/i18n/server";
 
 async function requireUser() {
   const session = await getSession();
@@ -16,7 +17,10 @@ export async function createClient(formData: FormData) {
   const email = (formData.get("email") as string)?.trim() || null;
   const phone = (formData.get("phone") as string)?.trim() || null;
   const notes = (formData.get("notes") as string)?.trim() || null;
-  if (!name) return { success: false, message: "Client name is required." };
+  if (!name) {
+    const t = await getT("contacts");
+    return { success: false, message: t("errors.clientNameRequired") };
+  }
 
   await prisma.client.create({ data: { name, email, phone, notes } });
   revalidatePath("/clients");
@@ -30,7 +34,10 @@ export async function updateClient(id: string, formData: FormData) {
   const email = (formData.get("email") as string)?.trim() || null;
   const phone = (formData.get("phone") as string)?.trim() || null;
   const notes = (formData.get("notes") as string)?.trim() || null;
-  if (!name) return { success: false, message: "Client name is required." };
+  if (!name) {
+    const t = await getT("contacts");
+    return { success: false, message: t("errors.clientNameRequired") };
+  }
 
   await prisma.client.update({ where: { id }, data: { name, email, phone, notes } });
   revalidatePath("/clients");
@@ -44,7 +51,8 @@ export async function deleteClient(id: string) {
   const projects = await prisma.project.count({ where: { clientId: id } });
   const invoices = await prisma.invoice.count({ where: { clientId: id } });
   if (projects > 0 || invoices > 0) {
-    return { success: false, message: "Detach projects/invoices before deleting this client." };
+    const t = await getT("contacts");
+    return { success: false, message: t("errors.clientHasLinks") };
   }
   await prisma.client.delete({ where: { id } });
   revalidatePath("/clients");

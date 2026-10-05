@@ -1,28 +1,12 @@
-// Movement kinds. Only INCOME and EXPENSE are profit & loss; every other kind just
-// moves money between accounts or finances the company, so it never touches P&L.
-export const TYPE_LABEL: Record<string, string> = {
-  INCOME: "Income",
-  EXPENSE: "Expense",
-  TRANSFER_IN: "Transfer in",
-  TRANSFER_OUT: "Transfer out",
-  CAPITAL_IN: "Capital contribution",
-  LOAN_IN: "Loan received",
-  LOAN_REPAY: "Loan repayment",
-  OTHER_IN: "Unclassified in",
-  OTHER_OUT: "Unclassified out",
-};
+// Movement kinds (labels: common "type.*"). Only INCOME and EXPENSE are profit &
+// loss; every other kind just moves money between accounts or finances the
+// company, so it never touches P&L.
 
 export const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   BANK: "Bank",
   CASH: "Cash",
   OWNER: "Owner",
   TERM_DEPOSIT: "Term deposit",
-};
-
-export const RATE_SOURCE_LABEL: Record<string, string> = {
-  BANK: "bank",
-  MANUAL: "manual",
-  DEFAULT: "default",
 };
 
 const INFLOW = new Set(["INCOME", "TRANSFER_IN", "CAPITAL_IN", "LOAN_IN", "OTHER_IN"]);
@@ -33,7 +17,6 @@ export const isInflow = (type: string) => INFLOW.has(type);
 export const isMoneyIn = (t: { type: string; amount: number }) => isInflow(t.type) === t.amount >= 0;
 
 // Workflow. Drafts are not in the books yet: every total counts reviewed and posted entries only.
-export const STATUS_LABEL: Record<string, string> = { DRAFT: "Draft", REVIEWED: "Reviewed", POSTED: "Posted" };
 export const BOOKED = { status: { not: "DRAFT" } };
 // A payment settles an invoice once it's in the books — a draft doesn't yet.
 export const BOOKED_ALLOCATIONS = { where: { transaction: BOOKED } };

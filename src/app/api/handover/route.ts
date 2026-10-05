@@ -1,14 +1,16 @@
 import { getSession } from "@/lib/session";
 import { collect, pack } from "@/lib/handover";
+import { resolveLocale } from "@/i18n/locale";
 
-// GET /api/handover?month=YYYY-MM — the month's package for the accountant (ZIP).
+// GET /api/handover?month=YYYY-MM — the month's package for the accountant (ZIP),
+// in the signed-in user's language.
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session?.user) return new Response("Unauthorized", { status: 401 });
   const month = new URL(req.url).searchParams.get("month") || "";
   if (!/^\d{4}-\d{2}$/.test(month)) return new Response("Invalid month", { status: 400 });
 
-  const zip = await pack(await collect(month), session.user.name ?? null);
+  const zip = await pack(await collect(month), session.user.name ?? null, await resolveLocale());
   return new Response(new Uint8Array(zip), {
     headers: {
       "Content-Type": "application/zip",

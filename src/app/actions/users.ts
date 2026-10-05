@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { getT } from "@/i18n/server";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -25,21 +26,22 @@ async function isLastActiveAdmin(userId: string) {
 
 export async function createUser(formData: FormData) {
   await requireAdmin();
+  const t = await getT("settings");
 
   const username = (formData.get("username") as string)?.trim();
   const password = formData.get("password") as string;
   const role = (formData.get("role") as string) === "ADMIN" ? "ADMIN" : "USER";
 
   if (!username || username.length < 3) {
-    return { success: false, message: "Username must be at least 3 characters." };
+    return { success: false, message: t("errors.usernameTooShort") };
   }
   if (!password || password.length < 8) {
-    return { success: false, message: "Default password must be at least 8 characters." };
+    return { success: false, message: t("errors.passwordTooShort") };
   }
 
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) {
-    return { success: false, message: "That username is already taken." };
+    return { success: false, message: t("errors.usernameTaken") };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -60,11 +62,12 @@ export async function createUser(formData: FormData) {
 
 export async function deleteUser(id: string) {
   const session = await requireAdmin();
+  const t = await getT("settings");
   if (id === session.user.id) {
-    return { success: false, message: "You can't delete your own account." };
+    return { success: false, message: t("errors.cantDeleteSelf") };
   }
   if (await isLastActiveAdmin(id)) {
-    return { success: false, message: "Can't delete the last active admin." };
+    return { success: false, message: t("errors.cantDeleteLastAdmin") };
   }
   await prisma.user.delete({ where: { id } });
   revalidatePath("/settings");
@@ -73,11 +76,12 @@ export async function deleteUser(id: string) {
 
 export async function setUserActive(id: string, active: boolean) {
   const session = await requireAdmin();
+  const t = await getT("settings");
   if (id === session.user.id && !active) {
-    return { success: false, message: "You can't deactivate your own account." };
+    return { success: false, message: t("errors.cantDeactivateSelf") };
   }
   if (!active && (await isLastActiveAdmin(id))) {
-    return { success: false, message: "Can't deactivate the last active admin." };
+    return { success: false, message: t("errors.cantDeactivateLastAdmin") };
   }
   await prisma.user.update({ where: { id }, data: { isActive: active } });
   revalidatePath("/settings");
@@ -86,9 +90,10 @@ export async function setUserActive(id: string, active: boolean) {
 
 export async function resetUserPassword(id: string, formData: FormData) {
   await requireAdmin();
+  const t = await getT("settings");
   const password = formData.get("password") as string;
   if (!password || password.length < 8) {
-    return { success: false, message: "Default password must be at least 8 characters." };
+    return { success: false, message: t("errors.passwordTooShort") };
   }
   const passwordHash = await bcrypt.hash(password, 10);
   // Force the user back through the change-password step on next login.

@@ -1,0 +1,36 @@
+{
+  "page": {
+    "title": "Profile",
+    "subtitle": "Your name and account details"
+  },
+  "name": {
+    "title": "Your name",
+    "description": "Shown in the greeting at the top. Leave it empty to use your username."
+  },
+  "account": {
+    "title": "Account",
+    "description": "To change your password or reset two-factor sign-in, ask an admin.",
+    "username": "Username",
+    "role": "Role",
+    "twoFactor": "Two-factor sign-in",
+    "memberSince": "Member since",
+    "twoFactorEnabled": "Enabled",
+    "twoFactorNotSetUp": "Not set up"
+  },
+  "roles": {
+    "USER": "Staff",
+    "ADMIN": "Admin"
+  },
+  "form": {
+    "displayName": "Display name",
+    "displayNamePlaceholder": "e.g. Nguyen Van A"
+  },
+  "toast": {
+    "saved": "Profile saved",
+    "connectionError": "Could not save — check your connection and try again."
+  },
+  "errors": {
+    "unauthorized": "Unauthorized",
+    "nameTooLong": "Keep the name under {max} characters."
+  }
+}

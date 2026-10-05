@@ -11,6 +11,7 @@ model User {
   id               String   @id @default(cuid())
   username         String   @unique
   displayName      String?                   // shown in the greeting; the username stays the login and audit name
+  locale           String?                   // interface language, "en" or "vi"; empty = the browser's choice
   passwordHash     String
   twoFactorSecret  String?
   twoFactorEnabled Boolean  @default(false)

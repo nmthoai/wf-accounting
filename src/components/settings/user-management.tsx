@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,8 @@ type ManagedUser = {
 
 export function UserManagement({ users, currentUserId }: { users: ManagedUser[]; currentUserId: string }) {
   const router = useRouter();
+  const t = useTranslations("settings");
+  const tc = useTranslations("common");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -37,14 +40,14 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
       const data = new FormData(form);
       const res = await createUser(data);
       if (!res.success) {
-        setAddError(res.message || "Could not create user.");
+        setAddError(res.message || t("users.toast.couldNotCreate"));
         return;
       }
-      notify.success("User created", (data.get("username") as string)?.trim());
+      notify.success(t("users.toast.created"), (data.get("username") as string)?.trim());
       form.reset();
       router.refresh();
     } catch {
-      notify.error("Something went wrong — please try again.");
+      notify.error(tc("errors.somethingWrong"));
     } finally {
       setAdding(false);
     }
@@ -54,10 +57,10 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
     setBusyId(id);
     try {
       const res = await fn();
-      notifyResult(res, done, "Could not update the user.");
+      notifyResult(res, done, t("users.toast.couldNotUpdate"));
       router.refresh();
     } catch {
-      notify.error("Something went wrong — please try again.");
+      notify.error(tc("errors.somethingWrong"));
     } finally {
       setBusyId(null);
     }
@@ -65,45 +68,45 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
 
   function statusBadge(u: ManagedUser) {
     if (u.locked)
-      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Locked</span>;
+      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">{t("users.status.locked")}</span>;
     if (!u.isActive)
-      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">Deactivated</span>;
+      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">{t("users.status.deactivated")}</span>;
     if (u.mustChangePassword || !u.twoFactorEnabled)
-      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Onboarding</span>;
-    return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Active · 2FA</span>;
+      return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{t("users.status.onboarding")}</span>;
+    return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{t("users.status.active")}</span>;
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Users</CardTitle>
-        <CardDescription>Invite-only. New users get a default password and onboard themselves (change password + 2FA).</CardDescription>
+        <CardTitle>{t("users.title")}</CardTitle>
+        <CardDescription>{t("users.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <form onSubmit={handleAdd} className="flex gap-3 items-end flex-wrap">
           <div className="space-y-2 flex-1 min-w-[140px]">
-            <Label htmlFor="username">Username</Label>
-            <Input id="username" name="username" placeholder="e.g. accountant1" required />
+            <Label htmlFor="username">{t("users.username")}</Label>
+            <Input id="username" name="username" placeholder={t("users.usernamePlaceholder")} required />
           </div>
           <div className="space-y-2 flex-1 min-w-[140px]">
-            <Label htmlFor="password">Default password</Label>
-            <Input id="password" name="password" type="text" placeholder="share this with them" required />
+            <Label htmlFor="password">{t("users.defaultPassword")}</Label>
+            <Input id="password" name="password" type="text" placeholder={t("users.passwordPlaceholder")} required />
           </div>
           <div className="space-y-2 w-28">
-            <Label htmlFor="role">Role</Label>
-            <Select name="role" defaultValue="USER">
+            <Label htmlFor="role">{t("users.role")}</Label>
+            <Select name="role" defaultValue="USER" items={[{ value: "USER", label: t("users.roles.USER") }, { value: "ADMIN", label: t("users.roles.ADMIN") }]}>
               <SelectTrigger id="role">
-                <SelectValue placeholder="Role" />
+                <SelectValue placeholder={t("users.role")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="USER">Staff</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
+                <SelectItem value="USER">{t("users.roles.USER")}</SelectItem>
+                <SelectItem value="ADMIN">{t("users.roles.ADMIN")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <Button type="submit" disabled={adding} className="gap-2">
             {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-            Add
+            {tc("actions.add")}
           </Button>
         </form>
         {addError && <p className="text-sm text-destructive">{addError}</p>}
@@ -114,9 +117,9 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
               <div className="flex flex-col">
                 <span className="text-sm font-medium">
                   {u.username}
-                  {u.id === currentUserId && <span className="text-xs text-muted-foreground"> (you)</span>}
+                  {u.id === currentUserId && <span className="text-xs text-muted-foreground"> {t("users.you")}</span>}
                 </span>
-                <span className="text-xs text-muted-foreground">{u.role === "ADMIN" ? "Admin" : "Staff"}</span>
+                <span className="text-xs text-muted-foreground">{u.role === "ADMIN" ? t("users.roles.ADMIN") : t("users.roles.USER")}</span>
               </div>
               <div className="flex items-center gap-2">
                 {statusBadge(u)}
@@ -124,36 +127,36 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                 {/* Unlock (only when locked out) */}
                 {u.locked && (
                   <Button variant="outline" size="sm" className="h-8 gap-1 text-amber-700" disabled={busyId === u.id}
-                    onClick={() => run(u.id, () => unlockUser(u.id), `Unlocked ${u.username}`)}>
-                    <LockOpen className="h-3.5 w-3.5" /> Unlock
+                    onClick={() => run(u.id, () => unlockUser(u.id), t("users.toast.unlocked", { username: u.username }))}>
+                    <LockOpen className="h-3.5 w-3.5" /> {t("users.unlock")}
                   </Button>
                 )}
 
                 {/* Reset password */}
                 <Dialog>
-                  <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title="Reset password" />}>
+                  <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={t("users.resetPassword.button")} />}>
                     <KeyRound className="h-4 w-4" />
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Reset password for {u.username}</DialogTitle>
+                      <DialogTitle>{t("users.resetPassword.title", { username: u.username })}</DialogTitle>
                     </DialogHeader>
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault();
                         const fd = new FormData(e.currentTarget);
-                        await run(u.id, () => resetUserPassword(u.id, fd), `Password reset for ${u.username}`);
+                        await run(u.id, () => resetUserPassword(u.id, fd), t("users.toast.passwordReset", { username: u.username }));
                       }}
                       className="space-y-4 pt-2"
                     >
                       <p className="text-sm text-muted-foreground">
-                        Sets a new default password. {u.username} will be forced to change it on next login.
+                        {t("users.resetPassword.intro", { username: u.username })}
                       </p>
                       <div className="space-y-2">
-                        <Label htmlFor={`pw-${u.id}`}>New default password</Label>
-                        <Input id={`pw-${u.id}`} name="password" type="text" placeholder="share this with them" required minLength={8} />
+                        <Label htmlFor={`pw-${u.id}`}>{t("users.resetPassword.newLabel")}</Label>
+                        <Input id={`pw-${u.id}`} name="password" type="text" placeholder={t("users.passwordPlaceholder")} required minLength={8} />
                       </div>
-                      <Button type="submit" className="w-full">Set default password</Button>
+                      <Button type="submit" className="w-full">{t("users.resetPassword.submit")}</Button>
                     </form>
                   </DialogContent>
                 </Dialog>
@@ -163,11 +166,11 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-muted-foreground hover:text-amber-600"
-                  title="Reset 2FA"
+                  title={t("users.reset2fa.button")}
                   disabled={busyId === u.id}
                   onClick={() => {
-                    if (confirm(`Reset 2FA for ${u.username}? They'll re-enrol on next login.`))
-                      run(u.id, () => resetUser2FA(u.id), `2FA reset for ${u.username}`);
+                    if (confirm(t("users.reset2fa.confirm", { username: u.username })))
+                      run(u.id, () => resetUser2FA(u.id), t("users.toast.twoFactorReset", { username: u.username }));
                   }}
                 >
                   <ShieldOff className="h-4 w-4" />
@@ -179,9 +182,9 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                   size="sm"
                   className="h-8"
                   disabled={busyId === u.id}
-                  onClick={() => run(u.id, () => setUserActive(u.id, !u.isActive), `${u.isActive ? "Deactivated" : "Activated"} ${u.username}`)}
+                  onClick={() => run(u.id, () => setUserActive(u.id, !u.isActive), u.isActive ? t("users.toast.deactivated", { username: u.username }) : t("users.toast.activated", { username: u.username }))}
                 >
-                  {u.isActive ? "Deactivate" : "Activate"}
+                  {u.isActive ? t("users.deactivate") : t("users.activate")}
                 </Button>
 
                 {/* Delete */}
@@ -189,11 +192,11 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                  title="Delete user"
+                  title={t("users.delete.button")}
                   disabled={busyId === u.id}
                   onClick={() => {
-                    if (confirm(`Delete ${u.username}? This cannot be undone.`))
-                      run(u.id, () => deleteUser(u.id), `Deleted ${u.username}`);
+                    if (confirm(t("users.delete.confirm", { username: u.username })))
+                      run(u.id, () => deleteUser(u.id), t("users.toast.deleted", { username: u.username }));
                   }}
                 >
                   <Trash2 className="h-4 w-4" />

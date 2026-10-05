@@ -1,0 +1,145 @@
+{
+  "page": {
+    "title": "Bank reconciliation",
+    "subtitle": "Bank statement lines matched to the ledger",
+    "draftLabel": "{label} (draft)"
+  },
+  "summary": {
+    "statementTo": "{currency} · statement to {date}",
+    "noStatement": "No statement imported yet.",
+    "bankStatement": "Bank statement",
+    "inApp": "In the app",
+    "difference": "Difference",
+    "agrees": "Agrees ✓",
+    "toReconcile": "{open} of {lines} bank lines to reconcile",
+    "toReconcileNotOnStatement": "{open} of {lines} bank lines to reconcile · {count, plural, one {# app entry} other {# app entries}} not on the statement",
+    "drafts": "{count, plural, one {# draft entry} other {# draft entries}} not counted in the app balance until reviewed"
+  },
+  "tabs": {
+    "open": "To reconcile ({count})",
+    "all": "All lines ({count})",
+    "imports": "Imports ({count})"
+  },
+  "import": {
+    "trigger": "Import statement",
+    "title": "Import a bank statement",
+    "account": "Account",
+    "file": "Statement file (.xlsx or .csv)",
+    "read": "Read statement",
+    "summary": "<b>{count} lines</b> · {from} → {to} · sheet “{sheet}”",
+    "summaryWithDuplicates": "<b>{count} lines</b> · {from} → {to} · sheet “{sheet}”<muted> · {duplicates} already imported</muted>",
+    "columnsRead": "Columns read: {columns}",
+    "opening": "Opening balance ({currency})",
+    "closing": "Closing balance ({currency})",
+    "balancePlaceholder": "As printed on the statement",
+    "check": {
+      "matches": "Opening {opening} + in {inflows} − out {outflows} = {expected} — matches the closing balance ✓",
+      "off": "Opening {opening} + in {inflows} − out {outflows} = {expected} — closing is {closing}, off by {diff}",
+      "incomplete": "Opening {opening} + in {inflows} − out {outflows} = {expected} — enter both balances"
+    },
+    "firstLines": "First lines",
+    "nothingNew": "Nothing new to import",
+    "submit": "{count, plural, one {Import # new line} other {Import # new lines}}",
+    "done": "{added, plural, one {Imported # new line.} other {Imported # new lines.}}",
+    "doneSkipped": "{added, plural, one {Imported # new line} other {Imported # new lines}} · {skipped} already imported, skipped.",
+    "couldNotRead": "Could not read the file.",
+    "couldNotImport": "Could not import.",
+    "toast": {
+      "title": "Statement imported",
+      "added": "{added, plural, one {# new line added} other {# new lines added}}",
+      "addedSkipped": "{added, plural, one {# new line added} other {# new lines added}}, {skipped} skipped"
+    }
+  },
+  "fields": {
+    "txnDate": "Date",
+    "postingDate": "Posting date",
+    "reference": "Reference",
+    "debit": "Money out",
+    "credit": "Money in",
+    "amount": "Amount",
+    "balance": "Balance",
+    "counterparty": "Counterparty",
+    "description": "Details"
+  },
+  "status": {
+    "MATCHED": "Matched",
+    "PARTIAL": "Part matched",
+    "UNMATCHED": "Not in ledger",
+    "partialLeft": "Part matched · {amount} left"
+  },
+  "match": {
+    "trigger": "Match to ledger entries",
+    "title": "Match bank line — {amount} on {date}",
+    "help": "Pick the ledger entries on {account} that make up this line — several if it covers more than one. Transfers, capital and loans are recorded on the Accounts page first.",
+    "noneIn": "No unmatched money-in entries on {account}.",
+    "noneOut": "No unmatched money-out entries on {account}.",
+    "selected": "Selected {total} of {remaining} still open",
+    "selectedOver": "Selected {total} of {remaining} still open<over> — more than the line</over>",
+    "submit": "{count, plural, =0 {Match entries} one {Match # entry} other {Match # entries}}",
+    "couldNotMatch": "Could not match.",
+    "toast": {
+      "matched": "Bank line matched",
+      "partMatched": "Bank line part matched",
+      "linked": "{count, plural, one {# entry linked} other {# entries linked}}"
+    }
+  },
+  "imports": {
+    "title": "Imported statements",
+    "description": "Each file was accepted only because opening + money in − money out equals its closing balance.",
+    "meta": "{file} · {lines} lines, {added} new · imported {date}",
+    "metaBy": "{file} · {lines} lines, {added} new · imported {date} by {name}",
+    "undo": "Undo this import",
+    "confirmUndo": "Remove this import and its {count} lines?",
+    "removed": "Import removed",
+    "empty": "No statements imported yet."
+  },
+  "lines": {
+    "date": "Date",
+    "account": "Account",
+    "bankDetails": "Bank details",
+    "amount": "Amount",
+    "inLedger": "In the ledger",
+    "posted": "posted {date}",
+    "noReference": "no reference",
+    "unmatch": "Unmatch",
+    "unmatched": "Entry unmatched",
+    "suggested": "Suggested: {label} · {date}",
+    "match": "Match",
+    "newEntry": "New income/expense entry from this line",
+    "empty": "No statement lines yet — import a statement to start.",
+    "allMatched": "Every bank line is matched to the ledger."
+  },
+  "notOnStatement": {
+    "title": "In the app but not on the bank statement",
+    "description": "Entries on a bank account, inside the statement period, that no bank line explains — check the account and date, or match them above."
+  },
+  "statement": {
+    "unreadable": "This file couldn't be read — export the statement as Excel (.xlsx) or CSV.",
+    "noTable": "No transaction table found — the file needs a header row with a date column and debit/credit (or amount) columns.",
+    "warnings": {
+      "order": "The running balance doesn't follow the line order everywhere — check the totals above against the bank.",
+      "opening": "The stated opening balance differs from the running balance.",
+      "closing": "The stated closing balance differs from the running balance."
+    }
+  },
+  "errors": {
+    "chooseFile": "Choose the statement file.",
+    "chooseAccount": "Choose which account this statement is for.",
+    "wrongCurrency": "This statement is in {statementCurrency}, but {account} is a {accountCurrency} account.",
+    "enterBalances": "Enter the statement's opening and closing balance.",
+    "doesNotAddUp": "The statement doesn't add up: opening {opening} + in {inflows} − out {outflows} = {expected}, but the closing balance is {closing}. Nothing was imported.",
+    "chooseEntry": "Choose at least one ledger entry.",
+    "entryGone": "An entry no longer exists — refresh the page.",
+    "reversed": "A reversed entry can't be matched — match its correction instead.",
+    "alreadyMatched": "\"{name}\" is already matched to another bank line.",
+    "alreadyMatchedUnnamed": "\"That entry\" is already matched to another bank line.",
+    "postedUnmatch": "That entry is posted — only the owner can unmatch it.",
+    "statementMatched": "Some of its lines are matched to ledger entries — unmatch them first.",
+    "statementOverlaps": "Another imported statement overlaps this period — undo that one first.",
+    "lineGone": "That bank line no longer exists.",
+    "otherAccount": "The bank line is on {account} — the entry must be too.",
+    "lineInEntryOut": "The bank line is money in; this entry is money out.",
+    "lineOutEntryIn": "The bank line is money out; this entry is money in.",
+    "moreThanLine": "That's more than the bank line ({amount})."
+  }
+}

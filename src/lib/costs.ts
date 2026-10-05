@@ -1,4 +1,5 @@
-// Cost register vocabulary (client-safe).
+// Cost register vocabulary (client-safe). The keys validate input and order the
+// choices; what the user sees comes from messages/<locale>/costs.json.
 
 export const PAYER: Record<string, string> = {
   COMPANY: "Company",
@@ -11,10 +12,4 @@ export const REIMBURSEMENT: Record<string, string> = {
   NOT_NEEDED: "Not needed — company paid",
   OWED: "Company owes the owner",
   REIMBURSED: "Reimbursed",
-};
-
-export const COST_STATUS: Record<string, string> = {
-  PENDING: "Pending review",
-  CONVERTED: "In the ledger",
-  DISMISSED: "Not a company cost",
 };

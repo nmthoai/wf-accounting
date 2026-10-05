@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { computeBalances, cashPosition, isPnl, isBooked, type Totals } from "@/lib/money";
@@ -7,6 +8,7 @@ const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 export default async function AccountsPage() {
   const session = await requirePageSession();
+  const t = await getTranslations("accounts");
   const [accounts, txns, loans] = await Promise.all([
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, include: { _count: { select: { transactions: true } } } }),
     prisma.transaction.findMany({
@@ -71,8 +73,8 @@ export default async function AccountsPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Accounts</h1>
-        <p className="text-muted-foreground mt-1">Where the money sits — bank, cash, owner-paid, deposits — plus transfers, capital and loans</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
       </div>
       <AccountsClient
         isAdmin={session?.user?.role === "ADMIN"}

@@ -4,10 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { computeBalances, cashPosition, totalsList, settlement, isMoneyIn, isPnl, isBooked, toVnd, fmtMoney, TYPE_LABEL, BOOKED_ALLOCATIONS, type Totals , vnTodayStart } from "@/lib/money";
+import { computeBalances, cashPosition, totalsList, settlement, isMoneyIn, isPnl, isBooked, toVnd, fmtMoney, BOOKED_ALLOCATIONS, type Totals , vnTodayStart } from "@/lib/money";
+import { getTranslations, getLocale } from "next-intl/server";
+import { fmtDate } from "@/lib/format";
 
 export default async function DashboardPage() {
   await requirePageSession(); // second line behind the proxy
+  // `tr`, not `t`: the transaction loops below already use `t`.
+  const tr = await getTranslations("dashboard");
+  const tc = await getTranslations("common");
+  const locale = await getLocale();
   const [transactions, accounts, openInvoices, projectList] = await Promise.all([
     prisma.transaction.findMany({ orderBy: { date: "desc" }, include: { category: true } }),
     prisma.account.findMany({ orderBy: { createdAt: "asc" } }),
@@ -50,11 +56,11 @@ export default async function DashboardPage() {
   const now = vnTodayStart(); // overdue from the day after the due date
   const comingItem = (i: typeof openInvoices[number]) => ({
     id: i.id,
-    label: i.direction === "PAYABLE" ? (i.vendor?.name ?? "Vendor") : (i.client?.name ?? "Client"),
-    sub: [i.number, i.project?.name, i.status === "PARTIAL" ? "part paid" : null].filter(Boolean).join(" · "),
+    label: i.direction === "PAYABLE" ? (i.vendor?.name ?? tr("coming.vendor")) : (i.client?.name ?? tr("coming.client")),
+    sub: [i.number, i.project?.name, i.status === "PARTIAL" ? tr("coming.partPaid") : null].filter(Boolean).join(" · "),
     amount: settlement(i.amount, i.allocations).difference,
     currency: i.currency,
-    due: i.dueDate.toLocaleDateString(undefined, { timeZone: "UTC" }),
+    due: fmtDate(i.dueDate, locale),
     overdue: i.dueDate < now,
   });
   const totalOf = (items: ReturnType<typeof comingItem>[]) => {
@@ -86,30 +92,30 @@ export default async function DashboardPage() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
   const cashSubtitle = accounts.length > 0
-    ? `Bank + cash across ${accounts.filter((a) => a.type === "BANK" || a.type === "CASH").length} accounts`
-    : "Add your accounts on the Accounts page";
+    ? tr("cards.cashSubtitle", { count: accounts.filter((a) => a.type === "BANK" || a.type === "CASH").length })
+    : tr("cards.cashNoAccounts");
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Financial overview for WorkFactory</p>
+          <h1 className="text-3xl font-serif font-bold text-primary">{tr("page.title")}</h1>
+          <p className="text-muted-foreground mt-1">{tr("page.subtitle")}</p>
           {drafts > 0 && (
             <Link href="/ledger?view=drafts" className="inline-block mt-2 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 hover:underline">
-              {drafts} {drafts === 1 ? "entry" : "entries"} waiting for review — not counted below yet →
+              {tr("page.draftsWaiting", { count: drafts })}
             </Link>
           )}
         </div>
         <Link href="/entry">
-          <Button className="gap-2"><Plus className="h-4 w-4" />New Entry</Button>
+          <Button className="gap-2"><Plus className="h-4 w-4" />{tr("page.newEntry")}</Button>
         </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cash &amp; Bank</CardTitle>
+            <CardTitle className="text-sm font-medium">{tr("cards.cashTitle")}</CardTitle>
             <Wallet className="h-4 w-4 opacity-75" />
           </CardHeader>
           <CardContent>
@@ -123,36 +129,36 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Surplus</CardTitle>
+            <CardTitle className="text-sm font-medium">{tr("cards.netSurplusTitle")}</CardTitle>
             <TrendingUp className={`h-4 w-4 ${netSurplus >= 0 ? "text-green-500" : "text-red-500"}`} />
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${netSurplus >= 0 ? "text-green-600" : "text-red-600"}`}>
               {formatVnd(netSurplus)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Income − Expenses (all time)</p>
+            <p className="text-xs text-muted-foreground mt-1">{tr("cards.netSurplusSubtitle")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+            <CardTitle className="text-sm font-medium">{tr("cards.totalIncomeTitle")}</CardTitle>
             <ArrowUpRight className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatVnd(totalIncome)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{income.filter(counted).length} entries</p>
+            <p className="text-xs text-muted-foreground mt-1">{tr("cards.entries", { count: income.filter(counted).length })}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <CardTitle className="text-sm font-medium">{tr("cards.totalExpensesTitle")}</CardTitle>
             <ArrowDownRight className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{formatVnd(totalExpense)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{expense.filter(counted).length} entries</p>
+            <p className="text-xs text-muted-foreground mt-1">{tr("cards.entries", { count: expense.filter(counted).length })}</p>
           </CardContent>
         </Card>
       </div>
@@ -160,8 +166,8 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Accounts</CardTitle>
-            <Link href="/accounts"><Button variant="outline" size="sm">Manage</Button></Link>
+            <CardTitle>{tr("accounts.title")}</CardTitle>
+            <Link href="/accounts"><Button variant="outline" size="sm">{tr("accounts.manage")}</Button></Link>
           </CardHeader>
           <CardContent className="space-y-2">
             {accountList.map((a) => {
@@ -173,15 +179,15 @@ export default async function DashboardPage() {
                 </div>
               );
             })}
-            {accountList.length === 0 && <p className="text-xs text-muted-foreground">No accounts yet.</p>}
+            {accountList.length === 0 && <p className="text-xs text-muted-foreground">{tr("accounts.empty")}</p>}
             {ownerTotals.map(([c, v]) => (
               <p key={c} className={`text-xs border-t pt-2 ${v < 0 ? "text-red-600" : "text-amber-700"}`}>
-                {v < 0 ? `Company owes the owner ${fmtMoney(-v, c)}` : `Owner holds ${fmtMoney(v, c)} of company money`}
+                {v < 0 ? tr("accounts.companyOwesOwner", { amount: fmtMoney(-v, c) }) : tr("accounts.ownerHolds", { amount: fmtMoney(v, c) })}
               </p>
             ))}
             {unclassified > 0 && (
               <Link href="/accounts" className="block text-xs text-amber-700 border-t pt-2 hover:underline">
-                {unclassified} movement{unclassified > 1 ? "s" : ""} need classifying →
+                {tr("accounts.needClassifying", { count: unclassified })}
               </Link>
             )}
           </CardContent>
@@ -189,13 +195,13 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Coming Payments</CardTitle>
-            <Link href="/invoices"><Button variant="outline" size="sm">View all</Button></Link>
+            <CardTitle>{tr("coming.title")}</CardTitle>
+            <Link href="/invoices"><Button variant="outline" size="sm">{tr("coming.viewAll")}</Button></Link>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <div className="flex items-center justify-between text-sm mb-1">
-                <span className="font-medium text-red-600">Going out — you pay</span>
+                <span className="font-medium text-red-600">{tr("coming.goingOut")}</span>
                 <span className="font-semibold text-red-600">{apOutstanding}</span>
               </div>
               <div className="space-y-1">
@@ -203,18 +209,18 @@ export default async function DashboardPage() {
                   <div key={i.id} className="flex items-center justify-between text-sm">
                     <span className="truncate">{i.label}{i.sub ? <span className="text-muted-foreground"> · {i.sub}</span> : null}</span>
                     <span className="flex items-center gap-2 shrink-0">
-                      {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">overdue</span>}
-                      <span className="text-muted-foreground text-xs">due {i.due}</span>
+                      {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tr("coming.overdue")}</span>}
+                      <span className="text-muted-foreground text-xs">{tr("coming.due", { date: i.due })}</span>
                       <span className="font-medium">{fmtMoney(i.amount, i.currency)}</span>
                     </span>
                   </div>
                 ))}
-                {comingOut.length === 0 && <p className="text-xs text-muted-foreground">Nothing to pay.</p>}
+                {comingOut.length === 0 && <p className="text-xs text-muted-foreground">{tr("coming.nothingToPay")}</p>}
               </div>
             </div>
             <div className="border-t pt-3">
               <div className="flex items-center justify-between text-sm mb-1">
-                <span className="font-medium text-green-700">Coming in — you receive</span>
+                <span className="font-medium text-green-700">{tr("coming.comingIn")}</span>
                 <span className="font-semibold text-green-700">{arOutstanding}</span>
               </div>
               <div className="space-y-1">
@@ -222,13 +228,13 @@ export default async function DashboardPage() {
                   <div key={i.id} className="flex items-center justify-between text-sm">
                     <span className="truncate">{i.label}{i.sub ? <span className="text-muted-foreground"> · {i.sub}</span> : null}</span>
                     <span className="flex items-center gap-2 shrink-0">
-                      {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">overdue</span>}
-                      <span className="text-muted-foreground text-xs">due {i.due}</span>
+                      {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tr("coming.overdue")}</span>}
+                      <span className="text-muted-foreground text-xs">{tr("coming.due", { date: i.due })}</span>
                       <span className="font-medium">{fmtMoney(i.amount, i.currency)}</span>
                     </span>
                   </div>
                 ))}
-                {comingIn.length === 0 && <p className="text-xs text-muted-foreground">Nothing expected in.</p>}
+                {comingIn.length === 0 && <p className="text-xs text-muted-foreground">{tr("coming.nothingIn")}</p>}
               </div>
             </div>
           </CardContent>
@@ -236,8 +242,8 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Top Projects by Profit</CardTitle>
-            <Link href="/projects"><Button variant="outline" size="sm">Projects</Button></Link>
+            <CardTitle>{tr("topProjects.title")}</CardTitle>
+            <Link href="/projects"><Button variant="outline" size="sm">{tr("topProjects.projects")}</Button></Link>
           </CardHeader>
           <CardContent className="space-y-2">
             {topProjects.map((p) => (
@@ -246,7 +252,7 @@ export default async function DashboardPage() {
                 <span className={`font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{formatVnd(p.net)}</span>
               </div>
             ))}
-            {topProjects.length === 0 && <p className="text-sm text-muted-foreground">Tag transactions to a project to see profit here.</p>}
+            {topProjects.length === 0 && <p className="text-sm text-muted-foreground">{tr("topProjects.empty")}</p>}
           </CardContent>
         </Card>
       </div>
@@ -255,10 +261,10 @@ export default async function DashboardPage() {
         <Card className="col-span-4">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Recent Transactions</CardTitle>
+              <CardTitle>{tr("recent.title")}</CardTitle>
             </div>
             <Link href="/ledger">
-              <Button variant="outline" size="sm">View All</Button>
+              <Button variant="outline" size="sm">{tr("recent.viewAll")}</Button>
             </Link>
           </CardHeader>
           <CardContent>
@@ -269,10 +275,10 @@ export default async function DashboardPage() {
                     {isMoneyIn(t) ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownRight className="h-4 w-4 text-red-600" />}
                   </div>
                   <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">{isPnl(t.type) ? (t.category?.name || "Uncategorized") : TYPE_LABEL[t.type]}</p>
+                    <p className="text-sm font-medium leading-none">{isPnl(t.type) ? (t.category?.name || tr("recent.uncategorized")) : tc(`type.${t.type}`)}</p>
                     <p className="text-sm text-muted-foreground">
                       {t.description}
-                      {t.status === "DRAFT" && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">draft</span>}
+                      {t.status === "DRAFT" && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tr("recent.draft")}</span>}
                     </p>
                   </div>
                   <div className={`ml-auto font-medium ${isMoneyIn(t) ? "text-green-600" : ""}`}>
@@ -282,7 +288,7 @@ export default async function DashboardPage() {
               ))}
               {recentTransactions.length === 0 && (
                 <div className="text-center py-4 text-muted-foreground text-sm">
-                  No transactions yet.
+                  {tr("recent.empty")}
                 </div>
               )}
             </div>
@@ -291,26 +297,26 @@ export default async function DashboardPage() {
 
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>{tr("quickActions.title")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <Link href="/entry" className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors">
               <div className="bg-primary/10 p-2 rounded-full">
                 <ArrowUpRight className="h-4 w-4 text-primary" />
               </div>
-              <div className="font-medium">Log Income</div>
+              <div className="font-medium">{tr("quickActions.logIncome")}</div>
             </Link>
             <Link href="/entry" className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors">
               <div className="bg-primary/10 p-2 rounded-full">
                 <ArrowDownRight className="h-4 w-4 text-primary" />
               </div>
-              <div className="font-medium">Log Expense</div>
+              <div className="font-medium">{tr("quickActions.logExpense")}</div>
             </Link>
             <Link href="/accounts" className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors">
               <div className="bg-primary/10 p-2 rounded-full">
                 <Wallet className="h-4 w-4 text-primary" />
               </div>
-              <div className="font-medium">Transfers, capital &amp; loans</div>
+              <div className="font-medium">{tr("quickActions.transfers")}</div>
             </Link>
           </CardContent>
         </Card>

@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createCategory, updateCategory, updateExchangeRate, createUnitRate, updateUnitRate, deleteUnitRate } from "@/app/actions/settings";
 import { Trash2 } from "lucide-react";
 import { requirePageSession } from "@/lib/session";
+import { getTranslations, getLocale } from "next-intl/server";
+import { fmtDate } from "@/lib/format";
 
 import { UserManagement } from "@/components/settings/user-management";
 import { EditCategoryDialog } from "@/components/settings/edit-category-dialog";
@@ -16,6 +18,9 @@ import { ActionForm } from "@/components/settings/action-form";
 
 export default async function SettingsPage() {
   const session = await requirePageSession();
+  const t = await getTranslations("settings");
+  const tc = await getTranslations("common");
+  const locale = await getLocale();
   const [currentUser, categories, unitRates, allUsers] = await Promise.all([
     prisma.user.findUnique({ where: { id: session?.user?.id } }),
     prisma.category.findMany({ orderBy: { createdAt: "desc" } }),
@@ -37,12 +42,13 @@ export default async function SettingsPage() {
 
   const incomeCategories = categories.filter((c) => c.type === "INCOME");
   const expenseCategories = categories.filter((c) => c.type === "EXPENSE");
+  const unitPer: Record<string, string> = { hours: t("unitRates.per.hours"), project: t("unitRates.per.project"), manday: t("unitRates.per.manday") };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage categories and bank balance</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
       </div>
 
       {isAdmin && session?.user?.id && (
@@ -54,33 +60,33 @@ export default async function SettingsPage() {
           {/* Categories Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Categories</CardTitle>
-              <CardDescription>Manage Invoice and Cost types</CardDescription>
+              <CardTitle>{t("categories.title")}</CardTitle>
+              <CardDescription>{t("categories.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <ActionForm action={createCategory} success="Category added" className="flex gap-4 items-end">
+              <ActionForm action={createCategory} success={t("categories.toast.added")} className="flex gap-4 items-end">
                 <div className="space-y-2 flex-1">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" name="name" placeholder="e.g. Software License" required />
+                  <Label htmlFor="name">{t("fields.name")}</Label>
+                  <Input id="name" name="name" placeholder={t("categories.namePlaceholder")} required />
                 </div>
                 <div className="space-y-2 w-1/3">
-                  <Label htmlFor="type">Type</Label>
-                  <Select name="type" required defaultValue="EXPENSE">
+                  <Label htmlFor="type">{t("fields.type")}</Label>
+                  <Select name="type" required defaultValue="EXPENSE" items={[{ value: "INCOME", label: tc("type.INCOME") }, { value: "EXPENSE", label: tc("type.EXPENSE") }]}>
                     <SelectTrigger id="type">
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder={t("categories.typePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="INCOME">Income</SelectItem>
-                      <SelectItem value="EXPENSE">Expense</SelectItem>
+                      <SelectItem value="INCOME">{tc("type.INCOME")}</SelectItem>
+                      <SelectItem value="EXPENSE">{tc("type.EXPENSE")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit">Add</Button>
+                <Button type="submit">{tc("actions.add")}</Button>
               </ActionForm>
 
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">Income Categories</h4>
+                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">{t("categories.incomeTitle")}</h4>
                   <div className="space-y-2">
                     {incomeCategories.map((c) => (
                       <div key={c.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
@@ -91,12 +97,12 @@ export default async function SettingsPage() {
                         </div>
                       </div>
                     ))}
-                    {incomeCategories.length === 0 && <p className="text-xs text-muted-foreground">No income categories.</p>}
+                    {incomeCategories.length === 0 && <p className="text-xs text-muted-foreground">{t("categories.noIncome")}</p>}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">Expense Categories</h4>
+                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">{t("categories.expenseTitle")}</h4>
                   <div className="space-y-2">
                     {expenseCategories.map((c) => (
                       <div key={c.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
@@ -107,7 +113,7 @@ export default async function SettingsPage() {
                         </div>
                       </div>
                     ))}
-                    {expenseCategories.length === 0 && <p className="text-xs text-muted-foreground">No expense categories.</p>}
+                    {expenseCategories.length === 0 && <p className="text-xs text-muted-foreground">{t("categories.noExpense")}</p>}
                   </div>
                 </div>
               </div>
@@ -117,33 +123,33 @@ export default async function SettingsPage() {
           {/* Unit Rates Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Unit Rates</CardTitle>
-              <CardDescription>Reference for billing rates (Hours, Projects, Mandays)</CardDescription>
+              <CardTitle>{t("unitRates.title")}</CardTitle>
+              <CardDescription>{t("unitRates.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <ActionForm action={createUnitRate} success="Unit rate added" className="flex gap-4 items-end flex-wrap">
+              <ActionForm action={createUnitRate} success={t("unitRates.toast.added")} className="flex gap-4 items-end flex-wrap">
                 <div className="space-y-2 flex-1 min-w-[200px]">
-                  <Label htmlFor="description">Description</Label>
-                  <Input id="description" name="description" placeholder="e.g. Senior Developer" required />
+                  <Label htmlFor="description">{t("fields.description")}</Label>
+                  <Input id="description" name="description" placeholder={t("unitRates.descriptionPlaceholder")} required />
                 </div>
                 <div className="space-y-2 w-32">
-                  <Label htmlFor="rate">Rate (USD)</Label>
-                  <Input id="rate" name="rate" type="number" step="0.01" min="0" placeholder="e.g. 50" required />
+                  <Label htmlFor="rate">{t("fields.rate")}</Label>
+                  <Input id="rate" name="rate" type="number" step="0.01" min="0" placeholder={t("unitRates.ratePlaceholder")} required />
                 </div>
                 <div className="space-y-2 w-32">
-                  <Label htmlFor="unit">Unit</Label>
-                  <Select name="unit" required defaultValue="hours">
+                  <Label htmlFor="unit">{t("fields.unit")}</Label>
+                  <Select name="unit" required defaultValue="hours" items={[{ value: "hours", label: t("unitRates.units.hours") }, { value: "project", label: t("unitRates.units.project") }, { value: "manday", label: t("unitRates.units.manday") }]}>
                     <SelectTrigger id="unit">
-                      <SelectValue placeholder="Unit" />
+                      <SelectValue placeholder={t("fields.unit")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="hours">Hours</SelectItem>
-                      <SelectItem value="project">Project</SelectItem>
-                      <SelectItem value="manday">Manday</SelectItem>
+                      <SelectItem value="hours">{t("unitRates.units.hours")}</SelectItem>
+                      <SelectItem value="project">{t("unitRates.units.project")}</SelectItem>
+                      <SelectItem value="manday">{t("unitRates.units.manday")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit">Add</Button>
+                <Button type="submit">{tc("actions.add")}</Button>
               </ActionForm>
 
               <div className="space-y-2">
@@ -151,17 +157,17 @@ export default async function SettingsPage() {
                   <div key={r.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{r.description}</span>
-                      <span className="text-xs text-muted-foreground">${r.rate} / {r.unit}</span>
+                      <span className="text-xs text-muted-foreground">{t("unitRates.rateLine", { rate: r.rate, unit: unitPer[r.unit] ?? r.unit })}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <EditUnitRateDialog unitRate={r} action={updateUnitRate} />
-                      <ActionForm action={deleteUnitRate.bind(null, r.id)} success="Unit rate deleted">
+                      <ActionForm action={deleteUnitRate.bind(null, r.id)} success={t("unitRates.toast.deleted")}>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
                       </ActionForm>
                     </div>
                   </div>
                 ))}
-                {unitRates.length === 0 && <p className="text-xs text-muted-foreground">No unit rates defined.</p>}
+                {unitRates.length === 0 && <p className="text-xs text-muted-foreground">{t("unitRates.empty")}</p>}
               </div>
             </CardContent>
           </Card>
@@ -171,32 +177,32 @@ export default async function SettingsPage() {
           {/* Global Settings Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Global Settings</CardTitle>
-              <CardDescription>Default system values</CardDescription>
+              <CardTitle>{t("exchangeRate.title")}</CardTitle>
+              <CardDescription>{t("exchangeRate.description")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-6 bg-muted/50 p-4 rounded-lg flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Current Rate</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("exchangeRate.current")}</p>
                   <p className="text-2xl font-bold text-primary">
                     {new Intl.NumberFormat('vi-VN').format(currentUser?.defaultUsdRate || 25400)} <span className="text-sm font-normal text-muted-foreground">VND / USD</span>
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Last updated</p>
+                  <p className="text-xs text-muted-foreground">{t("exchangeRate.lastUpdated")}</p>
                   <p className="text-sm font-medium">
-                    {currentUser?.updatedAt ? currentUser.updatedAt.toLocaleDateString() : "Never"}
+                    {currentUser?.updatedAt ? fmtDate(currentUser.updatedAt, locale, { timeZone: "Asia/Ho_Chi_Minh" }) : t("exchangeRate.never")}
                   </p>
                 </div>
               </div>
 
-              <ActionForm action={updateExchangeRate} success="Exchange rate updated" className="space-y-4">
+              <ActionForm action={updateExchangeRate} success={t("exchangeRate.toast.updated")} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="rate">Set New Exchange Rate</Label>
+                  <Label htmlFor="rate">{t("exchangeRate.newRate")}</Label>
                   <Input key={currentUser?.defaultUsdRate} id="rate" name="rate" type="number" step="0.01" defaultValue={currentUser?.defaultUsdRate} required />
-                  <p className="text-xs text-muted-foreground">This rate will automatically populate when logging USD transactions.</p>
+                  <p className="text-xs text-muted-foreground">{t("exchangeRate.hint")}</p>
                 </div>
-                <Button type="submit">Update Rate</Button>
+                <Button type="submit">{t("exchangeRate.submit")}</Button>
               </ActionForm>
             </CardContent>
           </Card>

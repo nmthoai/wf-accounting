@@ -1,0 +1,132 @@
+{
+  "app": {
+    "title": "Accounting Entry Tracker",
+    "metaTitle": "Workfactory Accounting Entry Tracker",
+    "metaDescription": "Agentic AI Platform Accounting Tool",
+    "logoAlt": "Logo"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "ledger": "Ledger",
+    "invoices": "Invoices",
+    "projects": "Projects",
+    "contacts": "Clients & Vendors",
+    "accounts": "Accounts",
+    "bank": "Bank",
+    "costs": "Costs",
+    "reports": "Reports",
+    "handover": "Handover",
+    "settings": "Settings",
+    "openSidebar": "Open sidebar",
+    "menu": "Navigation Menu"
+  },
+  "header": {
+    "hello": "Hello, <b>{name}</b>",
+    "profile": "Your profile",
+    "signOut": "Sign Out",
+    "signOutTitle": "Sign out?",
+    "signOutBody": "You'll need your password and 2FA code to sign back in.",
+    "signOutConfirm": "Yes, sign out"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "vi": "Tiếng Việt"
+  },
+  "actions": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "dismiss": "Dismiss",
+    "open": "Open",
+    "remove": "Remove",
+    "update": "Update",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "errors": {
+    "somethingWrong": "Something went wrong — please try again.",
+    "couldNotSave": "Could not save.",
+    "notFound": "Not found."
+  },
+  "type": {
+    "INCOME": "Income",
+    "EXPENSE": "Expense",
+    "TRANSFER_IN": "Transfer in",
+    "TRANSFER_OUT": "Transfer out",
+    "CAPITAL_IN": "Capital contribution",
+    "LOAN_IN": "Loan received",
+    "LOAN_REPAY": "Loan repayment",
+    "OTHER_IN": "Unclassified in",
+    "OTHER_OUT": "Unclassified out"
+  },
+  "accountType": {
+    "BANK": "Bank",
+    "CASH": "Cash",
+    "OWNER": "Owner",
+    "TERM_DEPOSIT": "Term deposit"
+  },
+  "rateSource": {
+    "BANK": "bank",
+    "MANUAL": "manual",
+    "DEFAULT": "default"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "REVIEWED": "Reviewed",
+    "POSTED": "Posted"
+  },
+  "invoiceStatus": {
+    "OPEN": "Open",
+    "PARTIAL": "Part paid",
+    "PAID": "Paid",
+    "VOID": "Void"
+  },
+  "direction": {
+    "RECEIVABLE": "Invoice",
+    "PAYABLE": "Bill"
+  },
+  "review": {
+    "doc": {
+      "PENDING": "Not checked",
+      "INVOICE": "Invoice on file",
+      "RECEIPT": "Receipt only",
+      "PAYMENT_ONLY": "Payment proof only",
+      "MISSING": "Invoice missing"
+    },
+    "purpose": {
+      "PENDING": "Not confirmed",
+      "CONFIRMED": "Business use confirmed",
+      "PERSONAL": "Personal — not company"
+    },
+    "cit": {
+      "PENDING": "Pending review",
+      "DEDUCTIBLE": "Deductible",
+      "NON_DEDUCTIBLE": "Not deductible"
+    },
+    "vat": {
+      "PENDING": "Pending review",
+      "CLAIMABLE": "Claimable",
+      "NOT_CLAIMABLE": "Not claimable",
+      "NO_VAT": "No VAT on document"
+    },
+    "problem": {
+      "unknownDoc": "Unknown document status.",
+      "unknownStatus": "Unknown review status.",
+      "vatTooHigh": "The VAT amount must be less than the entry amount.",
+      "confirmPurpose": "Confirm business use before marking it deductible or its VAT claimable.",
+      "needBasis": "There is no invoice or receipt on file — record the accountant's basis for deducting it in the review note.",
+      "vatNeedsInvoice": "Input VAT can only be claimable with the invoice on file.",
+      "vatAmountMissing": "Enter the VAT amount printed on the invoice."
+    }
+  },
+  "upload": {
+    "tooBig": "Attachments are limited to {max} MB per save — these come to {mb} MB. Save them in smaller batches."
+  }
+}

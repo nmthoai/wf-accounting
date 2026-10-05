@@ -1,0 +1,153 @@
+{
+  "page": {
+    "title": "Hóa đơn bán ra & mua vào",
+    "subtitle": "Khách hàng còn nợ công ty và công ty còn nợ nhà cung cấp"
+  },
+  "summary": {
+    "owedToYou": "Phải thu khách hàng",
+    "youOwe": "Phải trả nhà cung cấp",
+    "overdue": "Trong đó quá hạn {amount}",
+    "nothingOverdue": "Không có khoản quá hạn"
+  },
+  "filter": {
+    "all": "Tất cả",
+    "openOnly": "Còn nợ"
+  },
+  "newButton": "Thêm hóa đơn",
+  "label": {
+    "invoice": "hóa đơn bán ra",
+    "bill": "hóa đơn mua vào"
+  },
+  "kind": {
+    "PAYMENT": "Thanh toán",
+    "FEE": "Phí có CT"
+  },
+  "form": {
+    "receivable": "Phải thu — khách hàng nợ công ty",
+    "payable": "Phải trả — công ty nợ nhà cung cấp",
+    "client": "Khách hàng",
+    "vendor": "Nhà cung cấp",
+    "selectClient": "Chọn khách hàng",
+    "selectVendor": "Chọn nhà cung cấp",
+    "none": "Không có",
+    "addPartyFirst": "Thêm tại trang Dự án trước",
+    "project": "Dự án (không bắt buộc)",
+    "noProject": "Không thuộc dự án",
+    "category": "Khoản mục",
+    "noCategory": "Không có khoản mục",
+    "addIncomeCategories": "Thêm khoản mục doanh thu trong Cài đặt",
+    "addExpenseCategories": "Thêm khoản mục chi phí trong Cài đặt",
+    "number": "Số hóa đơn (không bắt buộc)",
+    "numberPlaceholder": "theo tệp PDF",
+    "amount": "Số tiền",
+    "issueDate": "Ngày lập hóa đơn",
+    "dueDate": "Hạn thanh toán",
+    "notes": "Ghi chú (không bắt buộc)",
+    "notesPlaceholder": "Công việc / điều khoản…",
+    "attach": "Đính kèm tệp PDF (không bắt buộc)"
+  },
+  "list": {
+    "overdue": "Quá hạn",
+    "viewPdf": "Xem tệp PDF",
+    "due": "đến hạn {date}",
+    "paidOn": "đã thanh toán ngày {date}",
+    "paidAmount": "đã trả {amount}",
+    "receivedAmount": "đã thu {amount}",
+    "fees": "phí {amount}",
+    "differenceTitle": "Tổng tiền thanh toán (gồm thuế) trừ số đã thanh toán và phí có chứng từ. Không được mặc nhiên coi là phí.",
+    "unmatchedDifference": "chênh lệch chưa giải trình {amount}",
+    "overpaidBy": "thanh toán thừa {amount}",
+    "void": "Hủy ghi nhận",
+    "showLinked": "{count, plural, other {Hiện # bút toán đã liên kết}}",
+    "hideLinked": "{count, plural, other {Ẩn # bút toán đã liên kết}}",
+    "draftBadge": "nháp — chờ duyệt",
+    "unlinkTitle": "Bỏ liên kết (bút toán vẫn được giữ nguyên)",
+    "emptyOpen": "Không còn số phải thanh toán — tất cả đã thanh toán đủ.",
+    "empty": "Chưa có hóa đơn nào. Thêm khoản phải thu (khách hàng nợ công ty) hoặc khoản phải trả (công ty nợ nhà cung cấp)."
+  },
+  "confirm": {
+    "void": "Hủy ghi nhận hóa đơn này?",
+    "delete": "Xóa hóa đơn này?",
+    "unlink": "Bỏ liên kết bút toán này khỏi hóa đơn? Bút toán vẫn được giữ nguyên trong sổ thu chi."
+  },
+  "toast": {
+    "invoiceCreated": "Đã thêm hóa đơn bán ra",
+    "billCreated": "Đã thêm hóa đơn mua vào",
+    "invoiceUpdated": "Đã cập nhật hóa đơn bán ra",
+    "billUpdated": "Đã cập nhật hóa đơn mua vào",
+    "invoiceVoided": "Đã hủy ghi nhận hóa đơn bán ra",
+    "billVoided": "Đã hủy ghi nhận hóa đơn mua vào",
+    "invoiceDeleted": "Đã xóa hóa đơn bán ra",
+    "billDeleted": "Đã xóa hóa đơn mua vào",
+    "unlinked": "Đã bỏ liên kết bút toán",
+    "paymentRecorded": "Đã ghi nhận thanh toán",
+    "linked": "Đã liên kết {kind, select, FEE {khoản phí} other {khoản thanh toán}} với {direction, select, PAYABLE {hóa đơn mua vào} other {hóa đơn bán ra}}"
+  },
+  "edit": {
+    "titleInvoice": "Sửa hóa đơn bán ra",
+    "titleBill": "Sửa hóa đơn mua vào",
+    "invoiceNumber": "Số hóa đơn",
+    "billNumber": "Số hóa đơn",
+    "paidNote": "Các khoản thanh toán đã ghi nhận giữ nguyên số tiền; trạng thái thanh toán được tính lại theo tổng tiền mới.",
+    "save": "Lưu thay đổi"
+  },
+  "payment": {
+    "record": "Ghi nhận thanh toán",
+    "title": "Ghi nhận thanh toán — {label}",
+    "intro": "Thêm {direction, select, PAYABLE {khoản chi} other {khoản thu}} vào sổ thu chi và liên kết với {label} này. Còn lại: <b>{amount}</b>",
+    "paidFrom": "Chi từ tài khoản",
+    "receivedInto": "Thu vào tài khoản",
+    "amount": "Số tiền ({currency})",
+    "date": "Ngày thanh toán",
+    "shortfallNote": "Nhập số tiền thực tế đã nhận được. Phần thanh toán thiếu (nếu có) vẫn hiển thị là chênh lệch chưa giải trình — không bao giờ được mặc nhiên coi là phí.",
+    "vndValue": "Giá trị quy đổi VND",
+    "rateBank": "VND thực tế",
+    "rateManual": "Nhập tỷ giá",
+    "rateDefault": "Mặc định ({rate})",
+    "vndPlaceholder": "Số VND đúng như trên sao kê ngân hàng",
+    "ratePlaceholder": "Số VND cho mỗi {currency}",
+    "descReceived": "Thu tiền khách hàng",
+    "descReceivedNo": "Thu tiền khách hàng — hóa đơn số {number}",
+    "descPaid": "Trả tiền nhà cung cấp",
+    "descPaidNo": "Trả tiền nhà cung cấp — hóa đơn số {number}"
+  },
+  "link": {
+    "trigger": "Liên kết bút toán đã có",
+    "title": "Liên kết bút toán — {label}",
+    "paymentHelp": "Dùng khi một lần chuyển khoản ngân hàng thanh toán cho nhiều hóa đơn, hoặc khoản thanh toán đã có trong sổ thu chi.",
+    "feeHelp": "Chỉ khoản phí có chứng từ đính kèm (giấy báo Nợ của ngân hàng hoặc biên lai) mới được dùng để giải trình một phần số tiền hóa đơn. Khoản chênh lệch đơn thuần không bao giờ được coi là phí.",
+    "entry": "Bút toán",
+    "chooseEntry": "Chọn bút toán",
+    "free": "{amount} chưa đối trừ",
+    "freeOf": "{amount} chưa đối trừ trên tổng {total}",
+    "noEvidence": "(chưa đính kèm chứng từ)",
+    "noChoices": "Không có {type, select, INCOME {khoản thu} other {khoản chi}} nào bằng {currency} còn tiền phải đối trừ",
+    "amount": "Số tiền cho {label} này ({currency})",
+    "submit": "Liên kết"
+  },
+  "errors": {
+    "invalidAmount": "Vui lòng nhập số tiền hợp lệ.",
+    "datesRequired": "Ngày lập hóa đơn và hạn thanh toán không được để trống.",
+    "invoiceVoided": "Hóa đơn này đã bị hủy ghi nhận.",
+    "currencyLocked": "Đã có khoản thanh toán liên kết theo loại tiền hiện tại — hãy bỏ liên kết trước khi đổi loại tiền.",
+    "voided": "Hóa đơn này đã bị hủy ghi nhận.",
+    "nothingToSettle": "Không còn số phải thanh toán.",
+    "enterAmountPaid": "Vui lòng nhập số tiền đã thanh toán.",
+    "moreThanOpen": "Số tiền này lớn hơn số còn lại ({amount}).",
+    "chooseAccount": "Vui lòng chọn tài khoản tiền đã dùng để thu hoặc chi khoản tiền này.",
+    "usdAccount": "{account} là tài khoản USD — hóa đơn này bằng {currency}.",
+    "enterAllocation": "Vui lòng nhập số tiền đối trừ.",
+    "chooseEntry": "Vui lòng chọn bút toán.",
+    "entryReversed": "Bút toán đó đã bị đảo — hãy liên kết bút toán điều chỉnh thay thế.",
+    "currencyMismatch": "Bút toán đó bằng {entryCurrency}; hóa đơn này bằng {currency}.",
+    "receivableNeedsIncome": "Khoản phải thu được thanh toán bằng một khoản thu.",
+    "billNeedsExpense": "Hóa đơn mua vào được thanh toán bằng một khoản chi.",
+    "feeMustBeExpense": "Phí phải là một khoản chi.",
+    "feeNeedsEvidence": "Vui lòng đính kèm chứng từ của khoản phí (giấy báo Nợ của ngân hàng hoặc biên lai) vào bút toán đó trước.",
+    "alreadyLinked": "Bút toán đã được liên kết với hóa đơn này.",
+    "notEnoughFree": "Bút toán đó chỉ còn {amount} phải đối trừ.",
+    "postedUnlink": "Khoản thanh toán này đã ghi sổ — chỉ chủ doanh nghiệp mới được bỏ liên kết.",
+    "ownerOnlyVoid": "Chỉ chủ doanh nghiệp mới được hủy ghi nhận hóa đơn.",
+    "hasPayments": "Hóa đơn đã có khoản thanh toán được liên kết — hãy bỏ liên kết trước."
+  }
+}

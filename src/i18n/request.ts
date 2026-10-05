@@ -1,14 +1,13 @@
-import { getRequestConfig } from 'next-intl/server';
-import { cookies } from 'next/headers';
+import { getRequestConfig } from "next-intl/server";
+import { resolveLocale } from "./locale";
+import { MESSAGES } from "./messages";
 
 export default getRequestConfig(async () => {
-  const cookieStore = await cookies();
-  // The cookie is client-controlled: only a language we ship reaches the import.
-  const asked = cookieStore.get('NEXT_LOCALE')?.value;
-  const locale = asked === 'vi' ? 'vi' : 'en';
-
+  // Only a language we ship is ever chosen (see resolveLocale).
+  const locale = await resolveLocale();
   return {
     locale,
-    messages: (await import(`../../messages/${locale}.json`)).default
+    messages: MESSAGES[locale],
+    timeZone: "Asia/Ho_Chi_Minh",
   };
 });

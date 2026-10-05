@@ -4,8 +4,10 @@ import * as xlsx from "xlsx";
 import { zipSync } from "fflate";
 import { prisma } from "@/lib/prisma";
 import { UPLOAD_DIR } from "@/lib/uploads";
-import { TYPE_LABEL, RATE_SOURCE_LABEL, STATUS_LABEL, EPS, BOOKED, accountDelta, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
-import { DOC_STATUS, DOC_OPEN, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
+import { EPS, BOOKED, accountDelta, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
+import { DOC_OPEN } from "@/lib/review";
+import { translator } from "@/i18n/server";
+import { DEFAULT_LOCALE, type Locale } from "@/i18n/config";
 
 // The monthly package for the accountant: ledger, invoices, bank
 // reconciliation, missing documents, open questions and change history —
@@ -14,6 +16,8 @@ import { DOC_STATUS, DOC_OPEN, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/
 const iso = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : "");
 const safe = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").replace(/[^\w.-]+/g, "_").slice(0, 80);
 const tol = (currency: string) => (currency === "VND" ? 0.5 : EPS);
+// Bank line statuses below are compared in code; this is each one's message key.
+const LINE_STATUS: Record<string, string> = { Matched: "matched", "Part matched": "partMatched", "Not in ledger": "notInLedger" };
 
 export function monthRange(month: string) {
   const [y, m] = month.split("-").map(Number);
@@ -115,40 +119,43 @@ export async function collect(month: string) {
 
 type Data = Awaited<ReturnType<typeof collect>>;
 
-// Everything the accountant should look at or answer.
-export function questions(d: Data) {
+// Everything the accountant should look at or answer, in the given language.
+export function questions(d: Data, locale: Locale = DEFAULT_LOCALE) {
+  const th = translator(locale, "handover");
+  const tc = translator(locale, "common");
   const q: { area: string; item: string; detail: string; amount: string; ref: string }[] = [];
   const amt = (n: number, c: string) => `${Math.round(n * 100) / 100} ${c}`;
   for (const t of d.entries) {
-    const what = `${iso(t.date)} · ${t.description ?? TYPE_LABEL[t.type] ?? t.type}`;
-    if (t.status === "DRAFT") q.push({ area: "Not reviewed", item: what, detail: "Draft — excluded from this package's figures until the owner reviews it.", amount: amt(t.amount, t.currency), ref: t.id });
+    const what = `${iso(t.date)} · ${t.description ?? tc(`type.${t.type}`)}`;
+    if (t.status === "DRAFT") q.push({ area: th("questions.area.notReviewed"), item: what, detail: th("questions.draft"), amount: amt(t.amount, t.currency), ref: t.id });
     if (!isBooked(t) || d.cancelled(t)) continue;
-    if (t.status === "REVIEWED") q.push({ area: "Not posted", item: what, detail: "Reviewed but not yet posted (locked).", amount: amt(t.amount, t.currency), ref: t.id });
+    if (t.status === "REVIEWED") q.push({ area: th("questions.area.notPosted"), item: what, detail: th("questions.notPosted"), amount: amt(t.amount, t.currency), ref: t.id });
     if (t.type === "EXPENSE" && (t.citStatus === "PENDING" || t.vatStatus === "PENDING")) {
-      q.push({ area: "Tax review", item: what, detail: `CIT: ${CIT_STATUS[t.citStatus]}; input VAT: ${VAT_STATUS[t.vatStatus]}.`, amount: amt(t.amount, t.currency), ref: t.id });
+      q.push({ area: th("questions.area.taxReview"), item: what, detail: th("questions.tax", { cit: tc(`review.cit.${t.citStatus}`), vat: tc(`review.vat.${t.vatStatus}`) }), amount: amt(t.amount, t.currency), ref: t.id });
     }
-    if (t.reviewNote) q.push({ area: "Note", item: what, detail: t.reviewNote, amount: amt(t.amount, t.currency), ref: t.id });
+    if (t.reviewNote) q.push({ area: th("questions.area.note"), item: what, detail: t.reviewNote, amount: amt(t.amount, t.currency), ref: t.id });
     if (t.account?.type === "BANK" && !t.bankLineId && d.bank.some((b) => b.account.id === t.accountId && b.covered)) {
-      q.push({ area: "Bank", item: what, detail: "On a bank account but not matched to any bank statement line yet.", amount: amt(t.amount, t.currency), ref: t.id });
+      q.push({ area: th("questions.area.bank"), item: what, detail: th("questions.unmatchedBank"), amount: amt(t.amount, t.currency), ref: t.id });
     }
   }
   for (const t of d.entries.filter((x) => x.reversalOfId)) {
-    q.push({ area: "Correction", item: `${iso(t.date)} · ${t.description ?? ""}`, detail: `Reverses a posted entry: ${t.reviewNote ?? ""}`, amount: amt(t.amount, t.currency), ref: t.id });
+    q.push({ area: th("questions.area.correction"), item: `${iso(t.date)} · ${t.description ?? ""}`, detail: th("questions.reverses", { note: t.reviewNote ?? "" }), amount: amt(t.amount, t.currency), ref: t.id });
   }
   for (const b of d.bank) {
     for (const l of b.lines.filter((x) => x.status !== "Matched")) {
-      q.push({ area: "Bank", item: `${iso(l.txnDate)} · ${b.account.name} · ${l.reference ?? ""}`, detail: `${l.status}: ${l.counterparty ?? l.description ?? ""}`, amount: amt(l.amount, b.account.currency), ref: l.locator });
+      q.push({ area: th("questions.area.bank"), item: `${iso(l.txnDate)} · ${b.account.name} · ${l.reference ?? ""}`, detail: th("questions.bankLine", { status: th(`lineStatus.${LINE_STATUS[l.status]}`), party: l.counterparty ?? l.description ?? "" }), amount: amt(l.amount, b.account.currency), ref: l.locator });
     }
-    if (!b.covered) q.push({ area: "Bank", item: b.account.name, detail: "No bank statement imported for this month.", amount: "", ref: "" });
+    if (!b.covered) q.push({ area: th("questions.area.bank"), item: b.account.name, detail: th("questions.noStatement"), amount: "", ref: "" });
   }
   for (const i of d.invoices) {
     const s = settlement(i.amount, i.allocations);
     if (i.status !== "VOID" && Math.abs(s.difference) > EPS && (i.status === "PARTIAL" || s.received + s.fees > 0)) {
-      q.push({ area: "Invoice", item: `${i.direction === "PAYABLE" ? "Bill" : "Invoice"} ${i.number ?? ""}`, detail: `Gross ${i.amount}, received ${s.received}, evidenced fees ${s.fees} — unmatched difference ${Math.round(s.difference * 100) / 100}.`, amount: amt(s.difference, i.currency), ref: i.id });
+      q.push({ area: th("questions.area.invoice"), item: th("questions.invoiceItem", { kind: tc(i.direction === "PAYABLE" ? "direction.PAYABLE" : "direction.RECEIVABLE"), number: i.number ?? "" }),
+        detail: th("questions.invoiceDifference", { gross: String(i.amount), received: String(s.received), fees: String(s.fees), difference: String(Math.round(s.difference * 100) / 100) }), amount: amt(s.difference, i.currency), ref: i.id });
     }
   }
   for (const c of d.costItems) {
-    q.push({ area: "Cost register", item: `${iso(c.receiptDate)} · ${c.provider}${c.ref ? ` (${c.ref})` : ""}`, detail: "Receipt pending review — not in the ledger yet.", amount: amt(c.amount, c.currency), ref: c.id });
+    q.push({ area: th("questions.area.costRegister"), item: `${iso(c.receiptDate)} · ${c.provider}${c.ref ? ` (${c.ref})` : ""}`, detail: th("questions.costPending"), amount: amt(c.amount, c.currency), ref: c.id });
   }
   return q;
 }
@@ -173,8 +180,10 @@ export function summarize(d: Data) {
   };
 }
 
-// The ZIP: one workbook plus the evidence files it links to.
-export async function pack(d: Data, user: string | null) {
+// The ZIP: one workbook plus the evidence files it links to, in the given language.
+export async function pack(d: Data, user: string | null, locale: Locale = DEFAULT_LOCALE) {
+  const th = translator(locale, "handover");
+  const tc = translator(locale, "common");
   const s = summarize(d);
   const wb = xlsx.utils.book_new();
   const add = (name: string, aoa: unknown[][], widths: number[]) => {
@@ -192,82 +201,94 @@ export async function pack(d: Data, user: string | null) {
     catch { missing.push(f.zipPath); }
   }
 
-  add("Read me", [
-    ["WorkFactory — accountant handover", ""],
-    ["Month", d.month],
-    ["Generated", `${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC${user ? ` by ${user}` : ""}`],
+  const when = new Date().toISOString().slice(0, 16).replace("T", " ");
+  add(th("sheets.readMe"), [
+    [th("readme.title"), ""],
+    [th("readme.month"), d.month],
+    [th("readme.generated"), user ? th("readme.generatedBy", { when, user }) : th("readme.generatedAt", { when })],
     [],
-    ["Entries in the month", s.entries],
-    ["— drafts (not reviewed; excluded from figures)", s.drafts],
-    ["— reviewed, not yet posted", s.reviewed],
-    ["— posted (locked)", s.posted],
-    ["Income (VND, reviewed and posted)", Math.round(s.income)],
-    ["Expenses (VND, reviewed and posted)", Math.round(s.expense)],
-    ["Entries missing documents", s.missingDocs],
-    ["Open questions", s.questions],
-    ["Evidence files included", s.evidence - missing.length],
-    ...(missing.length ? [["Evidence files missing on the server", missing.join(", ")]] : []),
+    [th("readme.entries"), s.entries],
+    [th("readme.drafts"), s.drafts],
+    [th("readme.reviewed"), s.reviewed],
+    [th("readme.posted"), s.posted],
+    [th("readme.income"), Math.round(s.income)],
+    [th("readme.expenses"), Math.round(s.expense)],
+    [th("readme.missingDocs"), s.missingDocs],
+    [th("readme.questions"), s.questions],
+    [th("readme.evidence"), s.evidence - missing.length],
+    ...(missing.length ? [[th("readme.evidenceMissing"), missing.join(", ")]] : []),
     [],
-    ...s.bank.map((b) => [`Bank ${b.name} (${b.currency})`, b.covered ? `statement closing ${Math.round(b.closing * 100) / 100} · app ${Math.round(b.app * 100) / 100} · ${b.agrees ? "agrees" : "DIFFERS"} · ${b.open} lines to reconcile` : "no statement imported for this month"]),
+    ...s.bank.map((b) => {
+      const v = { closing: String(Math.round(b.closing * 100) / 100), app: String(Math.round(b.app * 100) / 100), open: b.open };
+      return [th("readme.bank", { name: b.name, currency: b.currency }), b.covered ? (b.agrees ? th("readme.bankAgrees", v) : th("readme.bankDiffers", v)) : th("readme.bankNoStatement")];
+    }),
     [],
-    ["Notes", "Amounts are in the original currency; VND values use each entry's own rate (bank-settled where known). Currencies are never added together. Recording an expense doesn't make it deductible or its VAT claimable — see the CIT / Input VAT columns. Evidence paths in the Ledger sheet point into the evidence folder of this ZIP."],
+    [th("readme.notes"), th("readme.notesText")],
   ], [44, 110]);
 
-  const head = ["Date", "Status", "Type", "Account", "Category", "Project", "Vendor", "Description", "Invoice #", "Currency", "Amount", "Rate", "Rate source", "Amount (VND)",
-    "Document", "Business purpose", "CIT", "Input VAT", "VAT amount", "Review note", "Bank reference", "Settles", "Evidence", "Entered by", "Entry ID"];
+  const beforeEvidence = [th("columns.date"), th("columns.status"), th("columns.type"), th("columns.account"), th("columns.category"), th("columns.project"), th("columns.vendor"),
+    th("columns.description"), th("columns.invoiceNumber"), th("columns.currency"), th("columns.amount"), th("columns.rate"), th("columns.rateSource"), th("columns.amountVnd"),
+    th("columns.document"), th("columns.purpose"), th("columns.cit"), th("columns.inputVat"), th("columns.vatAmount"), th("columns.reviewNote"), th("columns.bankReference"),
+    th("columns.settles")];
+  const head = [...beforeEvidence, th("columns.evidence"), th("columns.enteredBy"), th("columns.entryId")];
   const ledgerRows = d.booked.map((t) => [
-    iso(t.date), `${STATUS_LABEL[t.status] ?? t.status}${t.reversalOfId ? " (reversal)" : t.reversedBy ? " (reversed)" : ""}`,
-    TYPE_LABEL[t.type] ?? t.type, t.account?.name ?? "", isPnl(t.type) ? t.category?.name ?? "" : "", t.project?.name ?? "", t.vendor?.name ?? "",
-    t.description ?? "", t.invoiceNumber ?? "", t.currency, t.amount, t.exchangeRate, t.rateSource ? RATE_SOURCE_LABEL[t.rateSource] ?? t.rateSource : "",
+    iso(t.date), t.reversalOfId ? th("ledger.reversal", { status: tc(`status.${t.status}`) }) : t.reversedBy ? th("ledger.reversed", { status: tc(`status.${t.status}`) }) : tc(`status.${t.status}`),
+    tc(`type.${t.type}`), t.account?.name ?? "", isPnl(t.type) ? t.category?.name ?? "" : "", t.project?.name ?? "", t.vendor?.name ?? "",
+    t.description ?? "", t.invoiceNumber ?? "", t.currency, t.amount, t.exchangeRate, t.rateSource ? tc(`rateSource.${t.rateSource}`) : "",
     Math.round(toVnd(t)),
-    isPnl(t.type) ? DOC_STATUS[t.docStatus] ?? t.docStatus : "",
-    t.type === "EXPENSE" ? PURPOSE_STATUS[t.purposeStatus] : "", t.type === "EXPENSE" ? CIT_STATUS[t.citStatus] : "", t.type === "EXPENSE" ? VAT_STATUS[t.vatStatus] : "",
+    isPnl(t.type) ? tc(`review.doc.${t.docStatus}`) : "",
+    t.type === "EXPENSE" ? tc(`review.purpose.${t.purposeStatus}`) : "", t.type === "EXPENSE" ? tc(`review.cit.${t.citStatus}`) : "", t.type === "EXPENSE" ? tc(`review.vat.${t.vatStatus}`) : "",
     t.vatAmount ?? "", t.reviewNote ?? "",
     t.bankLine ? `${iso(t.bankLine.txnDate)} ${t.bankLine.reference ?? ""}`.trim() : "",
-    t.allocations.map((a) => `${a.kind === "FEE" ? "fee → " : ""}${a.invoice.number ?? "(no number)"} ${a.amount}`).join("; "),
+    t.allocations.map((a) => {
+      const number = a.invoice.number ?? th("ledger.noNumber");
+      return a.kind === "FEE" ? th("ledger.fee", { number, amount: String(a.amount) }) : `${number} ${a.amount}`;
+    }).join("; "),
     (d.evidenceOf.get(t.id) ?? []).join("; "), t.createdBy ?? "", t.id,
   ]);
-  const ledger = add("Ledger", [head, ...ledgerRows], [11, 16, 14, 18, 18, 22, 18, 40, 12, 8, 14, 10, 10, 14, 18, 20, 16, 18, 10, 36, 26, 24, 50, 12, 26]);
+  const ledger = add(th("sheets.ledger"), [head, ...ledgerRows], [11, 16, 14, 18, 18, 22, 18, 40, 12, 8, 14, 10, 10, 14, 18, 20, 16, 18, 10, 36, 26, 24, 50, 12, 26]);
   // Each entry's evidence cell opens its first file once the ZIP is extracted.
-  const ev = head.indexOf("Evidence");
+  // Found by position: a translated heading may read the same as another column's.
+  const ev = beforeEvidence.length;
   d.booked.forEach((t, r) => {
     const first = d.evidenceOf.get(t.id)?.[0];
     const cell = ledger[xlsx.utils.encode_cell({ r: r + 1, c: ev })];
     if (first && cell) cell.l = { Target: first };
   });
 
-  add("Invoices", [
-    ["Direction", "Number", "Party", "Project", "Issue date", "Due date", "Currency", "Gross", "Received", "Evidenced fees", "Unmatched difference", "Status", "Paid date", "Evidence"],
+  add(th("sheets.invoices"), [
+    [th("columns.direction"), th("columns.number"), th("columns.party"), th("columns.project"), th("columns.issueDate"), th("columns.dueDate"), th("columns.currency"),
+      th("columns.gross"), th("columns.received"), th("columns.evidencedFees"), th("columns.unmatchedDifference"), th("columns.status"), th("columns.paidDate"), th("columns.evidence")],
     ...d.invoices.map((i) => {
       const st = settlement(i.amount, i.allocations);
-      return [i.direction === "PAYABLE" ? "Bill (AP)" : "Invoice (AR)", i.number ?? "", (i.direction === "PAYABLE" ? i.vendor?.name : i.client?.name) ?? "",
+      return [i.direction === "PAYABLE" ? th("invoices.payable") : th("invoices.receivable"), i.number ?? "", (i.direction === "PAYABLE" ? i.vendor?.name : i.client?.name) ?? "",
         i.project?.name ?? "", iso(i.issueDate), iso(i.dueDate), i.currency, i.amount, st.received, st.fees,
-        Math.abs(st.difference) > EPS ? Math.round(st.difference * 100) / 100 : 0, i.status, iso(i.paidDate),
+        Math.abs(st.difference) > EPS ? Math.round(st.difference * 100) / 100 : 0, tc(`invoiceStatus.${i.status}`), iso(i.paidDate),
         i.attachments.map((a) => d.files.get(a.id)?.zipPath ?? "").filter(Boolean).join("; ")];
     }),
   ], [12, 14, 26, 22, 11, 11, 8, 14, 14, 12, 16, 10, 11, 50]);
 
-  add("Bank reconciliation", [
+  add(th("sheets.bank"), [
     ...d.bank.flatMap((b) => [
-      [`${b.account.name} (${b.account.currency})`, b.covered ? "" : "No statement imported for this month"],
-      ["Statement opening", Math.round(b.opening * 100) / 100, "Statement closing", Math.round(b.closing * 100) / 100, "App balance at month end", Math.round(b.app * 100) / 100, "Difference", Math.round((b.app - b.closing) * 100) / 100],
+      [`${b.account.name} (${b.account.currency})`, b.covered ? "" : th("bank.noStatement")],
+      [th("bank.opening"), Math.round(b.opening * 100) / 100, th("bank.closing"), Math.round(b.closing * 100) / 100, th("bank.app"), Math.round(b.app * 100) / 100, th("bank.difference"), Math.round((b.app - b.closing) * 100) / 100],
       [],
     ]),
-    ["Account", "Date", "Posting date", "Reference", "Counterparty", "Details", "Amount", "Status", "Ledger entries"],
+    [th("columns.account"), th("columns.date"), th("columns.postingDate"), th("columns.reference"), th("columns.counterparty"), th("columns.details"), th("columns.amount"), th("columns.status"), th("columns.ledgerEntries")],
     ...d.bank.flatMap((b) => b.lines.map((l) => [b.account.name, iso(l.txnDate), iso(l.postingDate), l.reference ?? "", l.counterparty ?? "", l.description ?? "",
-      l.amount, l.status, l.entries.map((t) => `${t.description ?? TYPE_LABEL[t.type]} (${t.id})`).join("; ")])),
+      l.amount, th(`lineStatus.${LINE_STATUS[l.status]}`), l.entries.map((t) => `${t.description ?? tc(`type.${t.type}`)} (${t.id})`).join("; ")])),
   ], [22, 11, 11, 18, 32, 40, 14, 14, 50]);
 
-  add("Missing documents", [
-    ["Date", "Description", "Account", "Currency", "Amount", "Document", "Review note", "Entry ID"],
+  add(th("sheets.missingDocs"), [
+    [th("columns.date"), th("columns.description"), th("columns.account"), th("columns.currency"), th("columns.amount"), th("columns.document"), th("columns.reviewNote"), th("columns.entryId")],
     ...d.booked.filter((t) => isPnl(t.type) && !d.cancelled(t) && DOC_OPEN.includes(t.docStatus)).map((t) => [
-      iso(t.date), t.description ?? "", t.account?.name ?? "", t.currency, t.amount, DOC_STATUS[t.docStatus], t.reviewNote ?? "", t.id]),
+      iso(t.date), t.description ?? "", t.account?.name ?? "", t.currency, t.amount, tc(`review.doc.${t.docStatus}`), t.reviewNote ?? "", t.id]),
   ], [11, 40, 18, 8, 14, 20, 40, 26]);
 
-  add("Open questions", [["Area", "Item", "Question / detail", "Amount", "Reference"], ...questions(d).map((q) => [q.area, q.item, q.detail, q.amount, q.ref])], [14, 44, 70, 18, 28]);
+  add(th("sheets.openQuestions"), [[th("columns.area"), th("columns.item"), th("columns.questionDetail"), th("columns.amount"), th("columns.reference")], ...questions(d, locale).map((q) => [q.area, q.item, q.detail, q.amount, q.ref])], [14, 44, 70, 18, 28]);
 
-  add("Change history", [
-    ["When (UTC)", "Who", "Action", "Field", "From", "To", "Reason", "Entry ID"],
+  add(th("sheets.history"), [
+    [th("columns.when"), th("columns.who"), th("columns.action"), th("columns.field"), th("columns.from"), th("columns.to"), th("columns.reason"), th("columns.entryId")],
     ...d.history.map((h) => [h.createdAt.toISOString().slice(0, 16).replace("T", " "), h.user ?? "", h.action, h.field ?? "", h.oldValue ?? "", h.newValue ?? "", h.reason ?? "", h.entityId]),
   ], [17, 12, 10, 14, 30, 30, 40, 26]);
 

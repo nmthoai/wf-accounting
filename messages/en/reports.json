@@ -1,0 +1,112 @@
+{
+  "uncategorized": "Uncategorized",
+  "noProject": "(No project)",
+  "page": {
+    "title": "Profit & Loss",
+    "subtitle": "{month} · cash-basis (paid income & expenses) · reviewed and posted entries",
+    "draftsNotIncluded": "{count, plural, one {# draft entry} other {# draft entries}} this month not included — waiting for review →"
+  },
+  "lines": {
+    "empty": "No entries this month.",
+    "total": "Total"
+  },
+  "cards": {
+    "income": "Income",
+    "expenses": "Expenses",
+    "netProfit": "Net Profit",
+    "vsLastMonth": "{arrow} {amount} vs last month"
+  },
+  "byCategory": {
+    "income": "Income by category",
+    "expenses": "Expenses by category"
+  },
+  "byProject": {
+    "title": "Profit by project",
+    "project": "Project",
+    "income": "Income",
+    "expenses": "Expenses",
+    "net": "Net",
+    "empty": "No entries this month."
+  },
+  "tax": {
+    "title": "Tax review",
+    "intro": "Kept apart from the P&L: recording an expense doesn't make it deductible or its VAT claimable. These are the decisions recorded so far.",
+    "citTitle": "CIT deductibility of this month's expenses",
+    "inputVat": "Input VAT",
+    "claimable": "Claimable (invoice on file)",
+    "vatPending": "Expenses with VAT not yet reviewed",
+    "docsTitle": "Documents still to find",
+    "entryCount": "{count, plural, one {# entry} other {# entries}}",
+    "allDocs": "Every entry this month has its invoice or receipt.",
+    "openLedger": "Open in the ledger →"
+  },
+  "monthPicker": {
+    "previous": "Previous month",
+    "next": "Next month"
+  },
+  "downloads": {
+    "title": "Excel downloads",
+    "description": "Export raw data for a date range. Ledger uses the transaction date; invoices use the issue date.",
+    "from": "From",
+    "to": "To",
+    "invalidRange": "Pick a valid range (From must be on or before To).",
+    "entries": "Ledger entries (.xlsx)",
+    "invoices": "Invoices & bills (.xlsx)"
+  },
+  "export": {
+    "entries": {
+      "sheet": "Ledger Entries",
+      "columns": {
+        "date": "Date",
+        "status": "Status",
+        "type": "Type",
+        "account": "Account",
+        "description": "Description",
+        "category": "Category",
+        "project": "Project",
+        "vendor": "Vendor",
+        "invoiceNumber": "Invoice #",
+        "currency": "Currency",
+        "amount": "Amount",
+        "rate": "Rate",
+        "rateSource": "Rate source",
+        "amountVnd": "Amount (VND)",
+        "attachments": "Attachments",
+        "document": "Document",
+        "purpose": "Business purpose",
+        "cit": "CIT",
+        "inputVat": "Input VAT",
+        "vatAmount": "VAT amount",
+        "reviewNote": "Review note"
+      },
+      "reversal": "{status} (reversal)",
+      "totalIncome": "TOTAL Income",
+      "totalExpense": "TOTAL Expense",
+      "net": "NET"
+    },
+    "invoices": {
+      "sheet": "Invoices & Bills",
+      "columns": {
+        "issueDate": "Issue Date",
+        "dueDate": "Due Date",
+        "direction": "Direction",
+        "number": "Number",
+        "party": "Party",
+        "project": "Project",
+        "category": "Category",
+        "currency": "Currency",
+        "gross": "Gross",
+        "received": "Received",
+        "fees": "Evidenced fees",
+        "difference": "Unmatched difference",
+        "status": "Status",
+        "paidDate": "Paid Date",
+        "notes": "Notes"
+      },
+      "receivable": "Receivable (AR)",
+      "payable": "Payable (AP)",
+      "openAr": "Open AR (owed to you)",
+      "openAp": "Open AP (you owe)"
+    }
+  }
+}

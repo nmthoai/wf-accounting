@@ -1,0 +1,133 @@
+{
+  "page": {
+    "title": "Settings",
+    "subtitle": "Manage categories and bank balance"
+  },
+  "fields": {
+    "name": "Name",
+    "type": "Type",
+    "description": "Description",
+    "rate": "Rate (USD)",
+    "unit": "Unit"
+  },
+  "saveChanges": "Save changes",
+  "categories": {
+    "title": "Categories",
+    "description": "Manage Invoice and Cost types",
+    "namePlaceholder": "e.g. Software License",
+    "typePlaceholder": "Select type",
+    "incomeTitle": "Income Categories",
+    "expenseTitle": "Expense Categories",
+    "noIncome": "No income categories.",
+    "noExpense": "No expense categories.",
+    "editTitle": "Edit category",
+    "descriptionPlaceholder": "optional",
+    "deleteConfirm": "Delete the category \"{name}\"?",
+    "toast": {
+      "added": "Category added",
+      "saved": "Category saved",
+      "deleted": "Category deleted",
+      "couldNotDelete": "Could not delete the category."
+    }
+  },
+  "unitRates": {
+    "title": "Unit Rates",
+    "description": "Reference for billing rates (Hours, Projects, Mandays)",
+    "descriptionPlaceholder": "e.g. Senior Developer",
+    "ratePlaceholder": "e.g. 50",
+    "units": {
+      "hours": "Hours",
+      "project": "Project",
+      "manday": "Manday"
+    },
+    "per": {
+      "hours": "hours",
+      "project": "project",
+      "manday": "manday"
+    },
+    "rateLine": "${rate} / {unit}",
+    "empty": "No unit rates defined.",
+    "editTitle": "Edit unit rate",
+    "toast": {
+      "added": "Unit rate added",
+      "saved": "Unit rate saved",
+      "deleted": "Unit rate deleted"
+    }
+  },
+  "exchangeRate": {
+    "title": "Global Settings",
+    "description": "Default system values",
+    "current": "Current Rate",
+    "lastUpdated": "Last updated",
+    "never": "Never",
+    "newRate": "Set New Exchange Rate",
+    "hint": "This rate will automatically populate when logging USD transactions.",
+    "submit": "Update Rate",
+    "toast": {
+      "updated": "Exchange rate updated"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "description": "Invite-only. New users get a default password and onboard themselves (change password + 2FA).",
+    "username": "Username",
+    "usernamePlaceholder": "e.g. accountant1",
+    "defaultPassword": "Default password",
+    "passwordPlaceholder": "share this with them",
+    "role": "Role",
+    "roles": {
+      "USER": "Staff",
+      "ADMIN": "Admin"
+    },
+    "you": "(you)",
+    "status": {
+      "locked": "Locked",
+      "deactivated": "Deactivated",
+      "onboarding": "Onboarding",
+      "active": "Active · 2FA"
+    },
+    "unlock": "Unlock",
+    "resetPassword": {
+      "button": "Reset password",
+      "title": "Reset password for {username}",
+      "intro": "Sets a new default password. {username} will be forced to change it on next login.",
+      "newLabel": "New default password",
+      "submit": "Set default password"
+    },
+    "reset2fa": {
+      "button": "Reset 2FA",
+      "confirm": "Reset 2FA for {username}? They'll re-enrol on next login."
+    },
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "delete": {
+      "button": "Delete user",
+      "confirm": "Delete {username}? This cannot be undone."
+    },
+    "toast": {
+      "created": "User created",
+      "unlocked": "Unlocked {username}",
+      "passwordReset": "Password reset for {username}",
+      "twoFactorReset": "2FA reset for {username}",
+      "activated": "Activated {username}",
+      "deactivated": "Deactivated {username}",
+      "deleted": "Deleted {username}",
+      "couldNotCreate": "Could not create user.",
+      "couldNotUpdate": "Could not update the user."
+    }
+  },
+  "errors": {
+    "nameTypeRequired": "Name and type are required.",
+    "categoryTypeLocked": "This category is in use, so it can't switch between income and expense.",
+    "categoryInUse": "This category is in use — rename it instead, or move its entries first.",
+    "rateInvalid": "Enter a rate greater than 0.",
+    "allFieldsRequired": "All fields are required.",
+    "usernameTooShort": "Username must be at least 3 characters.",
+    "passwordTooShort": "Default password must be at least 8 characters.",
+    "usernameTaken": "That username is already taken.",
+    "cantDeleteSelf": "You can't delete your own account.",
+    "cantDeleteLastAdmin": "Can't delete the last active admin.",
+    "cantDeactivateSelf": "You can't deactivate your own account.",
+    "cantDeactivateLastAdmin": "Can't deactivate the last active admin."
+  }
+}

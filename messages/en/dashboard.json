@@ -1,0 +1,57 @@
+{
+  "page": {
+    "title": "Dashboard",
+    "subtitle": "Financial overview for WorkFactory",
+    "draftsWaiting": "{count, plural, one {{count} entry} other {{count} entries}} waiting for review — not counted below yet →",
+    "newEntry": "New Entry"
+  },
+  "cards": {
+    "cashTitle": "Cash & Bank",
+    "cashSubtitle": "Bank + cash across {count} accounts",
+    "cashNoAccounts": "Add your accounts on the Accounts page",
+    "netSurplusTitle": "Net Surplus",
+    "netSurplusSubtitle": "Income − Expenses (all time)",
+    "totalIncomeTitle": "Total Income",
+    "totalExpensesTitle": "Total Expenses",
+    "entries": "{count} entries"
+  },
+  "accounts": {
+    "title": "Accounts",
+    "manage": "Manage",
+    "empty": "No accounts yet.",
+    "companyOwesOwner": "Company owes the owner {amount}",
+    "ownerHolds": "Owner holds {amount} of company money",
+    "needClassifying": "{count, plural, one {{count} movement} other {{count} movements}} need classifying →"
+  },
+  "coming": {
+    "title": "Coming Payments",
+    "viewAll": "View all",
+    "goingOut": "Going out — you pay",
+    "comingIn": "Coming in — you receive",
+    "vendor": "Vendor",
+    "client": "Client",
+    "partPaid": "part paid",
+    "overdue": "overdue",
+    "due": "due {date}",
+    "nothingToPay": "Nothing to pay.",
+    "nothingIn": "Nothing expected in."
+  },
+  "topProjects": {
+    "title": "Top Projects by Profit",
+    "projects": "Projects",
+    "empty": "Tag transactions to a project to see profit here."
+  },
+  "recent": {
+    "title": "Recent Transactions",
+    "viewAll": "View All",
+    "uncategorized": "Uncategorized",
+    "draft": "draft",
+    "empty": "No transactions yet."
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "logIncome": "Log Income",
+    "logExpense": "Log Expense",
+    "transfers": "Transfers, capital & loans"
+  }
+}

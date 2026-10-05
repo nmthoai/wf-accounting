@@ -8,6 +8,7 @@ import { CURRENCIES } from "@/lib/money";
 import { DOC_STATUS } from "@/lib/review";
 import { PAYER, REIMBURSEMENT } from "@/lib/costs";
 import { convertCostItem, CostItemTaken } from "@/lib/cost-items";
+import { getT, type Translate } from "@/i18n/server";
 
 async function currentUser() {
   const session = await getSession();
@@ -37,18 +38,18 @@ function parseReview(fd: FormData) {
 }
 
 // The receipt's evidence — fixed once the item is in the ledger.
-function parseItem(fd: FormData) {
+function parseItem(fd: FormData, t: Translate) {
   const str = (k: string) => ((fd.get(k) as string) || "").trim();
   const provider = str("provider");
   const receiptDate = day(str("receiptDate"));
   const amount = parseFloat(str("amount"));
   const currency = str("currency") || "USD";
-  if (!provider) return { error: "Who is the provider?" };
-  if (!receiptDate) return { error: "Enter the date on the receipt." };
-  if (!(amount >= 0)) return { error: "Enter the amount as printed." };
-  if (!CURRENCIES.includes(currency)) return { error: "Unsupported currency." };
+  if (!provider) return { error: t("errors.providerRequired") };
+  if (!receiptDate) return { error: t("errors.dateRequired") };
+  if (!(amount >= 0)) return { error: t("errors.amountRequired") };
+  if (!CURRENCIES.includes(currency)) return { error: t("errors.unsupportedCurrency") };
   const from = day(str("servicePeriodFrom")), to = day(str("servicePeriodTo"));
-  if (from && to && from > to) return { error: "The service period ends before it starts." };
+  if (from && to && from > to) return { error: t("errors.periodReversed") };
   return {
     evidence: {
       provider, receiptDate, amount, currency, servicePeriodFrom: from, servicePeriodTo: to,
@@ -74,9 +75,11 @@ async function duplicateOf(e: { provider: string; receiptNumber: string | null; 
 
 export async function saveCostItem(id: string | null, fd: FormData) {
   const me = await currentUser();
+  const t = await getT("costs");
+  const tc = await getT("common");
   if (id) {
     const item = await prisma.costItem.findUnique({ where: { id } });
-    if (!item) return { success: false, message: "Not found." };
+    if (!item) return { success: false, message: tc("errors.notFound") };
     // Once in the ledger, the receipt's evidence stays as recorded (the form
     // doesn't even send it); only the review moves on, and new receipts
     // become evidence on the expense too.
@@ -86,17 +89,17 @@ export async function saveCostItem(id: string | null, fd: FormData) {
       revalidateAll();
       return { success: true };
     }
-    const parsed = parseItem(fd);
+    const parsed = parseItem(fd, t);
     if ("error" in parsed) return { success: false, message: parsed.error };
     const dup = await duplicateOf(parsed.evidence, id);
-    if (dup) return { success: false, message: `Already in the register: ${dup.provider} ${dup.receiptNumber ?? dup.receiptDate.toISOString().slice(0, 10)}.` };
+    if (dup) return { success: false, message: t("errors.duplicate", { provider: dup.provider, ref: dup.receiptNumber ?? dup.receiptDate.toISOString().slice(0, 10) }) };
     await prisma.costItem.update({ where: { id }, data: { ...parsed.evidence, ...parsed.review } });
     await persistUploads(fd.getAll("files") as File[], { costItemId: id });
   } else {
-    const parsed = parseItem(fd);
+    const parsed = parseItem(fd, t);
     if ("error" in parsed) return { success: false, message: parsed.error };
     const dup = await duplicateOf(parsed.evidence);
-    if (dup) return { success: false, message: `Already in the register: ${dup.provider} ${dup.receiptNumber ?? dup.receiptDate.toISOString().slice(0, 10)}.` };
+    if (dup) return { success: false, message: t("errors.duplicate", { provider: dup.provider, ref: dup.receiptNumber ?? dup.receiptDate.toISOString().slice(0, 10) }) };
     const item = await prisma.costItem.create({ data: { ...parsed.evidence, ...parsed.review, createdBy: me.name } });
     await persistUploads(fd.getAll("files") as File[], { costItemId: item.id });
   }
@@ -108,9 +111,10 @@ export async function saveCostItem(id: string | null, fd: FormData) {
 export async function dismissCostItem(id: string, reason: string) {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
-  if (!reason?.trim()) return { success: false, message: "Give the reason." };
+  const t = await getT("costs");
+  if (!reason?.trim()) return { success: false, message: t("errors.reasonRequired") };
   const item = await prisma.costItem.findUnique({ where: { id } });
-  if (!item || item.status !== "PENDING") return { success: false, message: "Only pending items can be dismissed." };
+  if (!item || item.status !== "PENDING") return { success: false, message: t("errors.onlyPendingDismiss") };
   await prisma.costItem.update({ where: { id }, data: { status: "DISMISSED", reviewNote: reason.trim() } });
   revalidateAll();
   return { success: true };
@@ -128,8 +132,9 @@ export async function reopenCostItem(id: string) {
 export async function deleteCostItem(id: string) {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  const t = await getT("costs");
   const item = await prisma.costItem.findUnique({ where: { id } });
-  if (!item || item.status === "CONVERTED") return { success: false, message: "Items in the ledger can't be deleted." };
+  if (!item || item.status === "CONVERTED") return { success: false, message: t("errors.ledgerItemsNoDelete") };
   const files = await prisma.attachment.findMany({ where: { costItemId: id, transactionId: null } });
   await prisma.costItem.delete({ where: { id } });
   for (const f of files) await removeUploadFile(f.filePath);
@@ -141,18 +146,19 @@ export async function deleteCostItem(id: string) {
 // a second one. Its receipts become evidence on that expense too.
 export async function linkCostItem(id: string, transactionId: string) {
   const me = await currentUser();
+  const tr = await getT("costs"); // `t` is the expense below
   const [item, t] = await Promise.all([
     prisma.costItem.findUnique({ where: { id } }),
     prisma.transaction.findUnique({ where: { id: transactionId }, include: { costItem: true, reversedBy: { select: { id: true } } } }),
   ]);
-  if (!item || item.status !== "PENDING") return { success: false, message: "Only pending items can be linked." };
-  if (!t || t.type !== "EXPENSE") return { success: false, message: "Choose an expense." };
-  if (t.reversalOfId || t.reversedBy) return { success: false, message: "That expense has been reversed — link its correction." };
-  if (t.costItem) return { success: false, message: "That expense already comes from another register item." };
+  if (!item || item.status !== "PENDING") return { success: false, message: tr("errors.onlyPendingLink") };
+  if (!t || t.type !== "EXPENSE") return { success: false, message: tr("errors.chooseExpense") };
+  if (t.reversalOfId || t.reversedBy) return { success: false, message: tr("errors.expenseReversed") };
+  if (t.costItem) return { success: false, message: tr("errors.expenseTaken") };
   try {
     await convertCostItem(id, transactionId, me.name);
   } catch (e) {
-    if (e instanceof CostItemTaken) return { success: false, message: "That register item is already in the ledger or dismissed." };
+    if (e instanceof CostItemTaken) return { success: false, message: tr("errors.itemTaken") };
     throw e;
   }
   revalidateAll();

@@ -1,0 +1,104 @@
+{
+  "status": {
+    "NOT_STARTED": "Chưa bắt đầu",
+    "ACTIVE": "Đang thực hiện",
+    "PENDING": "Đang chờ",
+    "DONE": "Hoàn thành",
+    "ARCHIVED": "Đã lưu trữ"
+  },
+  "noClient": "Không có khách hàng",
+  "page": {
+    "title": "Dự án",
+    "subtitle": "Lãi lỗ theo dự án — nhấn vào dự án để xem cơ cấu chi phí"
+  },
+  "list": {
+    "title": "Lãi lỗ theo dự án",
+    "description": "Lãi (lỗ) = doanh thu − chi phí từ các bút toán gắn với từng dự án (thực thu, thực chi). Nhấn vào một dự án để xem cơ cấu chi phí.",
+    "newProject": "Dự án mới",
+    "namePlaceholder": "Ví dụ: AI Character Dev",
+    "client": "Khách hàng",
+    "unpaidTitle": "{count} hóa đơn bán ra/mua vào chưa thanh toán · {amounts}",
+    "unpaid": "{count} chưa thanh toán",
+    "attachmentsTitle": "{count, plural, other {# tài liệu đính kèm}}",
+    "txnCount": "{count} bút toán",
+    "archive": "Lưu trữ",
+    "reactivate": "Kích hoạt lại",
+    "confirmDelete": "Xóa dự án {name}?",
+    "empty": "Chưa có dự án nào."
+  },
+  "toast": {
+    "created": "Đã tạo dự án",
+    "archived": "Đã lưu trữ dự án",
+    "reactivated": "Đã kích hoạt lại dự án",
+    "deleted": "Đã xóa dự án",
+    "saved": "Đã lưu dự án",
+    "documentsUploaded": "{count, plural, =1 {Đã tải lên tài liệu} other {Đã tải lên # tài liệu}}",
+    "documentRemoved": "Đã xóa tài liệu"
+  },
+  "edit": {
+    "title": "Sửa dự án",
+    "name": "Tên",
+    "client": "Khách hàng",
+    "status": "Trạng thái",
+    "startDate": "Ngày bắt đầu",
+    "endDate": "Ngày kết thúc",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Phạm vi, sản phẩm bàn giao, điều khoản…",
+    "saveChanges": "Lưu thay đổi"
+  },
+  "detail": {
+    "income": "Doanh thu",
+    "expenses": "Chi phí",
+    "netProfit": "Lợi nhuận",
+    "outstandingTitle": "Số còn phải thanh toán",
+    "outstandingDescription": "Hóa đơn bán ra & mua vào của dự án này đang chờ thanh toán.",
+    "documentsTitle": "Tài liệu",
+    "documentsDescription": "Hợp đồng và tài liệu tham khảo — lưu trữ riêng tư, chỉ xem được khi đã đăng nhập.",
+    "costBreakdown": "Cơ cấu chi phí theo khoản mục",
+    "uncategorized": "Chưa có khoản mục",
+    "noCosts": "Chưa có chi phí nào gắn với dự án này.",
+    "transactions": "Bút toán",
+    "noTransactions": "Chưa có bút toán nào gắn với dự án này.",
+    "typeBadge": {
+      "INCOME": "Thu",
+      "EXPENSE": "Chi",
+      "TRANSFER_IN": "Chuyển vào",
+      "TRANSFER_OUT": "Chuyển ra",
+      "CAPITAL_IN": "Nhận vốn góp",
+      "LOAN_IN": "Nhận tiền vay",
+      "LOAN_REPAY": "Trả gốc vay",
+      "OTHER_IN": "Vào – chưa phân loại",
+      "OTHER_OUT": "Ra – chưa phân loại"
+    },
+    "table": {
+      "date": "Ngày",
+      "type": "Loại",
+      "category": "Khoản mục",
+      "vendor": "NCC",
+      "description": "Diễn giải",
+      "amountVnd": "Quy đổi VND"
+    }
+  },
+  "outstanding": {
+    "empty": "Không còn số phải thanh toán — mọi hóa đơn bán ra & mua vào của dự án này đều đã thanh toán đủ.",
+    "youOwe": "Phải trả nhà cung cấp",
+    "owedToYou": "Phải thu khách hàng",
+    "overdue": "Quá hạn",
+    "unpaid": "Trong hạn",
+    "due": "{ref} · đến hạn {date}",
+    "openOf": "còn lại trên tổng {amount}"
+  },
+  "documents": {
+    "add": "Thêm tài liệu",
+    "upload": "Tải lên",
+    "hint": "PDF, Word, Excel hoặc hình ảnh. Lưu trữ riêng tư — chỉ xem được khi đã đăng nhập.",
+    "confirmRemove": "Xóa tài liệu này? Thao tác này sẽ xóa tệp.",
+    "couldNotUpload": "Không thể tải lên.",
+    "couldNotRemove": "Không thể xóa tài liệu."
+  },
+  "errors": {
+    "couldNotCreate": "Không thể tạo dự án.",
+    "nameRequired": "Tên dự án không được để trống.",
+    "hasLinked": "Đã có bút toán/hóa đơn gắn với dự án này. Hãy lưu trữ dự án thay vì xóa."
+  }
+}

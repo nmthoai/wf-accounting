@@ -3,9 +3,11 @@
 // 12mb) and nginx client_max_body_size 12m on the server.
 export const MAX_UPLOAD_MB = 10;
 
-export function uploadProblem(files: File[]) {
+// The message, in the user's language, when the files are too big together.
+// Pass the common-namespace translator (useTranslations("common")).
+export function uploadProblem(files: File[], t: (key: "upload.tooBig", values: { max: number; mb: string }) => string) {
   const total = files.reduce((s, f) => s + (f?.size ?? 0), 0);
   return total > MAX_UPLOAD_MB * 1024 * 1024
-    ? `Attachments are limited to ${MAX_UPLOAD_MB} MB per save — these come to ${(total / 1048576).toFixed(1)} MB. Save them in smaller batches.`
+    ? t("upload.tooBig", { max: MAX_UPLOAD_MB, mb: (total / 1048576).toFixed(1) })
     : null;
 }

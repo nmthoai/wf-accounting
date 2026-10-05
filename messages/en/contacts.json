@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "Clients & Vendors",
+    "subtitle": "The parties you invoice and pay"
+  },
+  "form": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "emailOptional": "Email (optional)",
+    "phoneOptional": "Phone (optional)"
+  },
+  "clients": {
+    "title": "Clients",
+    "description": "Who you invoice and run projects for. Revenue is total income received from them.",
+    "namePlaceholder": "e.g. Acme Co",
+    "meta": "{contact} · {projects} projects · {invoices} invoices",
+    "revenueTitle": "Revenue received",
+    "confirmDelete": "Delete client {name}?",
+    "empty": "No clients yet."
+  },
+  "vendors": {
+    "title": "Vendors",
+    "description": "Who you pay (e.g. subcontractors, services). Spend is total expenses tagged to them.",
+    "namePlaceholder": "e.g. ZDN",
+    "meta": "{contact} · {payments} payments",
+    "confirmDelete": "Delete vendor {name}?",
+    "empty": "No vendors yet."
+  },
+  "edit": {
+    "clientTitle": "Edit client",
+    "vendorTitle": "Edit vendor",
+    "save": "Save changes"
+  },
+  "toast": {
+    "clientAdded": "Client added",
+    "vendorAdded": "Vendor added",
+    "clientUpdated": "Client updated",
+    "vendorUpdated": "Vendor updated",
+    "clientDeleted": "Client deleted",
+    "vendorDeleted": "Vendor deleted"
+  },
+  "errors": {
+    "clientNameRequired": "Client name is required.",
+    "clientHasLinks": "Detach projects/invoices before deleting this client.",
+    "vendorNameRequired": "Vendor name is required.",
+    "vendorHasLinks": "Detach transactions/bills before deleting this vendor."
+  }
+}

@@ -29,7 +29,7 @@ test("M7: invoices appear as they stood at month end — open in July even thoug
   assert.ok(row, "listed in July");
   const head = rows[0] as string[];
   assert.equal(row[head.indexOf("Received")], 0); // the August payment isn't counted yet
-  assert.equal(row[head.indexOf("Status")], "OPEN");
+  assert.equal(row[head.indexOf("Status")], "Open");
 });
 
 test("L2: two receipts with the same file name both make it into the ZIP", async () => {

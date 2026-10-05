@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { EntryForm } from "./entry-form";
 import { defaultUsdRate } from "@/lib/fx";
@@ -20,6 +21,8 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
     reenter ? prisma.transaction.findUnique({ where: { id: reenter }, include: { reversedBy: true } }) : null,
     itemId ? prisma.costItem.findUnique({ where: { id: itemId } }) : null,
   ]);
+  const t = await getTranslations("ledger");
+  const tc = await getTranslations("common");
 
   // Started from a bank statement line: the part of it not yet in the ledger.
   let prefill;
@@ -35,12 +38,13 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
       : item.payer === "COMPANY"
         ? active.find((a) => a.type === "BANK" && a.currency === "VND") // cloud charges go through the company's VND card
         : undefined;
-    const period = item.servicePeriodFrom && item.servicePeriodTo
-      ? ` — ${item.servicePeriodFrom.toISOString().slice(0, 10)} to ${item.servicePeriodTo.toISOString().slice(0, 10)}` : "";
+    const description = item.servicePeriodFrom && item.servicePeriodTo
+      ? t("new.costPeriod", { provider: item.provider, from: item.servicePeriodFrom.toISOString().slice(0, 10), to: item.servicePeriodTo.toISOString().slice(0, 10) })
+      : item.provider;
     prefill = {
       type: "EXPENSE", accountId: account?.id ?? "", date: item.receiptDate, amount: item.amount, currency: item.currency,
       rateSource: item.currency === "VND" ? null : "BANK",
-      description: `${item.provider}${period}`, invoiceNumber: item.receiptNumber,
+      description, invoiceNumber: item.receiptNumber,
       vendorId: vendors.find((v) => v.name.toLowerCase() === item.provider.toLowerCase())?.id ?? "",
       docStatus: item.docStatus, reviewNote: item.reviewNote,
     };
@@ -58,7 +62,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
     lookalikes = nearby
       .filter((t) => (t.currency === item.currency && Math.abs(t.amount - item.amount) <= Math.max(0.01, item.amount * 0.01))
         || `${t.description ?? ""} ${t.vendor?.name ?? ""}`.toLowerCase().includes(word))
-      .map((t) => ({ id: t.id, date: t.date.toISOString().slice(0, 10), label: t.description ?? "Expense", amount: fmtMoney(t.amount, t.currency) }));
+      .map((t) => ({ id: t.id, date: t.date.toISOString().slice(0, 10), label: t.description ?? tc("type.EXPENSE"), amount: fmtMoney(t.amount, t.currency) }));
   }
   // Re-entering a reversed posted entry: start from its values, to be corrected.
   if (reversed?.reversedBy && (reversed.type === "INCOME" || reversed.type === "EXPENSE")) {
@@ -95,8 +99,8 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">New Entry</h1>
-        <p className="text-muted-foreground mt-1">Log a new income or expense transaction</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{t("new.title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("new.subtitle")}</p>
       </div>
 
       {costItem && <CostDuplicates itemId={costItem.id} lookalikes={lookalikes} />}

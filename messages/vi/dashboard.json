@@ -1,0 +1,57 @@
+{
+  "page": {
+    "title": "Tổng quan",
+    "subtitle": "Tổng quan tài chính của WorkFactory",
+    "draftsWaiting": "{count, plural, other {{count} bút toán}} chờ duyệt — chưa được tính vào số liệu bên dưới →",
+    "newEntry": "Thêm bút toán"
+  },
+  "cards": {
+    "cashTitle": "Tiền mặt & ngân hàng",
+    "cashSubtitle": "Ngân hàng + tiền mặt của {count} tài khoản",
+    "cashNoAccounts": "Thêm tài khoản tại trang Tài khoản tiền",
+    "netSurplusTitle": "Lãi (lỗ) lũy kế",
+    "netSurplusSubtitle": "Doanh thu − Chi phí (lũy kế từ đầu)",
+    "totalIncomeTitle": "Tổng doanh thu",
+    "totalExpensesTitle": "Tổng chi phí",
+    "entries": "{count} bút toán"
+  },
+  "accounts": {
+    "title": "Tài khoản tiền",
+    "manage": "Quản lý",
+    "empty": "Chưa có tài khoản nào.",
+    "companyOwesOwner": "Công ty nợ chủ DN {amount}",
+    "ownerHolds": "Chủ DN đang giữ {amount} tiền của công ty",
+    "needClassifying": "{count, plural, other {{count} bút toán}} cần phân loại →"
+  },
+  "coming": {
+    "title": "Các khoản sắp thu, sắp trả",
+    "viewAll": "Xem tất cả",
+    "goingOut": "Sắp trả — công ty còn nợ nhà cung cấp",
+    "comingIn": "Sắp thu — khách hàng còn nợ",
+    "vendor": "Nhà cung cấp",
+    "client": "Khách hàng",
+    "partPaid": "thanh toán một phần",
+    "overdue": "quá hạn",
+    "due": "đến hạn {date}",
+    "nothingToPay": "Không có khoản nào sắp trả.",
+    "nothingIn": "Không có khoản nào sắp thu."
+  },
+  "topProjects": {
+    "title": "Dự án có lợi nhuận cao nhất",
+    "projects": "Dự án",
+    "empty": "Gắn bút toán với dự án để xem lợi nhuận tại đây."
+  },
+  "recent": {
+    "title": "Bút toán gần đây",
+    "viewAll": "Xem tất cả",
+    "uncategorized": "Chưa có khoản mục",
+    "draft": "nháp",
+    "empty": "Chưa có bút toán nào."
+  },
+  "quickActions": {
+    "title": "Thao tác nhanh",
+    "logIncome": "Thêm khoản thu",
+    "logExpense": "Thêm khoản chi",
+    "transfers": "Chuyển tiền, vốn góp và vay"
+  }
+}

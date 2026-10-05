@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Cormorant_Garamond, Geist } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getLocale } from "next-intl/server";
+import { getMessages, getLocale, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toast";
@@ -19,10 +19,10 @@ const cormorant = Cormorant_Garamond({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "Workfactory Accounting Entry Tracker",
-  description: "Agentic AI Platform Accounting Tool",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("common.app");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
 export default async function RootLayout({
   children,
@@ -40,8 +40,8 @@ export default async function RootLayout({
       <body className="min-h-screen bg-background text-foreground font-sans flex flex-col bg-wf-pattern">
         <NextIntlClientProvider messages={messages}>
           {children}
+          <Toaster />
         </NextIntlClientProvider>
-        <Toaster />
       </body>
     </html>
   );

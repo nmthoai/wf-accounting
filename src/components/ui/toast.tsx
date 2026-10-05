@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+import { useTranslations } from "next-intl"
 import { Toast } from "@base-ui/react/toast"
 import { CheckCircle2, CircleAlert, XIcon } from "lucide-react"
 
@@ -17,19 +19,24 @@ export const notify = {
     toastManager.add({ title, description, type: "error", priority: "high", timeout: 8000 }),
 }
 
+// Set by the Toaster in the user's language.
+let couldNotSave = "Could not save."
+
 // For actions that answer { success, message }: confirm or report, and say
 // whether it worked.
 export function notifyResult(
   res: { success: boolean; message?: string } | null | undefined,
   done: string,
-  failed = "Could not save."
+  failed?: string
 ) {
   if (res?.success) notify.success(done)
-  else notify.error(res?.message || failed)
+  else notify.error(res?.message || failed || couldNotSave)
   return !!res?.success
 }
 
 export function Toaster() {
+  const t = useTranslations("common.errors")
+  useEffect(() => { couldNotSave = t("couldNotSave") }, [t])
   return (
     <Toast.Provider toastManager={toastManager}>
       <Toast.Portal>
@@ -43,6 +50,7 @@ export function Toaster() {
 
 function ToastList() {
   const { toasts } = Toast.useToastManager()
+  const t = useTranslations("common.actions")
   return toasts.map((toast) => (
     <Toast.Root
       key={toast.id}
@@ -74,7 +82,7 @@ function ToastList() {
           <Toast.Description className="text-muted-foreground" />
         </div>
         <Toast.Close
-          aria-label="Dismiss"
+          aria-label={t("dismiss")}
           className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <XIcon className="h-3.5 w-3.5" />

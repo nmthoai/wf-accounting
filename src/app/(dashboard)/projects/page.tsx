@@ -2,9 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { ProjectsClient } from "@/components/projects/projects-client";
 import { toVnd, settlement, totalsList, fmtMoney, BOOKED, BOOKED_ALLOCATIONS, type Totals } from "@/lib/money";
+import { getTranslations } from "next-intl/server";
 
 export default async function ProjectsPage() {
   await requirePageSession(); // second line behind the proxy
+  const t = await getTranslations("projects");
   const [projects, clients, openInvoices] = await Promise.all([
     prisma.project.findMany({ orderBy: { createdAt: "desc" }, include: { client: true, transactions: { where: BOOKED }, _count: { select: { attachments: true } } } }), // drafts wait for review
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -30,8 +32,8 @@ export default async function ProjectsPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">Projects</h1>
-        <p className="text-muted-foreground mt-1">Per-project profitability — click in for the cost breakdown</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
       </div>
       <ProjectsClient projects={projectRows} clients={clients} />
     </div>

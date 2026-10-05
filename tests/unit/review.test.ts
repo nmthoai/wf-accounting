@@ -1,9 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reviewProblem } from "@/lib/review";
+import { translator } from "@/i18n/server";
 
 const base = { type: "EXPENSE", amount: 1000, docStatus: "PENDING", purposeStatus: "PENDING", citStatus: "PENDING", vatStatus: "PENDING", vatAmount: null as number | null, reviewNote: null as string | null };
-const check = (patch: Partial<typeof base>) => reviewProblem({ ...base, ...patch });
+// The message the user sees (in English), or null.
+const en = translator("en", "common");
+const check = (patch: Partial<typeof base>) => {
+  const p = reviewProblem({ ...base, ...patch });
+  return p && en(`review.problem.${p}`);
+};
 
 test("a new expense and a bank-paid expense with a missing invoice can stay pending", () => {
   assert.equal(check({}), null);

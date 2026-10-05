@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { persistUploads } from "@/lib/uploads";
+import { getT } from "@/i18n/server";
 
 async function requireUser() {
   const session = await getSession();
@@ -18,10 +19,11 @@ const parseDate = (v: FormDataEntryValue | null) => {
 
 export async function createProject(formData: FormData) {
   await requireUser();
+  const t = await getT("projects");
   const name = (formData.get("name") as string)?.trim();
   const clientId = (formData.get("clientId") as string) || null;
   const notes = (formData.get("notes") as string)?.trim() || null;
-  if (!name) return { success: false, message: "Project name is required." };
+  if (!name) return { success: false, message: t("errors.nameRequired") };
 
   await prisma.project.create({
     data: { name, clientId: clientId || null, notes, status: "ACTIVE" },
@@ -33,13 +35,14 @@ export async function createProject(formData: FormData) {
 
 export async function updateProject(id: string, formData: FormData) {
   await requireUser();
+  const t = await getT("projects");
   const name = (formData.get("name") as string)?.trim();
   const clientId = (formData.get("clientId") as string) || null;
   const status = (formData.get("status") as string) || "ACTIVE";
   const description = (formData.get("description") as string)?.trim() || null;
   const startDate = parseDate(formData.get("startDate"));
   const endDate = parseDate(formData.get("endDate"));
-  if (!name) return { success: false, message: "Project name is required." };
+  if (!name) return { success: false, message: t("errors.nameRequired") };
 
   await prisma.project.update({
     where: { id },
@@ -63,8 +66,9 @@ export async function setProjectStatus(id: string, status: string) {
 // served only through the auth-protected /api/uploads route).
 export async function addProjectDocument(projectId: string, formData: FormData) {
   await requireUser();
+  const tc = await getT("common");
   // Check first, so a bad id doesn't leave an orphan file on disk.
-  if (!(await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } }))) return { success: false, message: "Not found." };
+  if (!(await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } }))) return { success: false, message: tc("errors.notFound") };
   await persistUploads(formData.getAll("files") as File[], { projectId });
   revalidatePath(`/projects/${projectId}`);
   return { success: true };
@@ -73,11 +77,12 @@ export async function addProjectDocument(projectId: string, formData: FormData) 
 export async function deleteProject(id: string) {
   const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+  const t = await getT("projects");
 
   const txns = await prisma.transaction.count({ where: { projectId: id } });
   const invoices = await prisma.invoice.count({ where: { projectId: id } });
   if (txns > 0 || invoices > 0) {
-    return { success: false, message: "This project has linked transactions/invoices. Archive it instead." };
+    return { success: false, message: t("errors.hasLinked") };
   }
   await prisma.project.delete({ where: { id } });
   revalidatePath("/projects");
