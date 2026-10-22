@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
   // xlsx (SheetJS) uses Node-specific dynamic requires that trip Turbopack's
   // file tracing — load it via native require at runtime instead of bundling.
   serverExternalPackages: ["xlsx"],
+  // The app never uses the image optimizer (its one <Image> is unoptimized);
+  // turning it off removes the public /_next/image endpoint and its native
+  // image decoding — the surface of GHSA-2464-fhr4-w9xw.
+  images: { unoptimized: true },
   experimental: {
     // Attachments up to 10 MB per save (src/lib/upload-limit.ts) plus the form itself.
     serverActions: { bodySizeLimit: "11mb" },
