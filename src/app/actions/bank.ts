@@ -140,6 +140,7 @@ export async function matchLine(lineId: string, transactionIds: string[]) {
   const entries = await prisma.transaction.findMany({ where: { id: { in: ids } }, include: { reversedBy: { select: { id: true } } } });
   if (entries.length !== ids.length) return { success: false, message: t("errors.entryGone") };
   if (entries.some((e) => e.reversalOfId || e.reversedBy)) return { success: false, message: t("errors.reversed") };
+  if (entries.some((e) => e.status === "REJECTED")) return { success: false, message: t("errors.rejected") };
   const taken = entries.find((e) => e.bankLineId && e.bankLineId !== lineId);
   if (taken) return { success: false, message: taken.description !== null ? t("errors.alreadyMatched", { name: taken.description }) : t("errors.alreadyMatchedUnnamed") };
   const problem = await bankLinkProblem(lineId, entries.filter((e) => e.bankLineId !== lineId));

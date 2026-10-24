@@ -80,7 +80,8 @@
   "status": {
     "DRAFT": "Nháp",
     "REVIEWED": "Đã duyệt",
-    "POSTED": "Đã ghi sổ"
+    "POSTED": "Đã ghi sổ",
+    "REJECTED": "Bị từ chối"
   },
   "invoiceStatus": {
     "OPEN": "Chưa thanh toán",

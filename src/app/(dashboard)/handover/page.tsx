@@ -30,6 +30,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
   // What should be true before the package goes to the accountant.
   const checks = [
     { ok: s.drafts === 0, text: s.drafts === 0 ? t("page.checks.noDrafts") : t("page.checks.drafts", { count: s.drafts }), href: "/ledger?view=drafts" },
+    ...(s.rejected > 0 ? [{ ok: false, text: t("page.checks.rejected", { count: s.rejected }), href: "/ledger?view=rejected" }] : []),
     { ok: s.reviewed === 0, text: s.reviewed === 0 ? t("page.checks.allPosted") : t("page.checks.notPosted", { count: s.reviewed }), href: "/ledger" },
     ...s.bank.map((b) => ({
       ok: b.covered && b.agrees && b.open === 0,

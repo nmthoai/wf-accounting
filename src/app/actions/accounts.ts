@@ -19,7 +19,8 @@ async function requireUser() {
 // The owner's entries count as reviewed; anyone else's wait for review.
 const startStatus = (me: { isAdmin: boolean }) => (me.isAdmin ? "REVIEWED" : "DRAFT");
 // A reviewed entry changed by anyone but the owner goes back to draft.
-const nextStatus = (me: { isAdmin: boolean }, status: string) => (!me.isAdmin && status === "REVIEWED" ? "DRAFT" : status);
+// Anyone but the owner changing a reviewed or rejected movement sends it (back) for review.
+const nextStatus = (me: { isAdmin: boolean }, status: string) => (!me.isAdmin && (status === "REVIEWED" || status === "REJECTED") ? "DRAFT" : status);
 const reasonOf = (fd: FormData) => ((fd.get("reason") as string) || "").trim() || null;
 
 async function requireAdmin() {

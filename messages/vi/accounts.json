@@ -55,7 +55,8 @@
     "postedLocked": "Đã ghi sổ — đã khóa",
     "empty": "Chưa có bút toán nào. Ghi nhận chuyển tiền, vốn góp hoặc khoản vay ở phía trên.",
     "reversePrompt": "Đảo bút toán đã ghi sổ này? Nhập lý do — sau đó ghi nhận lại bút toán đúng.",
-    "deleteConfirm": "Xóa bút toán này? Với chuyển tiền, cả bên chuyển và bên nhận đều bị xóa."
+    "deleteConfirm": "Xóa bút toán này? Với chuyển tiền, cả bên chuyển và bên nhận đều bị xóa.",
+    "rejectedReason": "Bị từ chối: {reason}"
   },
   "toast": {
     "movementReversed": "Đã đảo bút toán",

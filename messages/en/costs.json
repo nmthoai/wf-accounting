@@ -103,6 +103,7 @@
     "expenseReversed": "That expense has been reversed — link its correction.",
     "expenseTaken": "That expense already comes from another register item.",
     "itemTaken": "That register item is already in the ledger or dismissed.",
-    "itemGone": "That register item no longer exists."
+    "itemGone": "That register item no longer exists.",
+    "expenseRejected": "That expense was rejected — link the receipt once it is corrected and resubmitted."
   }
 }

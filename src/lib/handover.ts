@@ -58,7 +58,7 @@ export async function collect(month: string) {
   // Invoices as they stood at month end: issued this month, settled during it,
   // or still open on its last day — counting reviewed payments made by then.
   const invoices = allInvoices.flatMap((i) => {
-    const allocations = i.allocations.filter((a) => a.transaction.status !== "DRAFT" && a.transaction.date < end);
+    const allocations = i.allocations.filter((a) => isBooked(a.transaction) && a.transaction.date < end);
     const { received, fees } = settlement(i.amount, allocations);
     const status = i.status === "VOID" ? "VOID" : received + fees <= EPS ? "OPEN" : received + fees >= i.amount - EPS ? "PAID" : "PARTIAL";
     const issued = i.issueDate >= start;
@@ -133,6 +133,7 @@ export function questions(d: Data, locale: Locale = DEFAULT_LOCALE) {
   for (const t of d.entries) {
     const what = `${iso(t.date)} · ${t.description ?? tc(`type.${t.type}`)}`;
     if (t.status === "DRAFT") q.push({ area: th("questions.area.notReviewed"), item: what, detail: th("questions.draft"), amount: amt(t.amount, t.currency), ref: t.id });
+    if (t.status === "REJECTED") q.push({ area: th("questions.area.notReviewed"), item: what, detail: th("questions.rejected"), amount: amt(t.amount, t.currency), ref: t.id });
     if (!isBooked(t) || d.cancelled(t)) continue;
     if (t.status === "REVIEWED") q.push({ area: th("questions.area.notPosted"), item: what, detail: th("questions.notPosted"), amount: amt(t.amount, t.currency), ref: t.id });
     if (t.type === "EXPENSE" && (t.citStatus === "PENDING" || t.vatStatus === "PENDING")) {
@@ -170,7 +171,8 @@ export function summarize(d: Data) {
   const sum = (type: string) => live.filter((t) => t.type === type).reduce((s, t) => s + toVnd(t), 0);
   return {
     entries: d.entries.length,
-    drafts: d.entries.filter((t) => !isBooked(t)).length,
+    drafts: d.entries.filter((t) => t.status === "DRAFT").length,
+    rejected: d.entries.filter((t) => t.status === "REJECTED").length,
     reviewed: d.entries.filter((t) => t.status === "REVIEWED").length,
     posted: d.entries.filter((t) => t.status === "POSTED").length,
     income: sum("INCOME"),
@@ -214,6 +216,7 @@ export async function pack(d: Data, user: string | null, locale: Locale = DEFAUL
     [],
     [th("readme.entries"), s.entries],
     [th("readme.drafts"), s.drafts],
+    [th("readme.rejected"), s.rejected],
     [th("readme.reviewed"), s.reviewed],
     [th("readme.posted"), s.posted],
     [th("readme.income"), Math.round(s.income)],

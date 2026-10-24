@@ -55,7 +55,8 @@
     "postedLocked": "Posted — locked",
     "empty": "Nothing yet. Record a transfer, capital contribution or loan above.",
     "reversePrompt": "Reverse this posted movement? Give the reason — then record the correct one.",
-    "deleteConfirm": "Delete this movement? A transfer deletes both sides."
+    "deleteConfirm": "Delete this movement? A transfer deletes both sides.",
+    "rejectedReason": "Rejected: {reason}"
   },
   "toast": {
     "movementReversed": "Movement reversed",

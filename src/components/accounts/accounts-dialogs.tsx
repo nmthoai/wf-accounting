@@ -21,7 +21,7 @@ export type AccountRow = AccountOpt & {
 };
 export type LoanRow = { id: string; lender: string; currency: string; notes: string | null; received: number; repaid: number; outstanding: number };
 // status: DRAFT / REVIEWED / POSTED; reversal = cancels a posted movement; reversed = cancelled by one.
-type Workflow = { status: string; reversal: boolean; reversed: boolean };
+type Workflow = { status: string; reversal: boolean; reversed: boolean; rejectedReason?: string | null };
 export type TransferRow = Workflow & {
   isTransfer: true; id: string; transferId: string; date: string; description: string | null;
   fromAccountId: string | null; fromName: string; amountOut: number; currencyOut: string;

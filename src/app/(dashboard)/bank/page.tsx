@@ -28,7 +28,7 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
   const acc = new Map(accounts.map((a) => [a.id, a]));
   const label = (t: { type: string; description: string | null; status: string }) => {
     const base = `${tc(`type.${t.type}`)}${t.description ? ` · ${t.description}` : ""}`;
-    return t.status === "DRAFT" ? tb("page.draftLabel", { label: base }) : base;
+    return t.status === "DRAFT" ? tb("page.draftLabel", { label: base }) : t.status === "REJECTED" ? tb("page.rejectedLabel", { label: base }) : base;
   };
   // A reversal and the posted entry it cancels net to zero — neither is a bank movement.
   const cancelled = new Set(entries.map((t) => t.reversalOfId).filter(Boolean));
@@ -40,7 +40,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
   type E = (typeof entries)[number];
   const byId = new Map(entries.map((t) => [t.id, t]));
   const feeOf = new Map(entries.filter((t) => t.deductedFromId).map((t) => [t.deductedFromId!, t]));
-  const unmatched = (t: E) => !t.bankLineId && live(t);
+  // Rejected entries wait for correction before they can explain a bank line.
+  const unmatched = (t: E) => !t.bankLineId && live(t) && t.status !== "REJECTED";
   const asUnit = (t: E) => {
     const a = acc.get(t.accountId!)!;
     const fee = feeOf.get(t.id);
@@ -105,7 +106,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
       id: a.id, name: a.name, currency: a.currency,
       bankClosing: st ? st.closingBalance : null, asOf: st ? iso(st.periodTo) : null, appBalance,
       lines: mine.length, open: mine.filter((r) => r.status !== "MATCHED").length,
-      drafts: upTo.filter((t) => !isBooked(t)).length,
+      drafts: upTo.filter((t) => t.status === "DRAFT").length,
+      rejected: upTo.filter((t) => t.status === "REJECTED").length,
       notOnStatement,
     };
   });

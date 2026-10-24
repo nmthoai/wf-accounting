@@ -16,11 +16,13 @@ export const isInflow = (type: string) => INFLOW.has(type);
 // Money in (+) or out (−) as shown to people; a reversal carries a negative amount.
 export const isMoneyIn = (t: { type: string; amount: number }) => isInflow(t.type) === t.amount >= 0;
 
-// Workflow. Drafts are not in the books yet: every total counts reviewed and posted entries only.
-export const BOOKED = { status: { not: "DRAFT" } };
+// Workflow: DRAFT → REVIEWED → POSTED, or DRAFT → REJECTED (back to its
+// creator with the reason) → DRAFT again once corrected. Drafts and rejected
+// entries are not in the books: every total counts reviewed and posted only.
+export const BOOKED = { status: { in: ["REVIEWED", "POSTED"] } };
 // A payment settles an invoice once it's in the books — a draft doesn't yet.
 export const BOOKED_ALLOCATIONS = { where: { transaction: BOOKED } };
-export const isBooked = (t: { status: string }) => t.status !== "DRAFT";
+export const isBooked = (t: { status: string }) => t.status === "REVIEWED" || t.status === "POSTED";
 
 type Money = { amount: number; exchangeRate: number; vndAmount?: number | null };
 

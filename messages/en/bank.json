@@ -3,7 +3,8 @@
     "title": "Bank reconciliation",
     "subtitle": "Bank statement lines matched to the ledger",
     "draftLabel": "{label} (draft)",
-    "feeDeducted": "{label} (fee {fee} deducted)"
+    "feeDeducted": "{label} (fee {fee} deducted)",
+    "rejectedLabel": "{label} (rejected)"
   },
   "summary": {
     "statementTo": "{currency} · statement to {date}",
@@ -14,7 +15,8 @@
     "agrees": "Agrees ✓",
     "toReconcile": "{open} of {lines} bank lines to reconcile",
     "toReconcileNotOnStatement": "{open} of {lines} bank lines to reconcile · {count, plural, one {# app entry} other {# app entries}} not on the statement",
-    "drafts": "{count, plural, one {# draft entry} other {# draft entries}} not counted in the app balance until reviewed"
+    "drafts": "{count, plural, one {# draft entry} other {# draft entries}} not counted in the app balance until reviewed",
+    "rejected": "{count, plural, one {# rejected entry} other {# rejected entries}} not counted until corrected"
   },
   "tabs": {
     "open": "To reconcile ({count})",
@@ -141,6 +143,7 @@
     "otherAccount": "The bank line is on {account} — the entry must be too.",
     "lineInEntryOut": "The bank line is money in; this entry is money out.",
     "lineOutEntryIn": "The bank line is money out; this entry is money in.",
-    "moreThanLine": "That's more than the bank line ({amount})."
+    "moreThanLine": "That's more than the bank line ({amount}).",
+    "rejected": "A rejected entry can't be matched — it is matched again once corrected and resubmitted."
   }
 }

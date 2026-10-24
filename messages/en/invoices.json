@@ -169,6 +169,7 @@
     "feeReceiptsOnly": "A deducted fee can only be entered for money received.",
     "feeTooLarge": "The fee must be less than the amount settled.",
     "feeCategory": "Choose the expense category for the fee.",
-    "withheldFee": "This bank fee was withheld from a receipt and is already part of that receipt's settlement."
+    "withheldFee": "This bank fee was withheld from a receipt and is already part of that receipt's settlement.",
+    "entryRejected": "This entry was rejected — it can be linked once it is corrected and resubmitted."
   }
 }

@@ -103,6 +103,7 @@
     "expenseReversed": "Khoản chi này đã bị đảo — hãy liên kết bút toán điều chỉnh tương ứng.",
     "expenseTaken": "Khoản chi này đã được tạo từ một chứng từ khác trong bảng kê.",
     "itemTaken": "Chứng từ này trong bảng kê đã có trên sổ thu chi hoặc đã được đánh dấu không phải chi phí công ty.",
-    "itemGone": "Chứng từ này không còn trong bảng kê."
+    "itemGone": "Chứng từ này không còn trong bảng kê.",
+    "expenseRejected": "Khoản chi đó đã bị từ chối — hãy liên kết chứng từ sau khi khoản chi được sửa và gửi lại."
   }
 }

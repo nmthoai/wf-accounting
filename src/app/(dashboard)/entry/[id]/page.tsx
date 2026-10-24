@@ -52,6 +52,9 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const label = (key: string, raw: string) => (tc.has(key) ? tc(key) : raw);
   const show = (field: string | null, v: string | null) =>
     v === null ? "—" : field && names[field] ? names[field].get(v) ?? v : field && labels[field] ? label(`${labels[field]}.${v}`, v) : v;
+  // Why the owner sent it back: the latest rejection (history is newest first).
+  const rejected = transaction.status === "REJECTED" ? history.find((h) => h.action === "REJECT") : undefined;
+  const rejection = rejected?.reason ? { reason: rejected.reason, by: rejected.user } : null;
   const action = (a: string) => (t.has(`history.action.${a}`) ? t(`history.action.${a}`) : a);
   const fieldName = (f: string) => (t.has(`history.field.${f}`) ? t(`history.field.${f}`) : f);
 
@@ -72,6 +75,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
         reversedBy={ref(transaction.reversedBy)}
         correctionOf={ref(correctionOf)}
         withFee={!!transaction.deductedFee || !!transaction.deductedFromId}
+        rejection={rejection}
       />
 
       <EntryForm

@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Check, Loader2, Lock, Pencil, Trash2 } from "lucide-react";
 import { deleteTransaction, postEntries, reviewEntries } from "@/app/actions/ledger";
 import { notify, notifyResult } from "@/components/ui/toast";
+import { RejectDialog } from "@/components/ledger/reject-dialog";
 
-// Per-row actions: open, approve a draft (admin), delete if not posted (admin).
+// Per-row actions: open, approve or reject a draft (admin), delete if not posted (admin).
 export function RowActions({ id, href, status, isAdmin }: { id: string; href: string; status: string; isAdmin: boolean }) {
   const t = useTranslations("ledger");
   const tc = useTranslations("common");
@@ -24,12 +25,13 @@ export function RowActions({ id, href, status, isAdmin }: { id: string; href: st
   }
   return (
     <div className="flex justify-end gap-1">
-      {isAdmin && status === "DRAFT" && (
+      {isAdmin && (status === "DRAFT" || status === "REJECTED") && (
         <Button variant="ghost" size="icon" className="h-8 w-8 text-green-700 hover:bg-green-50" title={t("rowActions.approve")} disabled={busy}
           onClick={() => run(() => reviewEntries([id]), t("toast.approved"))}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         </Button>
       )}
+      {isAdmin && status === "DRAFT" && <RejectDialog id={id} compact />}
       <Link href={href} title={status === "POSTED" ? t("rowActions.openPosted") : tc("actions.edit")}>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
           {status === "POSTED" ? <Lock className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}

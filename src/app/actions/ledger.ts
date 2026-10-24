@@ -276,13 +276,17 @@ export async function editTransaction(id: string, formData: FormData) {
   // A reviewed entry whose money or classification anyone but the owner
   // changes goes back to draft; a note or evidence alone keeps it booked.
   const booksChanged = diff(id, existing, parsed.data).some((c) => BOOKS_FIELDS.has(c.field!));
-  const data = { ...parsed.data, status: !me.isAdmin && booksChanged && existing.status === "REVIEWED" ? "DRAFT" : existing.status };
+  // A rejected entry saved by anyone but the owner is resubmitted as a draft.
+  const data = {
+    ...parsed.data,
+    status: !me.isAdmin && ((booksChanged && existing.status === "REVIEWED") || existing.status === "REJECTED") ? "DRAFT" : existing.status,
+  };
   await prisma.transaction.update({ where: { id }, data });
   const changes = diff(id, existing, data, reason);
   // The partner moves with it: a fee takes its receipt's date, project and status.
   const partner = fee ?? receipt;
   if (partner) {
-    const follow = { ...(fee ? { date: data.date, projectId: data.projectId ?? null } : {}), status: data.status === "DRAFT" && partner.status === "REVIEWED" ? "DRAFT" : partner.status };
+    const follow = { ...(fee ? { date: data.date, projectId: data.projectId ?? null } : {}), status: data.status !== existing.status && partner.status !== "POSTED" ? data.status : partner.status };
     await prisma.transaction.update({ where: { id: partner.id }, data: follow });
     changes.push(...diff(partner.id, partner, follow, reason));
   }
@@ -306,14 +310,44 @@ async function withLegs(ids: string[]) {
   });
 }
 
-// Admin: approve drafts.
+// Admin: approve drafts (or a rejected entry, accepted after all).
 export async function reviewEntries(ids: string[]) {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
-  const drafts = (await withLegs(ids)).filter((t) => t.status === "DRAFT");
+  const drafts = (await withLegs(ids)).filter((t) => t.status === "DRAFT" || t.status === "REJECTED");
   await prisma.transaction.updateMany({ where: { id: { in: drafts.map((t) => t.id) } }, data: { status: "REVIEWED" } });
-  await record(drafts.map((t) => ({ entityId: t.id, action: "REVIEW", field: "status", oldValue: "DRAFT", newValue: "REVIEWED" })), me.name);
+  await record(drafts.map((t) => ({ entityId: t.id, action: "REVIEW", field: "status", oldValue: t.status, newValue: "REVIEWED" })), me.name);
   await refreshInvoiceStatus(await invoicesOf(drafts.map((t) => t.id))); // reviewed payments now settle their invoices
+  revalidateAll(ids.length === 1 ? ids[0] : undefined);
+  return { success: true, count: drafts.length };
+}
+
+// Admin: reject drafts, with the reason, back to whoever entered them. A
+// rejected entry stays out of the books; its creator corrects it and saving
+// resubmits it as a draft. The reason is kept in the change history.
+export async function rejectEntries(ids: string[], reason: string) {
+  const me = await currentUser();
+  if (!me.isAdmin) throw new Error("Unauthorized");
+  const t = await getT("ledger");
+  const why = reason?.trim();
+  if (!why) return { success: false, message: t("errors.rejectReasonRequired"), count: 0 };
+  const drafts = (await withLegs(ids)).filter((e) => e.status === "DRAFT");
+  if (drafts.length === 0) return { success: false, message: t("errors.onlyDraftsRejected"), count: 0 };
+  const draftIds = drafts.map((e) => e.id);
+  // Out of the books, it no longer explains a bank line or settles an invoice:
+  // both are released, and the corrected entry is matched and linked again.
+  const invoices = await invoicesOf(draftIds);
+  await prisma.$transaction(async (tx) => {
+    const changes: Change[] = drafts.map((e) => ({ entityId: e.id, action: "REJECT", field: "status", oldValue: "DRAFT", newValue: "REJECTED", reason: why }));
+    for (const e of drafts) if (e.bankLineId) changes.push({ entityId: e.id, action: "UNMATCH", field: "bankLineId", oldValue: e.bankLineId, reason: why });
+    for (const a of await tx.paymentAllocation.findMany({ where: { transactionId: { in: draftIds } } })) {
+      changes.push({ entityId: a.transactionId, action: "UNLINK", field: "invoice", oldValue: `${a.invoiceId} ${a.kind} ${a.amount}`, reason: why });
+    }
+    await tx.paymentAllocation.deleteMany({ where: { transactionId: { in: draftIds } } });
+    await tx.transaction.updateMany({ where: { id: { in: draftIds } }, data: { status: "REJECTED", bankLineId: null } });
+    await record(changes, me.name, tx);
+  });
+  await refreshInvoiceStatus(invoices);
   revalidateAll(ids.length === 1 ? ids[0] : undefined);
   return { success: true, count: drafts.length };
 }
@@ -488,7 +522,7 @@ export async function deleteAttachment(id: string) {
     return { success: false, message: t("errors.attachmentFeeEvidence") };
   }
   // Staff may tidy drafts and pending register receipts; other evidence is the owner's call.
-  const staffMay = att.transaction ? att.transaction.status === "DRAFT" : att.costItem?.status === "PENDING";
+  const staffMay = att.transaction ? att.transaction.status === "DRAFT" || att.transaction.status === "REJECTED" : att.costItem?.status === "PENDING";
   if (!me.isAdmin && !staffMay) return { success: false, message: t("errors.attachmentOwnerOnly") };
 
   await prisma.attachment.delete({ where: { id } });

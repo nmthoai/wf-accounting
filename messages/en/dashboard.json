@@ -3,7 +3,8 @@
     "title": "Dashboard",
     "subtitle": "Financial overview for WorkFactory",
     "draftsWaiting": "{count, plural, one {{count} entry} other {{count} entries}} waiting for review — not counted below yet →",
-    "newEntry": "New Entry"
+    "newEntry": "New Entry",
+    "rejectedWaiting": "{count, plural, one {# entry} other {# entries}} rejected — waiting for correction →"
   },
   "cards": {
     "cashTitle": "Cash & Bank",

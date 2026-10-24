@@ -169,6 +169,7 @@
     "feeReceiptsOnly": "Chỉ nhập phí bị trừ cho khoản tiền nhận về.",
     "feeTooLarge": "Phí phải nhỏ hơn số tiền đối trừ.",
     "feeCategory": "Chọn khoản mục chi phí cho khoản phí.",
-    "withheldFee": "Khoản phí ngân hàng này đã bị trừ từ một khoản thu và đã nằm trong số tiền đối trừ của khoản thu đó."
+    "withheldFee": "Khoản phí ngân hàng này đã bị trừ từ một khoản thu và đã nằm trong số tiền đối trừ của khoản thu đó.",
+    "entryRejected": "Bút toán này đã bị từ chối — có thể liên kết sau khi được sửa và gửi lại."
   }
 }

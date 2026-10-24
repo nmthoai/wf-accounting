@@ -154,6 +154,7 @@ export async function linkCostItem(id: string, transactionId: string) {
   if (!item || item.status !== "PENDING") return { success: false, message: tr("errors.onlyPendingLink") };
   if (!t || t.type !== "EXPENSE") return { success: false, message: tr("errors.chooseExpense") };
   if (t.reversalOfId || t.reversedBy) return { success: false, message: tr("errors.expenseReversed") };
+  if (t.status === "REJECTED") return { success: false, message: tr("errors.expenseRejected") };
   if (t.costItem) return { success: false, message: tr("errors.expenseTaken") };
   try {
     await convertCostItem(id, transactionId, me.name);

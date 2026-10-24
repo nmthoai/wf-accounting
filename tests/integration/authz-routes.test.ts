@@ -36,7 +36,7 @@ const PUBLIC = new Set(["auth.ts:authenticate", "locale.ts:setLocale", "auth.ts:
 const ADMIN_ONLY = [
   "accounts.ts:saveAccount", "bank.ts:deleteStatement", "clients.ts:deleteClient", "vendors.ts:deleteVendor", "projects.ts:deleteProject",
   "costs.ts:dismissCostItem", "costs.ts:reopenCostItem", "costs.ts:deleteCostItem", "invoices.ts:deleteInvoice",
-  "ledger.ts:deleteTransaction", "ledger.ts:reviewEntries", "ledger.ts:postEntries", "ledger.ts:reverseEntry", "ledger.ts:revalueEntry",
+  "ledger.ts:deleteTransaction", "ledger.ts:reviewEntries", "ledger.ts:postEntries", "ledger.ts:reverseEntry", "ledger.ts:revalueEntry", "ledger.ts:rejectEntries",
   "settings.ts:createCategory", "settings.ts:updateCategory", "settings.ts:deleteCategory", "settings.ts:updateExchangeRate",
   "settings.ts:createUnitRate", "settings.ts:updateUnitRate", "settings.ts:deleteUnitRate",
   "users.ts:createUser", "users.ts:deleteUser", "users.ts:setUserActive", "users.ts:resetUserPassword", "users.ts:resetUser2FA", "users.ts:unlockUser",
@@ -106,7 +106,7 @@ test("staff are refused every owner-only action, and nothing changes", async () 
     const fn = actions[file][name];
     assert.equal(typeof fn, "function", key);
     const form = fd({ name: "x", rate: 1, username: "evil", password: "Password123!", role: "ADMIN", type: "EXPENSE", currency: "VND", openingBalance: 1 });
-    const arg = name === "reviewEntries" || name === "postEntries" ? [target.id] : target.id;
+    const arg = name === "reviewEntries" || name === "postEntries" || name === "rejectEntries" ? [target.id] : target.id;
     if (!(await refused(() => fn(arg, form, form)))) allowed.push(key);
   }
   assert.deepEqual(allowed, []);

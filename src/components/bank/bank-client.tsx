@@ -27,7 +27,7 @@ export type LineRow = {
 export type AccountSummary = {
   id: string; name: string; currency: string;
   bankClosing: number | null; asOf: string | null; appBalance: number | null;
-  lines: number; open: number; drafts: number; notOnStatement: Linked[];
+  lines: number; open: number; drafts: number; rejected: number; notOnStatement: Linked[];
 };
 export type StatementRow = {
   id: string; accountName: string; currency: string; fileName: string; periodFrom: string; periodTo: string;
@@ -296,6 +296,7 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                         : t("summary.toReconcile", { open: s.open, lines: s.lines })}
                     </p>
                     {s.drafts > 0 && <p className="text-xs text-amber-700">{t("summary.drafts", { count: s.drafts })}</p>}
+                    {s.rejected > 0 && <p className="text-xs text-red-700">{t("summary.rejected", { count: s.rejected })}</p>}
                   </>
                 )}
               </CardContent>

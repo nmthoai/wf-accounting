@@ -42,7 +42,17 @@ export default async function AccountsPage() {
   const movements: MovementRow[] = [];
   const seenTransfers = new Set<string>();
   const cancelled = new Set(txns.map((t) => t.reversalOfId).filter(Boolean));
-  const flow = (t: { id: string; status: string; reversalOfId: string | null }) => ({ status: t.status, reversal: !!t.reversalOfId, reversed: cancelled.has(t.id) });
+  // Why a rejected movement was sent back: its latest rejection.
+  const rejections = new Map<string, string>();
+  const rejectedIds = txns.filter((t) => t.status === "REJECTED").map((t) => t.id);
+  if (rejectedIds.length) {
+    for (const r of await prisma.changeLog.findMany({ where: { action: "REJECT", entityId: { in: rejectedIds } }, orderBy: { createdAt: "desc" } })) {
+      if (!rejections.has(r.entityId) && r.reason) rejections.set(r.entityId, r.reason);
+    }
+  }
+  const flow = (t: { id: string; status: string; reversalOfId: string | null }) => ({
+    status: t.status, reversal: !!t.reversalOfId, reversed: cancelled.has(t.id), rejectedReason: rejections.get(t.id) ?? null,
+  });
   for (const t of txns) {
     if (isPnl(t.type)) continue;
     if (t.transferId) {

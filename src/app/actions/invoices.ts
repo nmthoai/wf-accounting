@@ -336,6 +336,7 @@ export async function linkToInvoice(id: string, formData: FormData) {
   if (!t) return { success: false, message: tr("errors.chooseEntry") };
   if (t.reversalOfId || t.reversedBy) return { success: false, message: tr("errors.entryReversed") };
   if (t.deductedFromId) return { success: false, message: tr("errors.withheldFee") };
+  if (t.status === "REJECTED") return { success: false, message: tr("errors.entryRejected") };
   if (t.currency !== inv.currency) {
     return { success: false, message: tr("errors.currencyMismatch", { entryCurrency: t.currency, currency: inv.currency }) };
   }

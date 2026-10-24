@@ -10,7 +10,8 @@
     "all": "Tất cả",
     "drafts": "Nháp ({count})",
     "docs": "Thiếu chứng từ ({count})",
-    "tax": "Chờ rà soát thuế ({count})"
+    "tax": "Chờ rà soát thuế ({count})",
+    "rejected": "Bị từ chối ({count})"
   },
   "table": {
     "date": "Ngày",
@@ -41,12 +42,14 @@
     "cit": "TNDN: {status}",
     "vatTitle": "Thuế GTGT đầu vào",
     "vat": "GTGT: {status}",
-    "vatWithAmount": "GTGT: {status} {amount}"
+    "vatWithAmount": "GTGT: {status} {amount}",
+    "rejectedReason": "Bị từ chối: {reason}"
   },
   "rowActions": {
     "approve": "Duyệt (chuyển sang Đã duyệt)",
     "openPosted": "Mở (đã ghi sổ — đã khóa)",
-    "confirmDelete": "Xóa bút toán này? Với bút toán chuyển tiền, cả hai bên đều bị xóa; với khoản thu, phí ngân hàng bị trừ từ nó cũng bị xóa."
+    "confirmDelete": "Xóa bút toán này? Với bút toán chuyển tiền, cả hai bên đều bị xóa; với khoản thu, phí ngân hàng bị trừ từ nó cũng bị xóa.",
+    "reject": "Từ chối (trả lại kèm lý do)"
   },
   "postThrough": {
     "label": "Ghi sổ các bút toán đã duyệt đến ngày",
@@ -57,7 +60,8 @@
   "buttons": {
     "approve": "Duyệt",
     "post": "Ghi sổ",
-    "reverse": "Đảo…"
+    "reverse": "Đảo…",
+    "reject": "Từ chối…"
   },
   "toast": {
     "approved": "Đã duyệt bút toán",
@@ -69,7 +73,8 @@
     "saved": "Đã lưu bút toán",
     "receiptRemoved": "Đã xóa tệp",
     "receiptRemoveFailed": "Không thể xóa tệp.",
-    "somethingWrong": "Đã xảy ra lỗi"
+    "somethingWrong": "Đã xảy ra lỗi",
+    "rejected": "Đã từ chối bút toán"
   },
   "status": {
     "reversalOf": "Bút toán đảo này triệt tiêu bút toán <link>{label}</link>. Bút toán này đã ghi sổ và không thể thay đổi.",
@@ -79,7 +84,11 @@
     "posted": "Đã ghi sổ — đã khóa. Vẫn có thể cập nhật chứng từ và rà soát thuế; để thay đổi nội dung khác, hãy đảo bút toán và nhập bút toán điều chỉnh.",
     "correctionOf": "Điều chỉnh cho bút toán <link>{label}</link>.",
     "confirmPost": "Ghi sổ bút toán này? Bút toán sẽ bị khóa; khi đó mọi điều chỉnh phải thực hiện qua bút toán đảo.",
-    "reverseFailed": "Không thể đảo bút toán."
+    "reverseFailed": "Không thể đảo bút toán.",
+    "rejected": "Bị từ chối — đã trả lại để sửa. Chưa được tính vào số dư hay báo cáo; lưu bản đã sửa sẽ gửi lại để duyệt.",
+    "rejectedReason": "Lý do: {reason}",
+    "rejectedReasonBy": "{name} từ chối với lý do: {reason}",
+    "rejectedOwner": "Bị từ chối — đã trả lại để sửa. Chưa được tính vào số dư hay báo cáo; bút toán quay lại thành nháp khi được sửa, hoặc bạn có thể tự duyệt."
   },
   "reverse": {
     "title": "Đảo bút toán đã ghi sổ",
@@ -117,7 +126,8 @@
       "UNMATCH": "Đã bỏ khớp dòng sao kê",
       "LINK": "Đã liên kết",
       "UNLINK": "Đã bỏ liên kết",
-      "REVALUE": "Đã đánh giá lại tỷ giá"
+      "REVALUE": "Đã đánh giá lại tỷ giá",
+      "REJECT": "Đã từ chối"
     },
     "field": {
       "type": "Loại nghiệp vụ",
@@ -237,7 +247,9 @@
     "attachmentOwnerOnly": "Chỉ chủ doanh nghiệp mới được xóa chứng từ này.",
     "feePairLocked": "Phí ngân hàng bị trừ từ một khoản thu luôn đi cùng khoản thu đó: cùng tài khoản, loại tiền, loại nghiệp vụ, ngày và dự án. Hãy sửa khoản thu — phí sẽ theo — hoặc đảo hay xóa cả hai cùng lúc.",
     "feeExceedsReceipt": "Phí ngân hàng phải nhỏ hơn khoản thu mà phí đó bị trừ.",
-    "pairNotPosted": "Mọi bút toán đi cùng bút toán này phải đã ghi sổ và chưa bị đảo thì mới đảo được."
+    "pairNotPosted": "Mọi bút toán đi cùng bút toán này phải đã ghi sổ và chưa bị đảo thì mới đảo được.",
+    "rejectReasonRequired": "Hãy nhập lý do từ chối.",
+    "onlyDraftsRejected": "Chỉ có thể từ chối bút toán nháp đang chờ duyệt."
   },
   "revalue": {
     "booked": "Đã ghi nhận theo tỷ giá {rate} VND/{currency} → {vnd} VND · tỷ giá {source}",
@@ -264,5 +276,12 @@
       "matched": "Bút toán đã khớp với một dòng sao kê của tài khoản theo dõi bằng loại tiền khác — hãy bỏ khớp trước khi đánh giá lại tỷ giá, rồi khớp lại."
     },
     "postedHint": "Đã ghi sổ: giá trị này đã khóa. Muốn thay đổi, hãy đảo bút toán và nhập bút toán điều chỉnh."
+  },
+  "reject": {
+    "title": "Từ chối bút toán này",
+    "body": "Bút toán được trả lại cho người đã nhập, kèm lý do của bạn. Bút toán không được tính vào số dư và báo cáo cho đến khi người đó sửa và lưu lại — sau đó bút toán quay lại để bạn duyệt.",
+    "reason": "Lý do từ chối",
+    "reasonPlaceholder": "Ví dụ: sai tài khoản — khoản này chi từ MB USD",
+    "submit": "Từ chối và trả lại"
   }
 }

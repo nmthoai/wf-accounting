@@ -202,6 +202,8 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
                     <><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${kindColor[m.kind] ?? "bg-slate-200 text-slate-700"}`}>{tc(`type.${m.kind}`)}</span>{m.accountName}</>
                   )}
                   {m.status === "DRAFT" && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">{t("movements.draft")}</span>}
+                  {m.status === "REJECTED" && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700" title={m.rejectedReason ?? undefined}>{tc("status.REJECTED")}</span>}
+                  {m.status === "REJECTED" && m.rejectedReason && <span className="text-[11px] text-red-700">{t("movements.rejectedReason", { reason: m.rejectedReason })}</span>}
                   {m.reversal && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-700">{t("movements.reversal")}</span>}
                   {m.reversed && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-700">{t("movements.reversed")}</span>}
                   {m.status === "POSTED" && <span title={t("movements.postedLocked")}><Lock className="h-3.5 w-3.5 text-muted-foreground" /></span>}

@@ -3,7 +3,8 @@
     "title": "Đối chiếu ngân hàng",
     "subtitle": "Dòng sao kê ngân hàng được khớp với sổ thu chi",
     "draftLabel": "{label} (nháp)",
-    "feeDeducted": "{label} (đã trừ phí {fee})"
+    "feeDeducted": "{label} (đã trừ phí {fee})",
+    "rejectedLabel": "{label} (bị từ chối)"
   },
   "summary": {
     "statementTo": "{currency} · sao kê đến ngày {date}",
@@ -14,7 +15,8 @@
     "agrees": "Khớp ✓",
     "toReconcile": "{open}/{lines} dòng sao kê cần đối chiếu",
     "toReconcileNotOnStatement": "{open}/{lines} dòng sao kê cần đối chiếu · {count, plural, other {# bút toán trên sổ}} chưa có trên sao kê",
-    "drafts": "{count, plural, other {# bút toán nháp}} chỉ được tính vào số dư theo sổ khi đã duyệt"
+    "drafts": "{count, plural, other {# bút toán nháp}} chỉ được tính vào số dư theo sổ khi đã duyệt",
+    "rejected": "{count, plural, other {# bút toán bị từ chối}} chưa được tính cho đến khi được sửa"
   },
   "tabs": {
     "open": "Cần đối chiếu ({count})",
@@ -141,6 +143,7 @@
     "otherAccount": "Dòng sao kê thuộc tài khoản {account} — bút toán cũng phải thuộc tài khoản này.",
     "lineInEntryOut": "Dòng sao kê là tiền vào; bút toán này là tiền ra.",
     "lineOutEntryIn": "Dòng sao kê là tiền ra; bút toán này là tiền vào.",
-    "moreThanLine": "Vượt quá số tiền của dòng sao kê ({amount})."
+    "moreThanLine": "Vượt quá số tiền của dòng sao kê ({amount}).",
+    "rejected": "Không thể khớp bút toán bị từ chối — bút toán sẽ được khớp lại sau khi được sửa và gửi lại."
   }
 }

@@ -363,3 +363,4 @@ Recurring wording settled while translating the screens.
 | Revalue / Revaluation (exchange rate) | Đánh giá lại tỷ giá |
 | Booked at {rate} (the VND value an entry was recorded at) | Đã ghi nhận theo tỷ giá {rate} |
 | Internal transfer | Chuyển tiền nội bộ |
+| Reject / Rejected (entry review) / Reject and send back | Từ chối / Bị từ chối (status, tab, badge) / Đã từ chối (history, toast) / Từ chối và trả lại — a rejected entry is not counted in balances or reports |

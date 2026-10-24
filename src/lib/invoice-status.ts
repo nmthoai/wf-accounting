@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { EPS, settlement } from "@/lib/money";
+import { BOOKED, EPS, settlement } from "@/lib/money";
 
 // Recompute invoice status from its allocations: OPEN (nothing settled yet),
 // PARTIAL, or PAID (payments + evidenced fees cover the gross). VOID is left alone.
@@ -9,7 +9,7 @@ export async function refreshInvoiceStatus(invoiceIds: (string | null | undefine
     const inv = await prisma.invoice.findUnique({
       where: { id },
       // Draft payments don't settle anything until reviewed.
-      include: { allocations: { where: { transaction: { status: { not: "DRAFT" } } }, include: { transaction: { select: { date: true } } } } },
+      include: { allocations: { where: { transaction: BOOKED }, include: { transaction: { select: { date: true } } } } },
     });
     if (!inv || inv.status === "VOID") continue;
     const { received, fees } = settlement(inv.amount, inv.allocations);

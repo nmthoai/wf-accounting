@@ -24,16 +24,19 @@ const badge: Record<string, string> = {
 
 const STATUS_BADGE: Record<string, string> = {
   DRAFT: "bg-amber-100 text-amber-700",
+  REJECTED: "bg-red-100 text-red-700",
   REVIEWED: "bg-blue-50 text-blue-700",
   POSTED: "bg-slate-200 text-slate-700",
 };
 
 // Entries cancelled by a reversal (and the reversals) need no further review.
 const LIVE: Prisma.TransactionWhereInput = { reversalOfId: null, reversedBy: { is: null } };
-// Review views: drafts waiting for the owner, entries whose invoice/receipt is
-// still to be found, and expenses whose CIT or VAT treatment is undecided.
-const VIEWS: Record<"drafts" | "docs" | "tax", Prisma.TransactionWhereInput> = {
+// Review views: drafts waiting for the owner, entries the owner sent back for
+// correction, entries whose invoice/receipt is still to be found, and expenses
+// whose CIT or VAT treatment is undecided.
+const VIEWS: Record<"drafts" | "rejected" | "docs" | "tax", Prisma.TransactionWhereInput> = {
   drafts: { status: "DRAFT" },
+  rejected: { status: "REJECTED" },
   docs: { type: { in: ["INCOME", "EXPENSE"] }, docStatus: { in: DOC_OPEN }, ...LIVE },
   tax: { type: "EXPENSE", OR: [{ citStatus: "PENDING" }, { vatStatus: "PENDING" }], ...LIVE },
 };
@@ -48,7 +51,7 @@ const taxTone = (s: string, good: string) => (s === "PENDING" ? "text-amber-700"
 
 export default async function LedgerPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const sp = await searchParams;
-  const view = sp.view === "drafts" || sp.view === "docs" || sp.view === "tax" ? sp.view : null;
+  const view = sp.view === "drafts" || sp.view === "rejected" || sp.view === "docs" || sp.view === "tax" ? sp.view : null;
   const session = await requirePageSession();
   const isAdmin = session?.user?.role === "ADMIN";
   const tl = await getTranslations("ledger"); // `t` is a transaction below
@@ -56,8 +59,9 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
   const locale = await getLocale();
   // A stored code's label, or the code itself if it has none.
   const label = (key: string, raw: string) => (tc.has(key) ? tc(key) : raw);
-  const [draftCount, docsCount, taxCount, reviewedCount] = await Promise.all([
+  const [draftCount, rejectedCount, docsCount, taxCount, reviewedCount] = await Promise.all([
     prisma.transaction.count({ where: VIEWS.drafts }),
+    prisma.transaction.count({ where: VIEWS.rejected }),
     prisma.transaction.count({ where: VIEWS.docs }),
     prisma.transaction.count({ where: VIEWS.tax }),
     prisma.transaction.count({ where: { status: "REVIEWED" } }),
@@ -75,6 +79,13 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
       reversedBy: { select: { id: true } },
     },
   });
+  // Why each rejected entry was sent back: its latest rejection.
+  const rejectedIds = transactions.filter((t) => t.status === "REJECTED").map((t) => t.id);
+  const rejections = new Map<string, string>();
+  if (rejectedIds.length) {
+    const rows = await prisma.changeLog.findMany({ where: { action: "REJECT", entityId: { in: rejectedIds } }, orderBy: { createdAt: "desc" } });
+    for (const r of rows) if (!rejections.has(r.entityId) && r.reason) rejections.set(r.entityId, r.reason);
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -90,7 +101,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
 
       <div className="flex justify-between items-center gap-3 flex-wrap">
         <div className="flex bg-muted p-1 rounded-lg text-sm w-fit flex-wrap">
-          {([[null, tl("tabs.all")], ["drafts", tl("tabs.drafts", { count: draftCount })], ["docs", tl("tabs.docs", { count: docsCount })], ["tax", tl("tabs.tax", { count: taxCount })]] as const).map(([v, text]) => (
+          {([[null, tl("tabs.all")], ["drafts", tl("tabs.drafts", { count: draftCount })], ["rejected", tl("tabs.rejected", { count: rejectedCount })], ["docs", tl("tabs.docs", { count: docsCount })], ["tax", tl("tabs.tax", { count: taxCount })]] as const).map(([v, text]) => (
             <Link key={text} href={v ? `/ledger?view=${v}` : "/ledger"}
               className={`px-3 py-1 rounded-md font-medium transition-all ${view === v ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</Link>
           ))}
@@ -128,6 +139,9 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                           : t.reversedBy ? tl("row.reversed", { status: label(`status.${t.status}`, t.status) })
                           : label(`status.${t.status}`, t.status)}
                       </span>
+                      {rejections.has(t.id) && (
+                        <span className="text-[11px] text-red-700 max-w-[14rem]">{tl("row.rejectedReason", { reason: rejections.get(t.id)! })}</span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{t.account?.name ?? <span className="text-amber-700">{tl("row.noAccount")}</span>}</TableCell>

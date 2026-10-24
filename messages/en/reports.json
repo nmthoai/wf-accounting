@@ -4,7 +4,8 @@
   "page": {
     "title": "Profit & Loss",
     "subtitle": "{month} · cash-basis (paid income & expenses) · reviewed and posted entries",
-    "draftsNotIncluded": "{count, plural, one {# draft entry} other {# draft entries}} this month not included — waiting for review →"
+    "draftsNotIncluded": "{count, plural, one {# draft entry} other {# draft entries}} this month not included — waiting for review →",
+    "rejectedNotIncluded": "{count, plural, one {# rejected entry} other {# rejected entries}} this month not included — waiting for correction →"
   },
   "lines": {
     "empty": "No entries this month.",

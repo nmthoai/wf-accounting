@@ -54,7 +54,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
     const word = item.provider.toLowerCase().split(/[\s/]+/)[0];
     const nearby = await prisma.transaction.findMany({
       where: {
-        type: "EXPENSE", reversalOfId: null, reversedBy: { is: null }, costItem: { is: null },
+        type: "EXPENSE", reversalOfId: null, reversedBy: { is: null }, costItem: { is: null }, status: { not: "REJECTED" },
         date: { gte: new Date(+item.receiptDate - 10 * DAY), lte: new Date(+item.receiptDate + 10 * DAY) },
       },
       include: { vendor: true },

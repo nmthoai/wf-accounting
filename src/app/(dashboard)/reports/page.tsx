@@ -46,10 +46,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     : vnToday().slice(0, 7);
   const { start, end, prevStart } = monthBounds(month);
 
-  const [txns, prevTxns, drafts] = await Promise.all([
+  const [txns, prevTxns, drafts, rejected] = await Promise.all([
     prisma.transaction.findMany({ where: { ...PNL, date: { gte: start, lt: end } }, include: { category: true, project: true } }),
     prisma.transaction.findMany({ where: { ...PNL, date: { gte: prevStart, lt: start } }, select: { type: true, amount: true, exchangeRate: true, vndAmount: true } }),
     prisma.transaction.count({ where: { type: { in: ["INCOME", "EXPENSE"] }, status: "DRAFT", date: { gte: start, lt: end } } }),
+    prisma.transaction.count({ where: { type: { in: ["INCOME", "EXPENSE"] }, status: "REJECTED", date: { gte: start, lt: end } } }),
   ]);
 
   // Per-project breakdown for the month
@@ -121,6 +122,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           {drafts > 0 && (
             <Link href="/ledger?view=drafts" className="inline-block mt-2 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 hover:underline">
               {tr("page.draftsNotIncluded", { count: drafts })}
+            </Link>
+          )}
+          {rejected > 0 && (
+            <Link href="/ledger?view=rejected" className="inline-block mt-2 ml-2 text-xs px-2 py-1 rounded bg-red-100 text-red-800 hover:underline">
+              {tr("page.rejectedNotIncluded", { count: rejected })}
             </Link>
           )}
         </div>

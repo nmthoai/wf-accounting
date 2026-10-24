@@ -80,7 +80,8 @@
   "status": {
     "DRAFT": "Draft",
     "REVIEWED": "Reviewed",
-    "POSTED": "Posted"
+    "POSTED": "Posted",
+    "REJECTED": "Rejected"
   },
   "invoiceStatus": {
     "OPEN": "Open",

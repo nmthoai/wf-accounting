@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { defaultUsdRate } from "@/lib/fx";
-import { EPS, settlement, type Totals , vnTodayStart } from "@/lib/money";
+import { EPS, settlement, type Totals , vnTodayStart, isBooked } from "@/lib/money";
 import { InvoicesClient } from "@/components/invoices/invoices-client";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
@@ -27,7 +27,7 @@ export default async function InvoicesPage() {
     // yet allocated — not a reversal, nor an entry a reversal cancelled, nor a
     // bank fee already counted in the receipt it was withheld from.
     prisma.transaction.findMany({
-      where: { type: { in: ["INCOME", "EXPENSE"] }, reversalOfId: null, reversedBy: { is: null }, deductedFromId: null },
+      where: { type: { in: ["INCOME", "EXPENSE"] }, reversalOfId: null, reversedBy: { is: null }, deductedFromId: null, status: { not: "REJECTED" } },
       orderBy: { date: "desc" },
       include: { account: true, allocations: true, _count: { select: { attachments: true } } },
     }),
@@ -35,7 +35,7 @@ export default async function InvoicesPage() {
 
   const now = vnTodayStart(); // overdue from the day after the due date
   const rows = invoices.map((i) => {
-    const s = settlement(i.amount, i.allocations.filter((a) => a.transaction.status !== "DRAFT"));
+    const s = settlement(i.amount, i.allocations.filter((a) => isBooked(a.transaction)));
     const open = i.status === "OPEN" || i.status === "PARTIAL";
     return {
       id: i.id,
@@ -59,7 +59,7 @@ export default async function InvoicesPage() {
       attachment: i.attachments[0] ? i.attachments[0].filePath : null,
       ...s,
       allocations: i.allocations.map((a) => ({
-        id: a.id, kind: a.kind, amount: a.amount, draft: a.transaction.status === "DRAFT",
+        id: a.id, kind: a.kind, amount: a.amount, draft: a.transaction.status === "DRAFT", rejected: a.transaction.status === "REJECTED",
         date: iso(a.transaction.date)!,
         accountName: a.transaction.account?.name ?? "—",
         description: a.transaction.description,

@@ -11,7 +11,8 @@
       "bankAgrees": "{name}: sao kê khớp với sổ ({closing})",
       "bankDiffers": "{name}: theo sao kê {closing}, theo sổ {app} · {open} dòng cần đối chiếu",
       "allDocs": "Mọi bút toán đều đã có chứng từ",
-      "missingDocs": "{count, plural, other {# bút toán còn thiếu chứng từ}}"
+      "missingDocs": "{count, plural, other {# bút toán còn thiếu chứng từ}}",
+      "rejected": "{count, plural, other {# bút toán bị từ chối}} đang chờ sửa — không được tính vào số liệu"
     },
     "cards": {
       "entries": "Bút toán",
@@ -56,7 +57,8 @@
     "noStatement": "Chưa nhập sao kê ngân hàng cho tháng này.",
     "invoiceItem": "{kind} {number}",
     "invoiceDifference": "Tổng tiền thanh toán {gross}, đã thanh toán {received}, phí có chứng từ {fees} — chênh lệch chưa giải trình {difference}.",
-    "costPending": "Chứng từ chờ hạch toán — chưa có trên sổ thu chi."
+    "costPending": "Chứng từ chờ hạch toán — chưa có trên sổ thu chi.",
+    "rejected": "Bị từ chối và đã trả lại để sửa — không được tính vào số liệu của bộ hồ sơ này cho đến khi được sửa và duyệt."
   },
   "lineStatus": {
     "matched": "Đã khớp",
@@ -93,7 +95,8 @@
     "bankDiffers": "số dư cuối kỳ theo sao kê {closing} · theo sổ {app} · CÓ CHÊNH LỆCH · {open} dòng cần đối chiếu",
     "bankNoStatement": "chưa nhập sao kê cho tháng này",
     "notes": "Ghi chú",
-    "notesText": "Số tiền ghi theo nguyên tệ; giá trị quy đổi VND dùng tỷ giá riêng của từng bút toán (theo số VND thực tế ngân hàng ghi nhận, nếu có). Không bao giờ cộng gộp các loại tiền với nhau. Việc ghi nhận một khoản chi không có nghĩa là khoản chi đó được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT — xem các cột TNDN / GTGT đầu vào. Đường dẫn tệp chứng từ trong trang tính Sổ thu chi trỏ tới thư mục evidence của tệp ZIP này."
+    "notesText": "Số tiền ghi theo nguyên tệ; giá trị quy đổi VND dùng tỷ giá riêng của từng bút toán (theo số VND thực tế ngân hàng ghi nhận, nếu có). Không bao giờ cộng gộp các loại tiền với nhau. Việc ghi nhận một khoản chi không có nghĩa là khoản chi đó được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT — xem các cột TNDN / GTGT đầu vào. Đường dẫn tệp chứng từ trong trang tính Sổ thu chi trỏ tới thư mục evidence của tệp ZIP này.",
+    "rejected": "— bị từ chối (đã trả lại để sửa; không được tính vào số liệu)"
   },
   "ledger": {
     "reversal": "{status} (bút toán đảo)",

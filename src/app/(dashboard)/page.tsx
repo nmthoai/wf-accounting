@@ -28,7 +28,8 @@ export default async function DashboardPage() {
   // Drafts are not in the books until reviewed. A reversal and the entry it
   // cancels stay in the totals (they net to zero) but not in the counts.
   const booked = transactions.filter(isBooked);
-  const drafts = transactions.length - booked.length;
+  const drafts = transactions.filter((t) => t.status === "DRAFT").length;
+  const rejected = transactions.filter((t) => t.status === "REJECTED").length;
   const cancelled = new Set(transactions.map((t) => t.reversalOfId).filter(Boolean));
   const counted = (t: { id: string; reversalOfId: string | null }) => !t.reversalOfId && !cancelled.has(t.id);
 
@@ -104,6 +105,11 @@ export default async function DashboardPage() {
           {drafts > 0 && (
             <Link href="/ledger?view=drafts" className="inline-block mt-2 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 hover:underline">
               {tr("page.draftsWaiting", { count: drafts })}
+            </Link>
+          )}
+          {rejected > 0 && (
+            <Link href="/ledger?view=rejected" className="inline-block mt-2 ml-2 text-xs px-2 py-1 rounded bg-red-100 text-red-800 hover:underline">
+              {tr("page.rejectedWaiting", { count: rejected })}
             </Link>
           )}
         </div>
@@ -279,6 +285,7 @@ export default async function DashboardPage() {
                     <p className="text-sm text-muted-foreground">
                       {t.description}
                       {t.status === "DRAFT" && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tr("recent.draft")}</span>}
+                      {t.status === "REJECTED" && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tc("status.REJECTED")}</span>}
                     </p>
                   </div>
                   <div className={`ml-auto font-medium ${isMoneyIn(t) ? "text-green-600" : ""}`}>

@@ -4,7 +4,8 @@
   "page": {
     "title": "Báo cáo lãi lỗ",
     "subtitle": "{month} · theo cơ sở tiền (doanh thu đã thu, chi phí đã chi) · bút toán đã duyệt và đã ghi sổ",
-    "draftsNotIncluded": "{count, plural, other {# bút toán nháp}} trong tháng này chưa được tính — đang chờ duyệt →"
+    "draftsNotIncluded": "{count, plural, other {# bút toán nháp}} trong tháng này chưa được tính — đang chờ duyệt →",
+    "rejectedNotIncluded": "{count, plural, other {# bút toán bị từ chối}} trong tháng chưa được tính — đang chờ sửa →"
   },
   "lines": {
     "empty": "Không có bút toán nào trong tháng này.",

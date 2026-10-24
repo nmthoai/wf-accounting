@@ -10,7 +10,8 @@
     "all": "All",
     "drafts": "Drafts ({count})",
     "docs": "Documents to find ({count})",
-    "tax": "Tax review pending ({count})"
+    "tax": "Tax review pending ({count})",
+    "rejected": "Rejected ({count})"
   },
   "table": {
     "date": "Date",
@@ -41,12 +42,14 @@
     "cit": "CIT: {status}",
     "vatTitle": "Input VAT",
     "vat": "VAT: {status}",
-    "vatWithAmount": "VAT: {status} {amount}"
+    "vatWithAmount": "VAT: {status} {amount}",
+    "rejectedReason": "Rejected: {reason}"
   },
   "rowActions": {
     "approve": "Approve (mark reviewed)",
     "openPosted": "Open (posted — locked)",
-    "confirmDelete": "Delete this entry? A transfer deletes both sides; a receipt also deletes the bank fee withheld from it."
+    "confirmDelete": "Delete this entry? A transfer deletes both sides; a receipt also deletes the bank fee withheld from it.",
+    "reject": "Reject (send back with a reason)"
   },
   "postThrough": {
     "label": "Post reviewed entries through",
@@ -57,7 +60,8 @@
   "buttons": {
     "approve": "Approve",
     "post": "Post",
-    "reverse": "Reverse…"
+    "reverse": "Reverse…",
+    "reject": "Reject…"
   },
   "toast": {
     "approved": "Entry approved",
@@ -69,7 +73,8 @@
     "saved": "Entry saved",
     "receiptRemoved": "Receipt removed",
     "receiptRemoveFailed": "Could not remove the receipt.",
-    "somethingWrong": "Something went wrong"
+    "somethingWrong": "Something went wrong",
+    "rejected": "Entry rejected"
   },
   "status": {
     "reversalOf": "This reversal cancels <link>{label}</link>. It is posted and can't change.",
@@ -79,7 +84,11 @@
     "posted": "Posted — locked. Evidence and tax review can still be updated; to change anything else, reverse it and enter the correction.",
     "correctionOf": "Correction of <link>{label}</link>.",
     "confirmPost": "Post this entry? It will be locked; corrections then go through a reversal.",
-    "reverseFailed": "Could not reverse."
+    "reverseFailed": "Could not reverse.",
+    "rejected": "Rejected — sent back for correction. Not counted in balances or reports; saving a corrected version resubmits it for review.",
+    "rejectedReason": "Reason: {reason}",
+    "rejectedReasonBy": "Rejected by {name}: {reason}",
+    "rejectedOwner": "Rejected — sent back for correction. Not counted in balances or reports; it comes back as a draft when corrected, or approve it yourself."
   },
   "reverse": {
     "title": "Reverse a posted entry",
@@ -117,7 +126,8 @@
       "UNMATCH": "Unmatched from a bank line",
       "LINK": "Linked",
       "UNLINK": "Unlinked",
-      "REVALUE": "Revalued"
+      "REVALUE": "Revalued",
+      "REJECT": "Rejected"
     },
     "field": {
       "type": "Type",
@@ -237,7 +247,9 @@
     "attachmentOwnerOnly": "Only the owner can remove this document.",
     "feePairLocked": "A bank fee withheld from a receipt stays with it: same account, currency, type, date and project. Change the receipt — the fee follows — or reverse or delete them together.",
     "feeExceedsReceipt": "The bank fee must stay less than the receipt it was withheld from.",
-    "pairNotPosted": "Everything that moves with this entry must be posted, and not yet reversed, before it can be reversed."
+    "pairNotPosted": "Everything that moves with this entry must be posted, and not yet reversed, before it can be reversed.",
+    "rejectReasonRequired": "Give the reason for rejecting it.",
+    "onlyDraftsRejected": "Only drafts waiting for review can be rejected."
   },
   "revalue": {
     "booked": "Booked at {rate} VND/{currency} → {vnd} VND · {source} rate",
@@ -264,5 +276,12 @@
       "matched": "This entry is matched to a bank line in an account kept in another currency — unmatch it before revaluing, then match it again."
     },
     "postedHint": "Posted: this value is locked. To change it, reverse the entry and enter the correction."
+  },
+  "reject": {
+    "title": "Reject this entry",
+    "body": "It goes back to whoever entered it, with your reason. It stays out of balances and reports until they correct it and save it again — then it comes back to you for review.",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. wrong account — this was paid from MB USD",
+    "submit": "Reject and send back"
   }
 }

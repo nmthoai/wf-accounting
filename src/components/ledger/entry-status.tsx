@@ -11,13 +11,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Check, Loader2, Lock, Undo2 } from "lucide-react";
 import { postEntries, reverseEntry, reviewEntries } from "@/app/actions/ledger";
 import { notify } from "@/components/ui/toast";
+import { RejectDialog } from "@/components/ledger/reject-dialog";
 
 type Ref = { id: string; label: string } | null;
 
 // Where an entry stands in Draft → Reviewed → Posted, and what the owner can do next.
-export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, correctionOf, withFee = false }: {
+export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, correctionOf, withFee = false, rejection = null }: {
   id: string; status: string; isAdmin: boolean; reversalOf: Ref; reversedBy: Ref; correctionOf: Ref;
   withFee?: boolean; // a receipt with a withheld bank fee, or that fee: reversed together
+  rejection?: { reason: string; by: string | null } | null; // why the owner sent it back
 }) {
   const t = useTranslations("ledger");
   const tc = useTranslations("common");
@@ -52,12 +54,14 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
     finally { setBusy(false); }
   }
 
-  const tone = status === "DRAFT" ? "border-amber-300 bg-amber-50" : status === "POSTED" ? "border-slate-300 bg-slate-50" : "border-blue-200 bg-blue-50";
+  const tone = status === "DRAFT" ? "border-amber-300 bg-amber-50" : status === "REJECTED" ? "border-red-300 bg-red-50"
+    : status === "POSTED" ? "border-slate-300 bg-slate-50" : "border-blue-200 bg-blue-50";
   const text = reversalOf
     ? t.rich("status.reversalOf", { label: reversalOf.label, link: (c) => <Link className="underline" href={`/entry/${reversalOf.id}`}>{c}</Link> })
     : reversedBy
       ? t.rich("status.reversedBy", { label: reversedBy.label, link: (c) => <Link className="underline" href={`/entry/${reversedBy.id}`}>{c}</Link> })
       : status === "DRAFT" ? t("status.draft")
+        : status === "REJECTED" ? (isAdmin ? t("status.rejectedOwner") : t("status.rejected"))
         : status === "REVIEWED" ? t("status.reviewed")
           : t("status.posted");
 
@@ -67,16 +71,22 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
         {status === "POSTED" && <Lock className="h-4 w-4 mt-0.5 shrink-0" />}
         <div>
           <p>{text}</p>
+          {status === "REJECTED" && rejection && (
+            <p className="mt-1 font-medium text-red-800">
+              {rejection.by ? t("status.rejectedReasonBy", { reason: rejection.reason, name: rejection.by }) : t("status.rejectedReason", { reason: rejection.reason })}
+            </p>
+          )}
           {correctionOf && <p className="text-xs mt-1">{t.rich("status.correctionOf", { label: correctionOf.label, link: (c) => <Link className="underline" href={`/entry/${correctionOf.id}`}>{c}</Link> })}</p>}
         </div>
       </div>
       {isAdmin && !reversalOf && !reversedBy && (
         <div className="flex gap-2">
-          {status === "DRAFT" && (
+          {(status === "DRAFT" || status === "REJECTED") && (
             <Button size="sm" className="gap-1" disabled={busy} onClick={() => run(() => reviewEntries([id]), t("toast.approved"))}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {t("buttons.approve")}
             </Button>
           )}
+          {status === "DRAFT" && <RejectDialog id={id} />}
           {status === "REVIEWED" && (
             <Button size="sm" variant="outline" className="gap-1" disabled={busy}
               onClick={() => { if (confirm(t("status.confirmPost"))) run(() => postEntries([id]), t("toast.posted")); }}>

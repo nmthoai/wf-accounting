@@ -23,7 +23,7 @@ type Invoice = {
   issueDate: string; dueDate: string; paidDate: string | null;
   currency: string; amount: number; status: string; overdue: boolean; attachment: string | null;
   received: number; fees: number; difference: number;
-  allocations: { id: string; kind: string; amount: number; date: string; accountName: string; description: string | null; draft: boolean; feeDeducted: number | null }[];
+  allocations: { id: string; kind: string; amount: number; date: string; accountName: string; description: string | null; draft: boolean; rejected: boolean; feeDeducted: number | null }[];
 };
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
@@ -303,6 +303,7 @@ export function InvoicesClient({
                           </span>
                           {a.date} · {a.accountName}{a.description ? ` · ${a.description}` : ""}
                           {a.draft && <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{t("list.draftBadge")}</span>}
+                          {a.rejected && <span className="ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tc("status.REJECTED")}</span>}
                           {a.feeDeducted ? (
                             <span className="block mt-0.5 text-muted-foreground">
                               {t("list.feeDeducted", { fee: fmtMoney(a.feeDeducted, i.currency), net: fmtMoney(a.amount - a.feeDeducted, i.currency), account: a.accountName })}

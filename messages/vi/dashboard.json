@@ -3,7 +3,8 @@
     "title": "Tổng quan",
     "subtitle": "Tổng quan tài chính của WorkFactory",
     "draftsWaiting": "{count, plural, other {{count} bút toán}} chờ duyệt — chưa được tính vào số liệu bên dưới →",
-    "newEntry": "Thêm bút toán"
+    "newEntry": "Thêm bút toán",
+    "rejectedWaiting": "{count, plural, other {# bút toán}} bị từ chối — đang chờ sửa →"
   },
   "cards": {
     "cashTitle": "Tiền mặt & ngân hàng",

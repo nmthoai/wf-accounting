@@ -11,7 +11,8 @@
       "bankAgrees": "{name}: statement and app agree ({closing})",
       "bankDiffers": "{name}: statement {closing} vs app {app} · {open} lines to reconcile",
       "allDocs": "Every entry has its document",
-      "missingDocs": "{count, plural, one {# entry still missing documents} other {# entries still missing documents}}"
+      "missingDocs": "{count, plural, one {# entry still missing documents} other {# entries still missing documents}}",
+      "rejected": "{count, plural, one {# rejected entry} other {# rejected entries}} waiting for correction — excluded from the figures"
     },
     "cards": {
       "entries": "Entries",
@@ -56,7 +57,8 @@
     "noStatement": "No bank statement imported for this month.",
     "invoiceItem": "{kind} {number}",
     "invoiceDifference": "Gross {gross}, received {received}, evidenced fees {fees} — unmatched difference {difference}.",
-    "costPending": "Receipt pending review — not in the ledger yet."
+    "costPending": "Receipt pending review — not in the ledger yet.",
+    "rejected": "Rejected and sent back for correction — excluded from this package's figures until it is corrected and reviewed."
   },
   "lineStatus": {
     "matched": "Matched",
@@ -93,7 +95,8 @@
     "bankDiffers": "statement closing {closing} · app {app} · DIFFERS · {open} lines to reconcile",
     "bankNoStatement": "no statement imported for this month",
     "notes": "Notes",
-    "notesText": "Amounts are in the original currency; VND values use each entry's own rate (bank-settled where known). Currencies are never added together. Recording an expense doesn't make it deductible or its VAT claimable — see the CIT / Input VAT columns. Evidence paths in the Ledger sheet point into the evidence folder of this ZIP."
+    "notesText": "Amounts are in the original currency; VND values use each entry's own rate (bank-settled where known). Currencies are never added together. Recording an expense doesn't make it deductible or its VAT claimable — see the CIT / Input VAT columns. Evidence paths in the Ledger sheet point into the evidence folder of this ZIP.",
+    "rejected": "— rejected (sent back for correction; excluded from figures)"
   },
   "ledger": {
     "reversal": "{status} (reversal)",
