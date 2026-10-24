@@ -45,7 +45,10 @@ export async function GET(req: Request) {
     const txns = await prisma.transaction.findMany({
       where: { date: { gte: start, lt: end } },
       orderBy: { date: "asc" },
-      include: { category: true, project: true, vendor: true, account: true, _count: { select: { attachments: true } } },
+      include: {
+        category: true, project: true, vendor: true, account: true, _count: { select: { attachments: true } },
+        bankLine: { select: { txnDate: true, reference: true } }, // the statement line it is reconciled to
+      },
     });
 
     const col = (key: string) => tr(`export.entries.columns.${key}`);
@@ -54,10 +57,11 @@ export async function GET(req: Request) {
       category: col("category"), project: col("project"), vendor: col("vendor"), invoiceNumber: col("invoiceNumber"),
       currency: col("currency"), amount: col("amount"), rate: col("rate"), rateSource: col("rateSource"), amountVnd: col("amountVnd"),
       attachments: col("attachments"), document: col("document"), purpose: col("purpose"), cit: col("cit"), inputVat: col("inputVat"),
-      vatAmount: col("vatAmount"), reviewNote: col("reviewNote"),
+      vatAmount: col("vatAmount"), reviewNote: col("reviewNote"), bankLine: col("bankLine"), entryId: col("entryId"),
     };
-    const headers = [c.date, c.status, c.type, c.account, c.description, c.category, c.project, c.vendor, c.invoiceNumber, c.currency, c.amount, c.rate, c.rateSource, c.amountVnd, c.attachments,
-      c.document, c.purpose, c.cit, c.inputVat, c.vatAmount, c.reviewNote];
+    // Bank line and entry ID let an accountant reconcile any range against the bank statements.
+    const headers = [c.date, c.status, c.type, c.account, c.description, c.category, c.project, c.vendor, c.invoiceNumber, c.currency, c.amount, c.rate, c.rateSource, c.amountVnd, c.bankLine, c.attachments,
+      c.document, c.purpose, c.cit, c.inputVat, c.vatAmount, c.reviewNote, c.entryId];
     const expense = (t: { type: string }) => t.type === "EXPENSE";
     const rows: Record<string, unknown>[] = txns.map((t) => ({
       [c.date]: iso(t.date),
@@ -74,6 +78,7 @@ export async function GET(req: Request) {
       [c.rate]: t.exchangeRate,
       [c.rateSource]: t.rateSource ? label("rateSource", t.rateSource) : "",
       [c.amountVnd]: Math.round(toVnd(t)),
+      [c.bankLine]: t.bankLine ? [iso(t.bankLine.txnDate), t.bankLine.reference].filter(Boolean).join(" · ") : "",
       [c.attachments]: t._count.attachments,
       // Review status sits beside the bookkeeping, never folded into it.
       [c.document]: isPnl(t.type) ? label("review.doc", t.docStatus) : "",
@@ -82,6 +87,7 @@ export async function GET(req: Request) {
       [c.inputVat]: expense(t) ? label("review.vat", t.vatStatus) : "",
       [c.vatAmount]: expense(t) && t.vatAmount != null ? t.vatAmount : "",
       [c.reviewNote]: t.reviewNote ?? "",
+      [c.entryId]: t.id,
     }));
 
     // Totals are profit & loss only — transfers, capital and loans are listed but

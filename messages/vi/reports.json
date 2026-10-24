@@ -77,7 +77,9 @@
         "cit": "Thuế TNDN",
         "inputVat": "Thuế GTGT đầu vào",
         "vatAmount": "Tiền thuế GTGT",
-        "reviewNote": "Ghi chú rà soát"
+        "reviewNote": "Ghi chú rà soát",
+        "bankLine": "Dòng sao kê",
+        "entryId": "Mã bút toán"
       },
       "reversal": "{status} (bút toán đảo)",
       "totalIncome": "TỔNG DOANH THU",
