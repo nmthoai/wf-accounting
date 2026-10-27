@@ -34,6 +34,29 @@ function byCategory(txns: { type: string; amount: number; exchangeRate: number; 
   return [...map.entries()].sort((a, b) => b[1] - a[1]);
 }
 
+// One breakdown: each row's amount and share of the total, then the total.
+function Lines({ rows, total, color, emptyText, totalText }: {
+  rows: [string, number][]; total: number; color: string; emptyText: string; totalText: string;
+}) {
+  return (
+    <div className="space-y-2">
+      {rows.map(([name, amt]) => (
+        <div key={name} className="flex items-center justify-between text-sm">
+          <span>{name}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">{total > 0 ? Math.round((amt / total) * 100) : 0}%</span>
+            <span className={`font-medium ${color}`}>{fmt(amt)}</span>
+          </div>
+        </div>
+      ))}
+      {rows.length === 0 && <p className="text-sm text-muted-foreground">{emptyText}</p>}
+      <div className="border-t pt-2 flex items-center justify-between text-sm font-semibold">
+        <span>{totalText}</span><span className={color}>{fmt(total)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   await requirePageSession(); // second line behind the proxy
   const tr = await getTranslations("reports");
@@ -95,24 +118,6 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const exportFrom = `${vnToday().slice(0, 4)}-01-01`;
   const exportTo = now.toISOString().slice(0, 10);
 
-  const Lines = ({ rows, total, color }: { rows: [string, number][]; total: number; color: string }) => (
-    <div className="space-y-2">
-      {rows.map(([name, amt]) => (
-        <div key={name} className="flex items-center justify-between text-sm">
-          <span>{name}</span>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">{total > 0 ? Math.round((amt / total) * 100) : 0}%</span>
-            <span className={`font-medium ${color}`}>{fmt(amt)}</span>
-          </div>
-        </div>
-      ))}
-      {rows.length === 0 && <p className="text-sm text-muted-foreground">{tr("lines.empty")}</p>}
-      <div className="border-t pt-2 flex items-center justify-between text-sm font-semibold">
-        <span>{tr("lines.total")}</span><span className={color}>{fmt(total)}</span>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -165,11 +170,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-green-700">{tr("byCategory.income")}</CardTitle></CardHeader>
-          <CardContent><Lines rows={income} total={totalIncome} color="text-green-700" /></CardContent>
+          <CardContent><Lines rows={income} total={totalIncome} color="text-green-700" emptyText={tr("lines.empty")} totalText={tr("lines.total")} /></CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle className="text-red-700">{tr("byCategory.expenses")}</CardTitle></CardHeader>
-          <CardContent><Lines rows={expense} total={totalExpense} color="text-red-600" /></CardContent>
+          <CardContent><Lines rows={expense} total={totalExpense} color="text-red-600" emptyText={tr("lines.empty")} totalText={tr("lines.total")} /></CardContent>
         </Card>
       </div>
 
@@ -210,7 +215,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <p className="text-sm font-medium">{tr("tax.citTitle")}</p>
-            <Lines rows={cit} total={totalExpense} color="text-foreground" />
+            <Lines rows={cit} total={totalExpense} color="text-foreground" emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
           </div>
           <div className="space-y-4">
             <div className="space-y-2">

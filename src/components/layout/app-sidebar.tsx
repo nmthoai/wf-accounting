@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -42,7 +43,7 @@ export function AppSidebar() {
     <div className="hidden md:flex md:w-72 md:flex-col border-r bg-card shadow-sm z-20 relative">
       <div className="flex min-h-[4rem] py-4 shrink-0 items-center px-6 border-b">
         <Link href="/" className="flex items-center gap-3 font-serif text-3xl font-black text-primary tracking-tight">
-          <img src="/logo.svg" alt={tApp("logoAlt")} className="w-10 h-10 object-contain" />
+          <Image src="/logo.svg" alt={tApp("logoAlt")} width={40} height={40} className="w-10 h-10 object-contain" />
           <span>WorkFactory</span>
         </Link>
       </div>

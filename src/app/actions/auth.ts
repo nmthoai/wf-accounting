@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getT } from "@/i18n/server";
 
-export async function authenticate(prevState: any, formData: FormData) {
+export async function authenticate(_prevState: unknown, formData: FormData) {
   try {
     await signIn("credentials", formData);
   } catch (error) {
@@ -54,7 +54,7 @@ export async function generate2FASecret() {
     });
 
     return { success: true, secret: secret.base32, otpauthUrl: secret.otpauth_url };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error generating 2FA secret:", error);
     const t = await getT("auth");
     return { success: false, message: t("errors.serverError") };

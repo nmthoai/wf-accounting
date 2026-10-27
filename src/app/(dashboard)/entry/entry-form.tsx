@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { createTransaction, editTransaction, deleteAttachment } from "@/app/actions/ledger";
 import { Loader2, UploadCloud, Paperclip, X } from "lucide-react";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
@@ -34,6 +34,23 @@ function StatusSelect({ id, label, options, value, onChange, disabled }: {
   );
 }
 
+type Category = { id: string; name: string; type: string };
+type Attachment = { id: string; fileName: string; filePath: string };
+// What a new entry starts from (a bank line, a register receipt, a reversed
+// entry to re-enter) or what an edited entry holds.
+type EntryValues = {
+  type?: string; currency?: string; amount?: number; date?: Date | string;
+  accountId?: string | null; categoryId?: string | null; projectId?: string | null; vendorId?: string | null;
+  description?: string | null; invoiceNumber?: string | null;
+  exchangeRate?: number; vndAmount?: number | null; rateSource?: string | null;
+  docStatus?: string; purposeStatus?: string; citStatus?: string; vatStatus?: string;
+  vatAmount?: number | null; reviewNote?: string | null; attachments?: Attachment[];
+};
+type RecordedEntry = EntryValues & {
+  id: string; currency: string; amount: number; exchangeRate: number; vndAmount: number | null; rateSource: string | null;
+  transferId?: string | null; deductedFromId?: string | null; deductedFee?: { amount: number } | null;
+};
+
 export function EntryForm({
   categories,
   projects = [],
@@ -48,14 +65,14 @@ export function EntryForm({
   costItem,
   locked = false
 }: {
-  categories: any[];
+  categories: Category[];
   projects?: { id: string; name: string }[];
   vendors?: { id: string; name: string }[];
   accounts: AccountOpt[];
   defaultUsdRate: number;
   isAdmin: boolean;
-  initialData?: any;
-  prefill?: any; // a new entry started from a bank statement line, or re-entered after a reversal
+  initialData?: RecordedEntry;
+  prefill?: EntryValues; // a new entry started from a bank statement line, or re-entered after a reversal
   bankLine?: { id: string; label: string };
   correction?: { id: string; label: string }; // the reversed posted entry this one replaces
   costItem?: { id: string; label: string }; // the cost register receipt this expense records
@@ -66,7 +83,7 @@ export function EntryForm({
   const router = useRouter();
   const init = initialData ?? prefill;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [type, setType] = useState<"INCOME" | "EXPENSE">(init?.type || "EXPENSE");
+  const [type, setType] = useState<"INCOME" | "EXPENSE">(init?.type === "INCOME" ? "INCOME" : "EXPENSE");
   const [currency, setCurrency] = useState<string>(init?.currency || "VND");
   const [projectId, setProjectId] = useState<string>(init?.projectId || "");
   const [vendorId, setVendorId] = useState<string>(init?.vendorId || "");
@@ -109,7 +126,7 @@ export function EntryForm({
 
   const selectedCategory = categories.find(c => c.id === categoryId);
 
-  const [attachments, setAttachments] = useState<any[]>(init?.attachments || []);
+  const [attachments, setAttachments] = useState<Attachment[]>(init?.attachments || []);
   const [removingId, setRemovingId] = useState<string | null>(null);
   // Files chosen but not yet saved. We own this list (the native input only
   // keeps its last selection), so picking "Add more files" twice accumulates.
@@ -175,7 +192,7 @@ export function EntryForm({
       if (notifyResult(res, isEdit ? t("toast.saved") : t("toast.created"))) {
         router.push(bankLine ? "/bank" : costItem ? "/costs" : "/ledger");
       }
-    } catch (err) {
+    } catch {
       notify.error(t("toast.somethingWrong"));
     } finally {
       setIsSubmitting(false);

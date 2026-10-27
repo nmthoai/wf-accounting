@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // Attachments up to 10 MB per save (src/lib/upload-limit.ts) plus the form itself.
     serverActions: { bodySizeLimit: "11mb" },
-    // The request proxy (middleware) buffers bodies and truncates past this —
+    // The request proxy (src/proxy.ts) buffers bodies and truncates past this —
     // keep it above the server-action limit.
     proxyClientMaxBodySize: "12mb",
   },

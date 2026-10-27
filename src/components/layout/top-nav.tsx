@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { LogOut, Menu, Loader2, UserRound } from "lucide-react";
@@ -30,7 +31,7 @@ export function TopNav({ greeting }: { greeting: string | null }) {
             <SheetTitle className="sr-only">{t("nav.menu")}</SheetTitle>
             <div className="flex h-16 shrink-0 items-center px-6 border-b">
               <Link href="/" className="flex items-center gap-3 font-serif text-3xl font-black text-primary tracking-tight">
-                <img src="/logo.svg" alt={t("app.logoAlt")} className="w-10 h-10 object-contain" />
+                <Image src="/logo.svg" alt={t("app.logoAlt")} width={40} height={40} className="w-10 h-10 object-contain" />
                 <span>WorkFactory</span>
               </Link>
             </div>

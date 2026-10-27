@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import QRCode from "qrcode";
@@ -64,6 +65,9 @@ export function OnboardWizard({
     return () => {
       cancelled = true;
     };
+    // Only on entering the 2FA step: re-running when `t` changes would issue a
+    // new secret and change the QR code while it is being scanned.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   async function handlePassword(e: React.FormEvent<HTMLFormElement>) {
@@ -192,9 +196,11 @@ export function OnboardWizard({
                 </div>
               ) : qrCodeUrl ? (
                 <>
-                  <img
+                  <Image
                     src={qrCodeUrl}
                     alt={t("twoFactor.qrAlt")}
+                    width={192}
+                    height={192}
                     className="w-48 h-48 border rounded-lg bg-white p-2"
                   />
                   <div className="space-y-1">
