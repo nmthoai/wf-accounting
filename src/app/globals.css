@@ -65,6 +65,10 @@
   --input: #e2e8f0;
   --ring: #1E3A8A;
   --radius: 0.5rem;
+  /* Report chart series (validated for colour-blind separation on the card surface) */
+  --chart-revenue: #2a78d6;
+  --chart-cost: #eb6834;
+  --chart-net: #1baf7a;
 }
 
 .dark {
@@ -88,6 +92,9 @@
   --border: #334155;
   --input: #334155;
   --ring: #0EA5E9;
+  --chart-revenue: #3987e5;
+  --chart-cost: #d95926;
+  --chart-net: #199e70;
 }
 
 @layer base {

@@ -4,22 +4,20 @@
   "page": {
     "title": "Báo cáo lãi lỗ",
     "subtitle": "{month} · theo cơ sở tiền (doanh thu đã thu, chi phí đã chi) · bút toán đã duyệt và đã ghi sổ",
-    "draftsNotIncluded": "{count, plural, other {# bút toán nháp}} trong tháng này chưa được tính — đang chờ duyệt →",
-    "rejectedNotIncluded": "{count, plural, other {# bút toán bị từ chối}} trong tháng chưa được tính — đang chờ sửa →"
+    "draftsNotIncluded": "{count, plural, other {# bút toán nháp}} trong kỳ này chưa được tính — đang chờ duyệt →",
+    "rejectedNotIncluded": "{count, plural, other {# bút toán bị từ chối}} trong kỳ này chưa được tính — đang chờ sửa →"
   },
   "lines": {
-    "empty": "Không có bút toán nào trong tháng này.",
+    "empty": "Không có bút toán nào trong kỳ này.",
     "total": "Tổng cộng"
   },
   "cards": {
     "income": "Doanh thu",
     "expenses": "Chi phí",
     "netProfit": "Lợi nhuận",
-    "vsLastMonth": "{arrow} {amount} so với tháng trước"
-  },
-  "byCategory": {
-    "income": "Doanh thu theo khoản mục",
-    "expenses": "Chi phí theo khoản mục"
+    "perMonth": "Bình quân {amount} mỗi tháng",
+    "vsPrevious": "{arrow} {amount} so với {count, plural, =1 {tháng trước} other {# tháng trước đó}}",
+    "noEarlier": "Sổ sách chưa có các tháng trước đó để so sánh"
   },
   "byProject": {
     "title": "Lãi lỗ theo dự án",
@@ -27,18 +25,18 @@
     "income": "Doanh thu",
     "expenses": "Chi phí",
     "net": "Lãi/lỗ",
-    "empty": "Không có bút toán nào trong tháng này."
+    "empty": "Không có bút toán nào trong kỳ này."
   },
   "tax": {
     "title": "Rà soát thuế",
     "intro": "Tách riêng khỏi lãi lỗ: ghi nhận một khoản chi không có nghĩa là khoản chi đó được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT. Đây là các quyết định đã ghi nhận đến nay.",
-    "citTitle": "Chi phí trong tháng theo tình trạng được trừ khi tính thuế TNDN",
+    "citTitle": "Chi phí trong kỳ theo tình trạng được trừ khi tính thuế TNDN",
     "inputVat": "Thuế GTGT đầu vào",
     "claimable": "Được khấu trừ (đã có hóa đơn)",
     "vatPending": "Khoản chi chưa rà soát thuế GTGT",
     "docsTitle": "Chứng từ cần bổ sung",
     "entryCount": "{count, plural, other {# bút toán}}",
-    "allDocs": "Mọi bút toán trong tháng này đều đã có hóa đơn hoặc biên lai.",
+    "allDocs": "Mọi bút toán trong kỳ này đều đã có hóa đơn hoặc biên lai.",
     "openLedger": "Mở trong sổ thu chi →"
   },
   "monthPicker": {
@@ -111,5 +109,43 @@
       "openAr": "Còn phải thu",
       "openAp": "Còn phải trả"
     }
+  },
+  "period": {
+    "from": "Từ",
+    "to": "Đến",
+    "thisMonth": "Tháng này",
+    "last3": "3 tháng",
+    "last6": "6 tháng",
+    "last12": "12 tháng",
+    "ytd": "Từ đầu năm",
+    "all": "Tất cả",
+    "range": "{from} – {to}"
+  },
+  "trend": {
+    "title": "Xu hướng theo tháng",
+    "subtitle": "Doanh thu và chi phí mỗi tháng, quy đổi VND, kèm đường lãi lỗ. Rê chuột hoặc dùng phím Tab vào một tháng để xem số liệu.",
+    "revenue": "Doanh thu",
+    "cost": "Chi phí",
+    "net": "Lãi (lỗ)",
+    "aria": "Doanh thu, chi phí và lãi lỗ theo tháng, từ {from} đến {to}",
+    "empty": "Không có doanh thu hay chi phí trong kỳ này."
+  },
+  "detail": {
+    "title": "Chi tiết theo tháng",
+    "subtitle": "Từng khoản mục doanh thu và chi phí theo tháng, quy đổi VND. Mở một khoản mục để xem các bút toán; bấm vào bút toán để mở.",
+    "provisionalNote": "{count, plural, other {# bút toán ngoại tệ}} đang quy đổi theo tỷ giá mặc định hoặc nhập tay, chưa phải số VND thực tế — được đánh dấu “tạm tính” bên dưới cho đến khi đánh giá lại tỷ giá.",
+    "revenue": "Doanh thu",
+    "cost": "Chi phí",
+    "net": "Lãi (lỗ)",
+    "margin": "Tỷ suất lợi nhuận",
+    "item": "Khoản mục / bút toán",
+    "total": "Tổng cộng",
+    "expandAll": "Mở tất cả",
+    "collapseAll": "Đóng tất cả",
+    "caption": "Doanh thu và chi phí theo khoản mục và theo tháng, kèm lãi lỗ",
+    "none": "Không có trong kỳ này",
+    "noDescription": "(không có diễn giải)",
+    "provisional": "tạm tính",
+    "provisionalTitle": "Quy đổi theo tỷ giá mặc định hoặc nhập tay — đánh giá lại tỷ giá theo số VND thực tế đã thanh toán"
   }
 }

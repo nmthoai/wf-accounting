@@ -281,6 +281,10 @@ The Vietnamese interface (messages/vi/*.json) uses these terms. Drafted from VAS
 | Net (column / NET line) | Lãi (lỗ) | Lãi/lỗ | Line style of B02-DNN. The 'NET' total line becomes 'LÃI (LỖ)'. |
 | Total / TOTAL Income / TOTAL Expense | Tổng cộng / TỔNG DOANH THU / TỔNG CHI PHÍ | Tổng cộng | 'Tổng cộng' is the total line on TT133 forms. Matches the 'Tổng doanh thu / Tổng chi phí' cards. |
 | vs last month | so với tháng trước | so tháng trước | Common usage; both drafts agree. |
+| Profit (loss) — the monthly line in the trend chart and the table | Lãi (lỗ) | Lãi (lỗ) | Added 2026-10-31 for the period report. The monthly profit can be negative, so the chart legend and the table row use the 'Net' wording, not 'Lợi nhuận'. |
+| Margin (profit ÷ revenue) | Tỷ suất lợi nhuận | Tỷ suất LN | Added 2026-10-31. Profit (loss) as a share of revenue for the month or period. |
+| Provisional (valued at a default or manual rate) | Tạm tính | Tạm tính | Added 2026-10-31. A foreign-currency amount whose VND value is an estimate until revalued with the VND actually settled ('Đánh giá lại tỷ giá'). |
+| Period / From / To / Year to date | Kỳ / Từ / Đến / Từ đầu năm | Kỳ | Added 2026-10-31 for the report's period picker: 'trong kỳ này' replaces 'trong tháng này'. |
 | Excel downloads / Download (package) | Tải về tệp Excel / Tải về | Tải Excel / Tải về | Common usage. The handover button reads 'Tải bộ hồ sơ'. |
 | Ledger entries (.xlsx) / Invoices & bills (.xlsx) | Sổ thu chi (.xlsx) / Hóa đơn bán ra & mua vào (.xlsx) | Sổ thu chi / Hóa đơn | Sheet names are 'Sổ thu chi' and 'HĐ bán ra & mua vào' (Excel limits sheet names to 31 characters). |
 | From / To (date range) | Từ ngày / Đến ngày | Từ / Đến | Standard on report filters; both drafts agree. |

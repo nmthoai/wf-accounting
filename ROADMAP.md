@@ -43,8 +43,9 @@ internal staff).
   **per-project "unpaid" badge / Outstanding list**.
 - ~~Balance tab~~ — replaced by the typed cash book (Accounts, Oct 2026).
 - **Chart of accounts** — clean income/expense categories.
-- **Monthly P&L report** — income & expenses by category for any month, with a
-  prior-month comparison (Reports tab).
+- **P&L report** (Reports tab) — any period of months: a monthly trend chart of
+  revenue, costs and profit, and a month-by-month table by category that opens
+  to each entry (Oct 2026; was one month at a time).
 
 ### Small additions (Sept 2026)
 - Edit invoices & bills in place; ZIP attachments with original filenames;

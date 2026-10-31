@@ -4,22 +4,20 @@
   "page": {
     "title": "Profit & Loss",
     "subtitle": "{month} · cash-basis (paid income & expenses) · reviewed and posted entries",
-    "draftsNotIncluded": "{count, plural, one {# draft entry} other {# draft entries}} this month not included — waiting for review →",
-    "rejectedNotIncluded": "{count, plural, one {# rejected entry} other {# rejected entries}} this month not included — waiting for correction →"
+    "draftsNotIncluded": "{count, plural, one {# draft entry} other {# draft entries}} in this period not included — waiting for review →",
+    "rejectedNotIncluded": "{count, plural, one {# rejected entry} other {# rejected entries}} in this period not included — waiting for correction →"
   },
   "lines": {
-    "empty": "No entries this month.",
+    "empty": "No entries in this period.",
     "total": "Total"
   },
   "cards": {
     "income": "Income",
     "expenses": "Expenses",
     "netProfit": "Net Profit",
-    "vsLastMonth": "{arrow} {amount} vs last month"
-  },
-  "byCategory": {
-    "income": "Income by category",
-    "expenses": "Expenses by category"
+    "perMonth": "{amount} per month on average",
+    "vsPrevious": "{arrow} {amount} vs {count, plural, =1 {the previous month} other {the previous # months}}",
+    "noEarlier": "No earlier months in the books to compare with"
   },
   "byProject": {
     "title": "Profit by project",
@@ -27,18 +25,18 @@
     "income": "Income",
     "expenses": "Expenses",
     "net": "Net",
-    "empty": "No entries this month."
+    "empty": "No entries in this period."
   },
   "tax": {
     "title": "Tax review",
     "intro": "Kept apart from the P&L: recording an expense doesn't make it deductible or its VAT claimable. These are the decisions recorded so far.",
-    "citTitle": "CIT deductibility of this month's expenses",
+    "citTitle": "CIT deductibility of this period's expenses",
     "inputVat": "Input VAT",
     "claimable": "Claimable (invoice on file)",
     "vatPending": "Expenses with VAT not yet reviewed",
     "docsTitle": "Documents still to find",
     "entryCount": "{count, plural, one {# entry} other {# entries}}",
-    "allDocs": "Every entry this month has its invoice or receipt.",
+    "allDocs": "Every entry in this period has its invoice or receipt.",
     "openLedger": "Open in the ledger →"
   },
   "monthPicker": {
@@ -111,5 +109,43 @@
       "openAr": "Open AR (owed to you)",
       "openAp": "Open AP (you owe)"
     }
+  },
+  "period": {
+    "from": "From",
+    "to": "To",
+    "thisMonth": "This month",
+    "last3": "3 months",
+    "last6": "6 months",
+    "last12": "12 months",
+    "ytd": "Year to date",
+    "all": "All",
+    "range": "{from} – {to}"
+  },
+  "trend": {
+    "title": "Monthly trend",
+    "subtitle": "Revenue and costs per month in VND, with the profit line. Hover or tab to a month for its figures.",
+    "revenue": "Revenue",
+    "cost": "Costs",
+    "net": "Profit (loss)",
+    "aria": "Revenue, costs and profit per month, {from} to {to}",
+    "empty": "No revenue or costs in this period."
+  },
+  "detail": {
+    "title": "Month by month",
+    "subtitle": "Every revenue and cost category per month in VND. Open a category to see its entries; click an entry to open it.",
+    "provisionalNote": "{count, plural, one {# foreign-currency entry is} other {# foreign-currency entries are}} valued at a default or manual rate, not the VND actually settled — marked “provisional” below until revalued.",
+    "revenue": "Revenue",
+    "cost": "Costs",
+    "net": "Profit (loss)",
+    "margin": "Margin",
+    "item": "Category / entry",
+    "total": "Total",
+    "expandAll": "Open all",
+    "collapseAll": "Close all",
+    "caption": "Revenue and costs by category and month, with profit",
+    "none": "None in this period",
+    "noDescription": "(no description)",
+    "provisional": "provisional",
+    "provisionalTitle": "Valued at a default or manual exchange rate — revalue it with the VND actually settled"
   }
 }

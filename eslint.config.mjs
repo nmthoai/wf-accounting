@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local, git-ignored bank reconciliation work (one-off scripts and bank files).
+    "reconciliation/**",
   ]),
 ]);
 
