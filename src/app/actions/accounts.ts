@@ -140,8 +140,11 @@ export async function recordMovement(formData: FormData) {
   const me = await requireUser();
   const parsed = await parseMovement(formData, await getT("accounts"));
   if ("error" in parsed) return { success: false, message: parsed.error };
-  const t = await prisma.transaction.create({ data: { ...parsed.data, status: startStatus(me), createdBy: me.name } });
-  await record([{ entityId: t.id, action: "CREATE", newValue: snapshot(t) }], me.name);
+  // The entry and its history are saved together, or neither is.
+  await prisma.$transaction(async (tx) => {
+    const t = await tx.transaction.create({ data: { ...parsed.data, status: startStatus(me), createdBy: me.name } });
+    await record([{ entityId: t.id, action: "CREATE", newValue: snapshot(t) }], me.name, tx);
+  });
   revalidateAll();
   return { success: true };
 }
@@ -165,8 +168,15 @@ export async function updateMovement(id: string, formData: FormData) {
   const problem = await stillFits(existing, parsed.data);
   if (problem) return { success: false, message: problem };
   const data = { ...parsed.data, status: nextStatus(me, existing.status) };
-  await prisma.transaction.update({ where: { id }, data });
-  await record(diff(id, existing, data, reasonOf(formData)), me.name);
+  // Saved only if the entry is still in the status it was read in: one posted
+  // meanwhile stays as posted. The change and its history are saved together.
+  const saved = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.transaction.updateMany({ where: { id, status: existing.status }, data });
+    if (count === 0) return false;
+    await record(diff(id, existing, data, reasonOf(formData)), me.name, tx);
+    return true;
+  });
+  if (!saved) return { success: false, message: t("errors.locked") };
   revalidateAll();
   return { success: true };
 }
@@ -226,14 +236,20 @@ export async function createTransfer(formData: FormData) {
   if ("error" in parsed) return { success: false, message: parsed.error };
   const transferId = randomUUID();
   const extra = { transferId, status: startStatus(me), createdBy: me.name };
-  const legs = await prisma.$transaction([
-    prisma.transaction.create({ data: { ...parsed.out, ...extra } }),
-    prisma.transaction.create({ data: { ...parsed.in, ...extra } }),
-  ]);
-  await record(legs.map((t) => ({ entityId: t.id, action: "CREATE", newValue: snapshot(t) })), me.name);
+  // Both legs and their history are saved together, or nothing is.
+  await prisma.$transaction(async (tx) => {
+    const legs = [
+      await tx.transaction.create({ data: { ...parsed.out, ...extra } }),
+      await tx.transaction.create({ data: { ...parsed.in, ...extra } }),
+    ];
+    await record(legs.map((t) => ({ entityId: t.id, action: "CREATE", newValue: snapshot(t) })), me.name, tx);
+  });
   revalidateAll();
   return { success: true };
 }
+
+// A leg's status changed between reading and saving it (e.g. it was posted).
+class ChangedMeanwhile extends Error {}
 
 export async function updateTransfer(transferId: string, formData: FormData) {
   const me = await requireUser();
@@ -255,11 +271,20 @@ export async function updateTransfer(transferId: string, formData: FormData) {
   if (problem) return { success: false, message: problem };
   const out = { ...parsed.out, status: nextStatus(me, outLeg.status) };
   const inn = { ...parsed.in, status: nextStatus(me, inLeg.status) };
-  await prisma.$transaction([
-    prisma.transaction.update({ where: { id: outLeg.id }, data: out }),
-    prisma.transaction.update({ where: { id: inLeg.id }, data: inn }),
-  ]);
-  await record([...diff(outLeg.id, outLeg, out, reasonOf(formData)), ...diff(inLeg.id, inLeg, inn, reasonOf(formData))], me.name);
+  // Each leg is saved only if it is still in the status it was read in; if
+  // either was posted meanwhile, nothing is saved. History goes with the change.
+  try {
+    await prisma.$transaction(async (tx) => {
+      for (const [leg, data] of [[outLeg, out], [inLeg, inn]] as const) {
+        const { count } = await tx.transaction.updateMany({ where: { id: leg.id, status: leg.status }, data });
+        if (count === 0) throw new ChangedMeanwhile();
+      }
+      await record([...diff(outLeg.id, outLeg, out, reasonOf(formData)), ...diff(inLeg.id, inLeg, inn, reasonOf(formData))], me.name, tx);
+    });
+  } catch (e) {
+    if (e instanceof ChangedMeanwhile) return { success: false, message: t("errors.locked") };
+    throw e;
+  }
   revalidateAll();
   return { success: true };
 }

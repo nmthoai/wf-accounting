@@ -13,8 +13,33 @@ import { getT } from "@/i18n/server";
 import { bankLinkProblem } from "@/lib/bank-match";
 import { diff, record, snapshot, type Change } from "@/lib/history";
 import { costItemProblem, convertCostItem, CostItemTaken } from "@/lib/cost-items";
+import type { Prisma } from "@prisma/client";
 
 type Decisions = { purposeStatus: string; citStatus: string; vatStatus: string };
+
+// An entry changed between being read and written (reviewed, rejected, posted,
+// reversed or deleted meanwhile): the transaction rolls back, nothing is saved.
+class ChangedMeanwhile extends Error {
+  constructor() { super("The entry changed meanwhile — nothing was saved."); }
+}
+
+// Writes only while each entry still has the status it was read with, so a
+// posting that lands in between is never overwritten.
+async function guardedUpdate(tx: Prisma.TransactionClient, rows: { id: string; status: string }[], data: Prisma.TransactionUncheckedUpdateManyInput, where: Prisma.TransactionWhereInput = {}) {
+  for (const status of new Set(rows.map((r) => r.status))) {
+    const ids = rows.filter((r) => r.status === status).map((r) => r.id);
+    const { count } = await tx.transaction.updateMany({ where: { ...where, id: { in: ids }, status }, data });
+    if (count !== ids.length) throw new ChangedMeanwhile();
+  }
+}
+
+const tryAgain = async () => (await getT("common"))("errors.somethingWrong");
+
+// What to say then: posted means locked; anything else, try again.
+async function changedText(id: string | null, posted: string) {
+  const now = id ? await prisma.transaction.findUnique({ where: { id }, select: { status: true } }) : null;
+  return now?.status === "POSTED" ? posted : tryAgain();
+}
 
 async function currentUser() {
   const session = await getSession();
@@ -183,11 +208,6 @@ export async function deleteTransaction(id: string) {
   if (legs.some((l) => l.status === "POSTED")) throw new Error("Posted entries can't be deleted — reverse them instead.");
   const ids = legs.map((l) => l.id);
 
-  // A register item that became this expense goes back to pending, keeping its receipts.
-  await prisma.costItem.updateMany({ where: { transactionId: { in: ids } }, data: { status: "PENDING", transactionId: null } });
-  await prisma.attachment.updateMany({ where: { transactionId: { in: ids }, costItemId: { not: null } }, data: { transactionId: null } });
-  // Cascade-delete removes the Attachment rows; also remove the files from disk.
-  const attachments = await prisma.attachment.findMany({ where: { transactionId: { in: ids } } });
   const invoices = await invoicesOf(ids); // payments being removed — their invoices reopen
 
   // A line that no longer adds up without them (a receipt left behind by its
@@ -196,13 +216,23 @@ export async function deleteTransaction(id: string) {
   for (const lineId of new Set(legs.map((l) => l.bankLineId).filter((x): x is string => !!x))) {
     if (await bankLinkProblem(lineId, [], ids)) {
       const rest = await prisma.transaction.findMany({ where: { bankLineId: lineId, id: { notIn: ids } }, select: { id: true } });
-      await prisma.transaction.updateMany({ where: { id: { in: rest.map((r) => r.id) } }, data: { bankLineId: null } });
       unmatch.push(...rest.map((r) => ({ entityId: r.id, action: "UNMATCH", field: "bankLineId", oldValue: lineId, reason: "matched entry deleted" })));
     }
   }
 
-  await prisma.transaction.deleteMany({ where: { id: { in: ids } } });
-  await record([...legs.map((l) => ({ entityId: l.id, action: "DELETE", oldValue: snapshot(l) })), ...unmatch], me.name);
+  // All or nothing, history included; a leg posted meanwhile stops it.
+  const attachments = await prisma.$transaction(async (tx) => {
+    // A register item that became this expense goes back to pending, keeping its receipts.
+    await tx.costItem.updateMany({ where: { transactionId: { in: ids } }, data: { status: "PENDING", transactionId: null } });
+    await tx.attachment.updateMany({ where: { transactionId: { in: ids }, costItemId: { not: null } }, data: { transactionId: null } });
+    // Cascade-delete removes the Attachment rows; also remove the files from disk.
+    const attachments = await tx.attachment.findMany({ where: { transactionId: { in: ids } } });
+    await tx.transaction.updateMany({ where: { id: { in: unmatch.map((c) => c.entityId) } }, data: { bankLineId: null } });
+    const { count } = await tx.transaction.deleteMany({ where: { id: { in: ids }, status: { not: "POSTED" } } });
+    if (count !== ids.length) throw new ChangedMeanwhile();
+    await record([...legs.map((l) => ({ entityId: l.id, action: "DELETE", oldValue: snapshot(l) })), ...unmatch], me.name, tx);
+    return attachments;
+  });
 
   for (const a of attachments) await removeUploadFile(a.filePath);
   await refreshInvoiceStatus(invoices);
@@ -239,8 +269,16 @@ export async function editTransaction(id: string, formData: FormData) {
     const review = me.isAdmin ? r.review : { ...r.review, vatAmount: existing.vatAmount };
     const problem = reviewProblem({ type: existing.type, amount: existing.amount, ...review });
     if (problem) return { success: false, message: await problemText(problem) };
-    await prisma.transaction.update({ where: { id }, data: review });
-    await record(diff(id, existing, review, reason), me.name);
+    // Unless it was reversed meanwhile; the change and its history go together.
+    try {
+      await prisma.$transaction(async (tx) => {
+        await guardedUpdate(tx, [existing], review, { reversedBy: { is: null } });
+        await record(diff(id, existing, review, reason), me.name, tx);
+      });
+    } catch (e) {
+      if (e instanceof ChangedMeanwhile) return { success: false, message: t("errors.reversedLocked") };
+      throw e;
+    }
     await persistUploads(formData.getAll("files") as File[], { transactionId: id });
     revalidateAll(id);
     return { success: true };
@@ -281,16 +319,25 @@ export async function editTransaction(id: string, formData: FormData) {
     ...parsed.data,
     status: !me.isAdmin && ((booksChanged && existing.status === "REVIEWED") || existing.status === "REJECTED") ? "DRAFT" : existing.status,
   };
-  await prisma.transaction.update({ where: { id }, data });
-  const changes = diff(id, existing, data, reason);
-  // The partner moves with it: a fee takes its receipt's date, project and status.
+  // Saved only if neither entry was reviewed, rejected or posted since it was
+  // read, together with its history.
   const partner = fee ?? receipt;
-  if (partner) {
-    const follow = { ...(fee ? { date: data.date, projectId: data.projectId ?? null } : {}), status: data.status !== existing.status && partner.status !== "POSTED" ? data.status : partner.status };
-    await prisma.transaction.update({ where: { id: partner.id }, data: follow });
-    changes.push(...diff(partner.id, partner, follow, reason));
+  try {
+    await prisma.$transaction(async (tx) => {
+      await guardedUpdate(tx, [existing], data);
+      const changes = diff(id, existing, data, reason);
+      // The partner moves with it: a fee takes its receipt's date, project and status.
+      if (partner) {
+        const follow = { ...(fee ? { date: data.date, projectId: data.projectId ?? null } : {}), status: data.status !== existing.status && partner.status !== "POSTED" ? data.status : partner.status };
+        await guardedUpdate(tx, [partner], follow);
+        changes.push(...diff(partner.id, partner, follow, reason));
+      }
+      await record(changes, me.name, tx);
+    });
+  } catch (e) {
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText(id, t("status.posted")) };
+    throw e;
   }
-  await record(changes, me.name);
   await refreshInvoiceStatus(await invoicesOf([id, ...(partner ? [partner.id] : [])]));
 
   // Append any newly attached receipts
@@ -315,8 +362,15 @@ export async function reviewEntries(ids: string[]) {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
   const drafts = (await withLegs(ids)).filter((t) => t.status === "DRAFT" || t.status === "REJECTED");
-  await prisma.transaction.updateMany({ where: { id: { in: drafts.map((t) => t.id) } }, data: { status: "REVIEWED" } });
-  await record(drafts.map((t) => ({ entityId: t.id, action: "REVIEW", field: "status", oldValue: t.status, newValue: "REVIEWED" })), me.name);
+  try {
+    await prisma.$transaction(async (tx) => {
+      await guardedUpdate(tx, drafts, { status: "REVIEWED" });
+      await record(drafts.map((t) => ({ entityId: t.id, action: "REVIEW", field: "status", oldValue: t.status, newValue: "REVIEWED" })), me.name, tx);
+    });
+  } catch (e) {
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await tryAgain(), count: 0 };
+    throw e;
+  }
   await refreshInvoiceStatus(await invoicesOf(drafts.map((t) => t.id))); // reviewed payments now settle their invoices
   revalidateAll(ids.length === 1 ? ids[0] : undefined);
   return { success: true, count: drafts.length };
@@ -337,16 +391,22 @@ export async function rejectEntries(ids: string[], reason: string) {
   // Out of the books, it no longer explains a bank line or settles an invoice:
   // both are released, and the corrected entry is matched and linked again.
   const invoices = await invoicesOf(draftIds);
-  await prisma.$transaction(async (tx) => {
-    const changes: Change[] = drafts.map((e) => ({ entityId: e.id, action: "REJECT", field: "status", oldValue: "DRAFT", newValue: "REJECTED", reason: why }));
-    for (const e of drafts) if (e.bankLineId) changes.push({ entityId: e.id, action: "UNMATCH", field: "bankLineId", oldValue: e.bankLineId, reason: why });
-    for (const a of await tx.paymentAllocation.findMany({ where: { transactionId: { in: draftIds } } })) {
-      changes.push({ entityId: a.transactionId, action: "UNLINK", field: "invoice", oldValue: `${a.invoiceId} ${a.kind} ${a.amount}`, reason: why });
-    }
-    await tx.paymentAllocation.deleteMany({ where: { transactionId: { in: draftIds } } });
-    await tx.transaction.updateMany({ where: { id: { in: draftIds } }, data: { status: "REJECTED", bankLineId: null } });
-    await record(changes, me.name, tx);
-  });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const changes: Change[] = drafts.map((e) => ({ entityId: e.id, action: "REJECT", field: "status", oldValue: "DRAFT", newValue: "REJECTED", reason: why }));
+      for (const e of drafts) if (e.bankLineId) changes.push({ entityId: e.id, action: "UNMATCH", field: "bankLineId", oldValue: e.bankLineId, reason: why });
+      for (const a of await tx.paymentAllocation.findMany({ where: { transactionId: { in: draftIds } } })) {
+        changes.push({ entityId: a.transactionId, action: "UNLINK", field: "invoice", oldValue: `${a.invoiceId} ${a.kind} ${a.amount}`, reason: why });
+      }
+      await tx.paymentAllocation.deleteMany({ where: { transactionId: { in: draftIds } } });
+      // Still drafts: one approved meanwhile is not rejected after all.
+      await guardedUpdate(tx, drafts, { status: "REJECTED", bankLineId: null });
+      await record(changes, me.name, tx);
+    });
+  } catch (e) {
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await tryAgain(), count: 0 };
+    throw e;
+  }
   await refreshInvoiceStatus(invoices);
   revalidateAll(ids.length === 1 ? ids[0] : undefined);
   return { success: true, count: drafts.length };
@@ -378,8 +438,16 @@ export async function postEntries(ids: string[] | null, through?: string) {
     const p = partners.find((x) => (t.deductedFromId ? x.id === t.deductedFromId : x.deductedFromId === t.id));
     return !p || posting.has(p.id) || p.status === "POSTED";
   });
-  await prisma.transaction.updateMany({ where: { id: { in: entries.map((t) => t.id) } }, data: { status: "POSTED" } });
-  await record(entries.map((t) => ({ entityId: t.id, action: "POST", field: "status", oldValue: "REVIEWED", newValue: "POSTED" })), me.name);
+  // Still reviewed: one sent back to draft meanwhile is not posted.
+  try {
+    await prisma.$transaction(async (tx) => {
+      await guardedUpdate(tx, entries, { status: "POSTED" });
+      await record(entries.map((t) => ({ entityId: t.id, action: "POST", field: "status", oldValue: "REVIEWED", newValue: "POSTED" })), me.name, tx);
+    });
+  } catch (e) {
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await tryAgain(), count: 0 };
+    throw e;
+  }
   revalidateAll(ids?.length === 1 ? ids[0] : undefined);
   return { success: true, count: entries.length };
 }
@@ -405,41 +473,47 @@ export async function reverseEntry(id: string, reason: string) {
   const transferId = t.transferId ? randomUUID() : null;
   const reversalOf = new Map<string, string>(); // original id → its reversal
 
-  await prisma.$transaction(async (tx) => {
-    const changes: Change[] = [];
-    for (const l of legs) {
-      // Its bank match and invoice links no longer hold — the corrected entry takes them.
-      if (l.bankLineId) changes.push({ entityId: l.id, action: "UNMATCH", field: "bankLineId", oldValue: l.bankLineId, reason: why });
-      for (const a of await tx.paymentAllocation.findMany({ where: { transactionId: l.id } })) {
-        changes.push({ entityId: l.id, action: "UNLINK", field: "invoice", oldValue: `${a.invoiceId} ${a.kind} ${a.amount}`, reason: why });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const changes: Change[] = [];
+      for (const l of legs) {
+        // Its bank match and invoice links no longer hold — the corrected entry takes them.
+        if (l.bankLineId) changes.push({ entityId: l.id, action: "UNMATCH", field: "bankLineId", oldValue: l.bankLineId, reason: why });
+        for (const a of await tx.paymentAllocation.findMany({ where: { transactionId: l.id } })) {
+          changes.push({ entityId: l.id, action: "UNLINK", field: "invoice", oldValue: `${a.invoiceId} ${a.kind} ${a.amount}`, reason: why });
+        }
+        await tx.paymentAllocation.deleteMany({ where: { transactionId: l.id } });
+        // Still posted and not reversed by a second request meanwhile.
+        await guardedUpdate(tx, [l], { bankLineId: null }, { reversedBy: { is: null } });
+        // A register item this expense came from is pending again, for the correction.
+        const item = await tx.costItem.findUnique({ where: { transactionId: l.id } });
+        if (item) {
+          await tx.costItem.update({ where: { id: item.id }, data: { status: "PENDING", transactionId: null } });
+          await tx.attachment.updateMany({ where: { costItemId: item.id, transactionId: l.id }, data: { transactionId: null } });
+          changes.push({ entityId: l.id, action: "UNLINK", field: "costItem", oldValue: item.id, reason: why });
+        }
+        const rev = await tx.transaction.create({
+          data: {
+            type: l.type, date: l.date, currency: l.currency, exchangeRate: l.exchangeRate, rateSource: l.rateSource,
+            amount: -l.amount, vndAmount: l.vndAmount === null ? null : -l.vndAmount,
+            accountId: l.accountId, loanId: l.loanId, categoryId: l.categoryId, projectId: l.projectId, vendorId: l.vendorId,
+            invoiceNumber: l.invoiceNumber, transferId,
+            description: tl("reverse.descPrefix", { description: l.description ?? "" }).trim(),
+            docStatus: l.docStatus, purposeStatus: l.purposeStatus, citStatus: l.citStatus, vatStatus: l.vatStatus,
+            vatAmount: l.vatAmount === null ? null : -l.vatAmount, reviewNote: why,
+            status: "POSTED", createdBy: me.name, reversalOfId: l.id,
+            deductedFromId: l.deductedFromId ? reversalOf.get(l.deductedFromId) ?? null : null,
+          },
+        });
+        reversalOf.set(l.id, rev.id);
+        changes.push({ entityId: l.id, action: "REVERSE", newValue: rev.id, reason: why }, { entityId: rev.id, action: "CREATE", newValue: snapshot(rev), reason: why });
       }
-      await tx.paymentAllocation.deleteMany({ where: { transactionId: l.id } });
-      await tx.transaction.update({ where: { id: l.id }, data: { bankLineId: null } });
-      // A register item this expense came from is pending again, for the correction.
-      const item = await tx.costItem.findUnique({ where: { transactionId: l.id } });
-      if (item) {
-        await tx.costItem.update({ where: { id: item.id }, data: { status: "PENDING", transactionId: null } });
-        await tx.attachment.updateMany({ where: { costItemId: item.id, transactionId: l.id }, data: { transactionId: null } });
-        changes.push({ entityId: l.id, action: "UNLINK", field: "costItem", oldValue: item.id, reason: why });
-      }
-      const rev = await tx.transaction.create({
-        data: {
-          type: l.type, date: l.date, currency: l.currency, exchangeRate: l.exchangeRate, rateSource: l.rateSource,
-          amount: -l.amount, vndAmount: l.vndAmount === null ? null : -l.vndAmount,
-          accountId: l.accountId, loanId: l.loanId, categoryId: l.categoryId, projectId: l.projectId, vendorId: l.vendorId,
-          invoiceNumber: l.invoiceNumber, transferId,
-          description: tl("reverse.descPrefix", { description: l.description ?? "" }).trim(),
-          docStatus: l.docStatus, purposeStatus: l.purposeStatus, citStatus: l.citStatus, vatStatus: l.vatStatus,
-          vatAmount: l.vatAmount === null ? null : -l.vatAmount, reviewNote: why,
-          status: "POSTED", createdBy: me.name, reversalOfId: l.id,
-          deductedFromId: l.deductedFromId ? reversalOf.get(l.deductedFromId) ?? null : null,
-        },
-      });
-      reversalOf.set(l.id, rev.id);
-      changes.push({ entityId: l.id, action: "REVERSE", newValue: rev.id, reason: why }, { entityId: rev.id, action: "CREATE", newValue: snapshot(rev), reason: why });
-    }
-    await record(changes, me.name, tx);
-  });
+      await record(changes, me.name, tx);
+    });
+  } catch (e) {
+    if (e instanceof ChangedMeanwhile) return { success: false, message: tl("errors.alreadyReversed") };
+    throw e;
+  }
   await refreshInvoiceStatus(invoices);
   revalidateAll(id);
   return { success: true };
@@ -486,19 +560,25 @@ export async function revalueEntry(id: string, formData: FormData) {
     if (problem) return { success: false, message: t("errors.bankLineMatched", { problem }) };
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.transaction.update({ where: { id: e.id }, data: next });
-    const changes: Change[] = [
-      ...diff(e.id, e, next, reason),
-      { entityId: e.id, action: "REVALUE", field: "vndValue", oldValue: String(before), newValue: String(after), reason },
-    ];
-    if (fee && feeNext) {
-      await tx.transaction.update({ where: { id: fee.id }, data: feeNext });
-      changes.push(...diff(fee.id, fee, feeNext, reason),
-        { entityId: fee.id, action: "REVALUE", field: "vndValue", oldValue: String(value(fee)), newValue: String(value({ amount: fee.amount, ...feeNext })), reason });
-    }
-    await record(changes, me.name, tx);
-  });
+  // Not if either was posted meanwhile.
+  try {
+    await prisma.$transaction(async (tx) => {
+      await guardedUpdate(tx, [e], next);
+      const changes: Change[] = [
+        ...diff(e.id, e, next, reason),
+        { entityId: e.id, action: "REVALUE", field: "vndValue", oldValue: String(before), newValue: String(after), reason },
+      ];
+      if (fee && feeNext) {
+        await guardedUpdate(tx, [fee], feeNext);
+        changes.push(...diff(fee.id, fee, feeNext, reason),
+          { entityId: fee.id, action: "REVALUE", field: "vndValue", oldValue: String(value(fee)), newValue: String(value({ amount: fee.amount, ...feeNext })), reason });
+      }
+      await record(changes, me.name, tx);
+    });
+  } catch (err) {
+    if (err instanceof ChangedMeanwhile) return { success: false, message: await changedText(id, t("revalue.errors.posted")) };
+    throw err;
+  }
   revalidateAll(id);
   return { success: true };
 }
@@ -525,9 +605,21 @@ export async function deleteAttachment(id: string) {
   const staffMay = att.transaction ? att.transaction.status === "DRAFT" || att.transaction.status === "REJECTED" : att.costItem?.status === "PENDING";
   if (!me.isAdmin && !staffMay) return { success: false, message: t("errors.attachmentOwnerOnly") };
 
-  await prisma.attachment.delete({ where: { id } });
+  // Only while it is still on the same entry, in the status checked above (not
+  // posted meanwhile); the file goes once the row and its history are saved.
+  try {
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.attachment.deleteMany({
+        where: { id, transactionId: att.transactionId, ...(att.transaction ? { transaction: { status: att.transaction.status } } : {}) },
+      });
+      if (count === 0) throw new ChangedMeanwhile();
+      if (att.transactionId) await record([{ entityId: att.transactionId, action: "UNLINK", field: "attachment", oldValue: att.fileName }], me.name, tx);
+    });
+  } catch (e) {
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText(att.transactionId, t("errors.attachmentPosted")) };
+    throw e;
+  }
   await removeUploadFile(att.filePath);
-  if (att.transactionId) await record([{ entityId: att.transactionId, action: "UNLINK", field: "attachment", oldValue: att.fileName }], me.name);
 
   revalidatePath("/ledger");
   revalidatePath("/invoices");

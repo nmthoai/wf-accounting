@@ -11,6 +11,9 @@ import { getT } from "@/i18n/server";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
+// An entry changed between the checks and the write; nothing was written.
+class Changed extends Error {}
+
 function revalidateAll() {
   revalidatePath("/bank");
   revalidatePath("/ledger");
@@ -139,17 +142,42 @@ export async function matchLine(lineId: string, transactionIds: string[]) {
 
   const entries = await prisma.transaction.findMany({ where: { id: { in: ids } }, include: { reversedBy: { select: { id: true } } } });
   if (entries.length !== ids.length) return { success: false, message: t("errors.entryGone") };
-  if (entries.some((e) => e.reversalOfId || e.reversedBy)) return { success: false, message: t("errors.reversed") };
-  if (entries.some((e) => e.status === "REJECTED")) return { success: false, message: t("errors.rejected") };
-  const taken = entries.find((e) => e.bankLineId && e.bankLineId !== lineId);
-  if (taken) return { success: false, message: taken.description !== null ? t("errors.alreadyMatched", { name: taken.description }) : t("errors.alreadyMatchedUnnamed") };
+  const blocked = unmatchable(entries, lineId, t);
+  if (blocked) return { success: false, message: blocked };
   const problem = await bankLinkProblem(lineId, entries.filter((e) => e.bankLineId !== lineId));
   if (problem) return { success: false, message: problem };
 
-  await prisma.transaction.updateMany({ where: { id: { in: ids } }, data: { bankLineId: lineId } });
-  await record(entries.filter((e) => e.bankLineId !== lineId).map((e) => ({ entityId: e.id, action: "MATCH", field: "bankLineId", newValue: lineId })), session.user.name);
+  // Matched only while every entry is still matchable: one rejected, reversed or
+  // matched elsewhere since the checks above leaves everything as it was.
+  try {
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.transaction.updateMany({
+        where: { id: { in: ids }, status: { not: "REJECTED" }, reversedBy: { is: null }, OR: [{ bankLineId: null }, { bankLineId: lineId }] },
+        data: { bankLineId: lineId },
+      });
+      if (count !== ids.length) throw new Changed();
+      await record(entries.filter((e) => e.bankLineId !== lineId).map((e) => ({ entityId: e.id, action: "MATCH", field: "bankLineId", newValue: lineId })), session.user.name, tx);
+    });
+  } catch (e) {
+    if (!(e instanceof Changed)) throw e;
+    const now = await prisma.transaction.findMany({ where: { id: { in: ids } }, include: { reversedBy: { select: { id: true } } } });
+    const message = now.length !== ids.length ? t("errors.entryGone") : unmatchable(now, lineId, t);
+    return { success: false, message: message ?? (await getT("common"))("errors.somethingWrong") };
+  }
   revalidateAll();
   return { success: true };
+}
+
+// Why these entries can't be matched to the line, or null.
+function unmatchable(
+  entries: { reversalOfId: string | null; reversedBy: unknown; status: string; bankLineId: string | null; description: string | null }[],
+  lineId: string, t: Awaited<ReturnType<typeof getT>>,
+) {
+  if (entries.some((e) => e.reversalOfId || e.reversedBy)) return t("errors.reversed");
+  if (entries.some((e) => e.status === "REJECTED")) return t("errors.rejected");
+  const taken = entries.find((e) => e.bankLineId && e.bankLineId !== lineId);
+  if (taken) return taken.description !== null ? t("errors.alreadyMatched", { name: taken.description }) : t("errors.alreadyMatchedUnnamed");
+  return null;
 }
 
 export async function unmatchEntry(transactionId: string) {
@@ -160,9 +188,23 @@ export async function unmatchEntry(transactionId: string) {
   if (!t?.bankLineId) return { success: true };
   // A receipt and its withheld fee leave the line together.
   const unit = [t, t.deductedFee, t.deductedFrom].filter((x): x is NonNullable<typeof x> => !!x && x.bankLineId === t.bankLineId);
-  if (unit.some((x) => x.status === "POSTED") && session.user.role !== "ADMIN") return { success: false, message: tb("errors.postedUnmatch") };
-  await prisma.transaction.updateMany({ where: { id: { in: unit.map((x) => x.id) } }, data: { bankLineId: null } });
-  await record(unit.map((x) => ({ entityId: x.id, action: "UNMATCH", field: "bankLineId", oldValue: x.bankLineId })), session.user.name);
+  const isAdmin = session.user.role === "ADMIN";
+  if (unit.some((x) => x.status === "POSTED") && !isAdmin) return { success: false, message: tb("errors.postedUnmatch") };
+  // Cleared only while still on that line and, for staff, not posted since the check above.
+  try {
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.transaction.updateMany({
+        where: { id: { in: unit.map((x) => x.id) }, bankLineId: t.bankLineId, ...(isAdmin ? {} : { status: { not: "POSTED" } }) },
+        data: { bankLineId: null },
+      });
+      if (count !== unit.length) throw new Changed();
+      await record(unit.map((x) => ({ entityId: x.id, action: "UNMATCH", field: "bankLineId", oldValue: x.bankLineId })), session.user.name, tx);
+    });
+  } catch (e) {
+    if (!(e instanceof Changed)) throw e;
+    const posted = !isAdmin && (await prisma.transaction.count({ where: { id: { in: unit.map((x) => x.id) }, status: "POSTED" } })) > 0;
+    return { success: false, message: posted ? tb("errors.postedUnmatch") : (await getT("common"))("errors.somethingWrong") };
+  }
   revalidateAll();
   return { success: true };
 }

@@ -59,29 +59,36 @@ export async function saveTaxReturn(id: string | null, fd: FormData) {
   const clash = await prisma.taxReturn.findFirst({ where: { form, period, supplement, ...(id ? { id: { not: id } } : {}) } });
   if (clash) return { success: false, message: t("errors.duplicate", { form, period }) };
 
+  // The declaration and its history are saved together or not at all.
   let saved;
   if (id) {
     const before = await prisma.taxReturn.findUnique({ where: { id } });
     if (!before) return { success: false, message: t("errors.gone") };
-    saved = await prisma.taxReturn.update({ where: { id }, data });
-    // One history row per changed field; changed figures listed by line code.
-    const changes: Change[] = [];
-    const show: Record<string, (r: TaxReturn) => string | null> = {
-      form: (r) => r.form, period: (r) => r.period, template: (r) => r.template, supplement: (r) => String(r.supplement),
-      filedDate: (r) => iso(r.filedDate), dueDate: (r) => iso(r.dueDate), submissionRef: (r) => r.submissionRef,
-      preparedBy: (r) => r.preparedBy, notes: (r) => r.notes,
-    };
-    for (const [field, f] of Object.entries(show)) {
-      if (f(before) !== f(saved)) changes.push({ entity: "TaxReturn", entityId: id, action: "UPDATE", field, oldValue: f(before), newValue: f(saved) });
-    }
-    const a = parseLines(before.lines), b = lines;
-    for (const code of new Set([...Object.keys(a), ...Object.keys(b)])) {
-      if ((a[code] ?? 0) !== (b[code] ?? 0)) changes.push({ entity: "TaxReturn", entityId: id, action: "UPDATE", field: `[${code}]`, oldValue: String(a[code] ?? 0), newValue: String(b[code] ?? 0) });
-    }
-    await record(changes, me.name);
+    saved = await prisma.$transaction(async (tx) => {
+      const after = await tx.taxReturn.update({ where: { id }, data });
+      // One history row per changed field; changed figures listed by line code.
+      const changes: Change[] = [];
+      const show: Record<string, (r: TaxReturn) => string | null> = {
+        form: (r) => r.form, period: (r) => r.period, template: (r) => r.template, supplement: (r) => String(r.supplement),
+        filedDate: (r) => iso(r.filedDate), dueDate: (r) => iso(r.dueDate), submissionRef: (r) => r.submissionRef,
+        preparedBy: (r) => r.preparedBy, notes: (r) => r.notes,
+      };
+      for (const [field, f] of Object.entries(show)) {
+        if (f(before) !== f(after)) changes.push({ entity: "TaxReturn", entityId: id, action: "UPDATE", field, oldValue: f(before), newValue: f(after) });
+      }
+      const a = parseLines(before.lines), b = lines;
+      for (const code of new Set([...Object.keys(a), ...Object.keys(b)])) {
+        if ((a[code] ?? 0) !== (b[code] ?? 0)) changes.push({ entity: "TaxReturn", entityId: id, action: "UPDATE", field: `[${code}]`, oldValue: String(a[code] ?? 0), newValue: String(b[code] ?? 0) });
+      }
+      await record(changes, me.name, tx);
+      return after;
+    });
   } else {
-    saved = await prisma.taxReturn.create({ data: { ...data, createdBy: me.name } });
-    await record([{ entity: "TaxReturn", entityId: saved.id, action: "CREATE", newValue: snapshot(saved) }], me.name);
+    saved = await prisma.$transaction(async (tx) => {
+      const created = await tx.taxReturn.create({ data: { ...data, createdBy: me.name } });
+      await record([{ entity: "TaxReturn", entityId: created.id, action: "CREATE", newValue: snapshot(created) }], me.name, tx);
+      return created;
+    });
   }
 
   await saveTaxFiles(files, saved.id);
@@ -94,10 +101,13 @@ export async function deleteTaxReturn(id: string) {
   const me = await requireAdmin();
   const r = await prisma.taxReturn.findUnique({ where: { id }, include: { files: true } });
   if (!r) return { success: true };
-  await prisma.taxReturn.delete({ where: { id } });
-  for (const f of r.files) await removeTaxFile(f.filePath);
   const files = r.files.map((f) => f.fileName).join(", ");
-  await record([{ entity: "TaxReturn", entityId: id, action: "DELETE", oldValue: `${snapshot(r)} · ${r.lines}${files ? ` · files deleted: ${files}` : ""}` }], me.name);
+  await prisma.$transaction(async (tx) => {
+    await tx.taxReturn.delete({ where: { id } });
+    await record([{ entity: "TaxReturn", entityId: id, action: "DELETE", oldValue: `${snapshot(r)} · ${r.lines}${files ? ` · files deleted: ${files}` : ""}` }], me.name, tx);
+  });
+  // Files go only once the deletion is saved.
+  for (const f of r.files) await removeTaxFile(f.filePath);
   revalidatePath("/tax");
   return { success: true };
 }
@@ -107,9 +117,11 @@ export async function deleteTaxReturnFile(fileId: string) {
   const me = await requireAdmin();
   const f = await prisma.taxReturnFile.findUnique({ where: { id: fileId } });
   if (!f) return { success: false };
-  await prisma.taxReturnFile.delete({ where: { id: fileId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.taxReturnFile.delete({ where: { id: fileId } });
+    await record([{ entity: "TaxReturn", entityId: f.taxReturnId, action: "UPDATE", field: "file", oldValue: f.fileName }], me.name, tx);
+  });
   await removeTaxFile(f.filePath);
-  await record([{ entity: "TaxReturn", entityId: f.taxReturnId, action: "UPDATE", field: "file", oldValue: f.fileName }], me.name);
   revalidatePath("/tax");
   return { success: true };
 }
@@ -124,8 +136,10 @@ export async function setTaxFlagNote(key: string, note: string, figure?: number 
   if (!text) return { success: false, message: t("errors.noteRequired") };
   const before = await prisma.taxFlagNote.findUnique({ where: { key } });
   const fig = typeof figure === "number" && Number.isFinite(figure) ? figure : null;
-  await prisma.taxFlagNote.upsert({ where: { key }, create: { key, note: text, user: me.name, figure: fig }, update: { note: text, user: me.name, figure: fig } });
-  await record([{ entity: "TaxFlag", entityId: key, action: "NOTE", oldValue: before?.note ?? null, newValue: text }], me.name);
+  await prisma.$transaction(async (tx) => {
+    await tx.taxFlagNote.upsert({ where: { key }, create: { key, note: text, user: me.name, figure: fig }, update: { note: text, user: me.name, figure: fig } });
+    await record([{ entity: "TaxFlag", entityId: key, action: "NOTE", oldValue: before?.note ?? null, newValue: text }], me.name, tx);
+  });
   revalidatePath("/tax");
   return { success: true };
 }
@@ -134,8 +148,10 @@ export async function clearTaxFlagNote(key: string) {
   const me = await requireAdmin();
   const before = await prisma.taxFlagNote.findUnique({ where: { key } });
   if (!before) return { success: true };
-  await prisma.taxFlagNote.delete({ where: { key } });
-  await record([{ entity: "TaxFlag", entityId: key, action: "REOPEN", oldValue: before.note }], me.name);
+  await prisma.$transaction(async (tx) => {
+    await tx.taxFlagNote.delete({ where: { key } });
+    await record([{ entity: "TaxFlag", entityId: key, action: "REOPEN", oldValue: before.note }], me.name, tx);
+  });
   revalidatePath("/tax");
   return { success: true };
 }

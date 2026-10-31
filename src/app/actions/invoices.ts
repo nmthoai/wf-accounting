@@ -25,6 +25,9 @@ function revalidateAll() {
   revalidatePath("/");
 }
 
+// A ledger entry changed between the checks and the write; nothing was written.
+class Changed extends Error {}
+
 const linkNote = (inv: { number: string | null; direction: string }, kind: string, amount: number) =>
   `${inv.direction === "PAYABLE" ? "bill" : "invoice"} ${inv.number ?? "(no number)"} · ${kind} ${amount}`;
 
@@ -120,51 +123,61 @@ export async function updateInvoice(id: string, formData: FormData) {
     }
   }
 
-  await prisma.invoice.update({
-    where: { id },
-    data: {
-      number,
-      clientId: isReceivable ? (clientId || null) : null,
-      vendorId: isReceivable ? null : (vendorId || null),
-      projectId: projectId || null,
-      categoryId: categoryId || null,
-      issueDate: new Date(issueStr),
-      dueDate: new Date(dueStr),
-      currency,
-      exchangeRate,
-      amount,
-      notes,
-    },
-  });
-
   // Payments that settle only this invoice carry its descriptive fields along
   // (number, project, category, vendor). Amounts are never rewritten, and
   // posted entries stay as they are.
   const own = inv.allocations.filter((a) => a.kind === "PAYMENT" && a.transaction._count.allocations === 1 && a.transaction.status !== "POSTED");
   const isAdmin = session.user?.role === "ADMIN";
-  for (const a of own) {
-    const carried = {
-      invoiceNumber: number,
-      projectId: projectId || null,
-      categoryId: categoryId || null,
-      vendorId: isReceivable ? null : (vendorId || null),
-    };
-    const changes = diff(a.transactionId, a.transaction, carried, "Invoice details changed");
-    if (changes.length === 0) continue; // notes, dates or the amount alone leave payments as they are
-    // A reviewed payment whose classification anyone but the owner changes goes
-    // back to draft; a new invoice number alone keeps it booked.
-    const reclassified = changes.some((c) => c.field !== "invoiceNumber");
-    const data = { ...carried, status: !isAdmin && reclassified && a.transaction.status === "REVIEWED" ? "DRAFT" : a.transaction.status };
-    await prisma.transaction.update({ where: { id: a.transactionId }, data });
-    const all = diff(a.transactionId, a.transaction, data, "Invoice details changed");
-    // A bank fee withheld from the payment follows its project, number and status.
-    const fee = await prisma.transaction.findUnique({ where: { deductedFromId: a.transactionId } });
-    if (fee) {
-      const follow = { invoiceNumber: number, projectId: projectId || null, status: data.status === "DRAFT" && fee.status === "REVIEWED" ? "DRAFT" : fee.status };
-      await prisma.transaction.update({ where: { id: fee.id }, data: follow });
-      all.push(...diff(fee.id, fee, follow, "Invoice details changed"));
-    }
-    await record(all, session.user?.name);
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.invoice.update({
+        where: { id },
+        data: {
+          number,
+          clientId: isReceivable ? (clientId || null) : null,
+          vendorId: isReceivable ? null : (vendorId || null),
+          projectId: projectId || null,
+          categoryId: categoryId || null,
+          issueDate: new Date(issueStr),
+          dueDate: new Date(dueStr),
+          currency,
+          exchangeRate,
+          amount,
+          notes,
+        },
+      });
+
+      for (const a of own) {
+        const carried = {
+          invoiceNumber: number,
+          projectId: projectId || null,
+          categoryId: categoryId || null,
+          vendorId: isReceivable ? null : (vendorId || null),
+        };
+        const changes = diff(a.transactionId, a.transaction, carried, "Invoice details changed");
+        if (changes.length === 0) continue; // notes, dates or the amount alone leave payments as they are
+        // A reviewed payment whose classification anyone but the owner changes goes
+        // back to draft; a new invoice number alone keeps it booked.
+        const reclassified = changes.some((c) => c.field !== "invoiceNumber");
+        const data = { ...carried, status: !isAdmin && reclassified && a.transaction.status === "REVIEWED" ? "DRAFT" : a.transaction.status };
+        // Written only while the payment still has the status read above: one posted
+        // (or reviewed) since then is not overwritten — the whole edit is undone.
+        const { count } = await tx.transaction.updateMany({ where: { id: a.transactionId, status: a.transaction.status }, data });
+        if (count === 0) throw new Changed();
+        const all = diff(a.transactionId, a.transaction, data, "Invoice details changed");
+        // A bank fee withheld from the payment follows its project, number and status.
+        const fee = await tx.transaction.findUnique({ where: { deductedFromId: a.transactionId } });
+        if (fee) {
+          const follow = { invoiceNumber: number, projectId: projectId || null, status: data.status === "DRAFT" && fee.status === "REVIEWED" ? "DRAFT" : fee.status };
+          await tx.transaction.update({ where: { id: fee.id }, data: follow });
+          all.push(...diff(fee.id, fee, follow, "Invoice details changed"));
+        }
+        await record(all, session.user?.name, tx);
+      }
+    });
+  } catch (e) {
+    if (!(e instanceof Changed)) throw e;
+    return { success: false, message: (await getT("common"))("errors.somethingWrong") };
   }
 
   await refreshInvoiceStatus([id]);
@@ -365,8 +378,19 @@ export async function linkToInvoice(id: string, formData: FormData) {
     return { success: false, message: open <= EPS ? tr("errors.nothingToSettle") : tr("errors.moreThanOpen", { amount: fmtMoney(open, inv.currency) }) };
   }
 
-  await prisma.paymentAllocation.create({ data: { invoiceId: id, transactionId: t.id, kind, amount } });
-  await record([{ entityId: t.id, action: "LINK", field: "invoice", newValue: linkNote(inv, kind, amount) }], session.user?.name);
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.paymentAllocation.create({ data: { invoiceId: id, transactionId: t.id, kind, amount } });
+      // Checked again once the link is written, so no other save can land in
+      // between: an entry rejected or reversed since the checks above isn't linked.
+      if ((await tx.transaction.count({ where: { id: t.id, status: { not: "REJECTED" }, reversedBy: { is: null } } })) === 0) throw new Changed();
+      await record([{ entityId: t.id, action: "LINK", field: "invoice", newValue: linkNote(inv, kind, amount) }], session.user?.name, tx);
+    });
+  } catch (e) {
+    if (!(e instanceof Changed)) throw e;
+    const now = await prisma.transaction.findUnique({ where: { id: t.id }, select: { status: true } });
+    return { success: false, message: now?.status === "REJECTED" ? tr("errors.entryRejected") : tr("errors.entryReversed") };
+  }
   await refreshInvoiceStatus([id]);
   revalidateAll();
   return { success: true };
@@ -377,9 +401,20 @@ export async function unlinkAllocation(allocationId: string) {
   const t = await getT("invoices");
   const a = await prisma.paymentAllocation.findUnique({ where: { id: allocationId }, include: { invoice: true, transaction: { select: { status: true } } } });
   if (!a) return { success: false, message: (await getT("common"))("errors.notFound") };
-  if (a.transaction.status === "POSTED" && session.user?.role !== "ADMIN") return { success: false, message: t("errors.postedUnlink") };
-  await prisma.paymentAllocation.delete({ where: { id: allocationId } });
-  await record([{ entityId: a.transactionId, action: "UNLINK", field: "invoice", oldValue: linkNote(a.invoice, a.kind, a.amount) }], session.user?.name);
+  const isAdmin = session.user?.role === "ADMIN";
+  if (a.transaction.status === "POSTED" && !isAdmin) return { success: false, message: t("errors.postedUnlink") };
+  try {
+    await prisma.$transaction(async (tx) => {
+      // For staff, removed only while the payment is still not posted.
+      const { count } = await tx.paymentAllocation.deleteMany({ where: { id: allocationId, ...(isAdmin ? {} : { transaction: { status: { not: "POSTED" } } }) } });
+      if (count === 0) throw new Changed();
+      await record([{ entityId: a.transactionId, action: "UNLINK", field: "invoice", oldValue: linkNote(a.invoice, a.kind, a.amount) }], session.user?.name, tx);
+    });
+  } catch (e) {
+    if (!(e instanceof Changed)) throw e;
+    const still = await prisma.paymentAllocation.count({ where: { id: allocationId } });
+    return { success: false, message: still ? t("errors.postedUnlink") : (await getT("common"))("errors.notFound") };
+  }
   await refreshInvoiceStatus([a.invoiceId]);
   revalidateAll();
   return { success: true };
@@ -394,8 +429,10 @@ export async function voidInvoice(id: string) {
   if (inv._count.allocations > 0) {
     return { success: false, message: t("errors.hasPayments") };
   }
-  await prisma.invoice.update({ where: { id }, data: { status: "VOID" } });
-  await record([{ entity: "Invoice", entityId: id, action: "UPDATE", field: "status", oldValue: inv.status, newValue: "VOID" }], session.user?.name);
+  await prisma.$transaction(async (tx) => {
+    await tx.invoice.update({ where: { id }, data: { status: "VOID" } });
+    await record([{ entity: "Invoice", entityId: id, action: "UPDATE", field: "status", oldValue: inv.status, newValue: "VOID" }], session.user?.name, tx);
+  });
   revalidateAll();
   return { success: true };
 }
