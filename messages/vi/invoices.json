@@ -7,7 +7,8 @@
     "owedToYou": "Phải thu khách hàng",
     "youOwe": "Phải trả nhà cung cấp",
     "overdue": "Trong đó quá hạn {amount}",
-    "nothingOverdue": "Không có khoản quá hạn"
+    "nothingOverdue": "Không có khoản quá hạn",
+    "viewTotal": "≈ {amount} tổng quy đổi"
   },
   "filter": {
     "all": "Tất cả",

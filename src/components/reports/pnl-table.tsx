@@ -12,14 +12,18 @@ import { cn } from "@/lib/utils";
 import { Chip, PanelHead } from "@/components/wf/ledger-ui";
 
 // Month-by-month P&L: revenue and cost categories as rows, months as columns.
-// A category opens to its entries, each in the column of its month.
+// A category opens to its entries, each in the column of its month. Figures
+// are in the view's currency; an entry made in another currency also shows
+// its own amount.
 
-export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[]; className?: string }) {
+export function PnlTable({ pnl, labels, currency, className }: { pnl: Pnl; labels: string[]; currency: string; className?: string }) {
   const t = useTranslations("reports.detail");
   const [open, setOpen] = useState<Set<string>>(new Set());
-  // VND written the way the rest of the app writes it (110.880.000), in either language.
-  const nf = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 });
-  const num = (v: number) => (Math.abs(v) < 0.5 ? "–" : nf.format(Math.round(v)));
+  // VND written the way the rest of the app writes it (110.880.000), in either
+  // language; USD in dollars and cents (1,234.50), as fmtMoney writes it.
+  const usd = currency !== "VND";
+  const nf = usd ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 });
+  const num = (v: number) => (usd ? (Math.abs(v) < 0.005 ? "–" : nf.format(v)) : Math.abs(v) < 0.5 ? "–" : nf.format(Math.round(v)));
   const keys = [...pnl.revenue.categories.map((c) => `revenue:${c.name}`), ...pnl.cost.categories.map((c) => `cost:${c.name}`)];
   const allOpen = keys.length > 0 && keys.every((k) => open.has(k));
   const toggle = (k: string) => setOpen((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
@@ -71,13 +75,13 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
                     <span className="flex items-center gap-1.5 truncate">
                       <span className="wf-num">{it.date}</span>
                       {it.project ? <span className="truncate">· {it.project}</span> : null}
-                      {it.currency !== "VND" ? <span className="wf-num">· {fmtMoney(it.amount, it.currency)}</span> : null}
-                      {it.provisional ? <Chip tone="warn" title={t("provisionalTitle")}>{t("provisional")}</Chip> : null}
+                      {it.currency !== currency ? <span className="wf-num">· {fmtMoney(it.amount, it.currency)}</span> : null}
+                      {it.provisional && currency === "VND" ? <Chip tone="warn" title={t("provisionalTitle")}>{t("provisional")}</Chip> : null}
                     </span>
                   </Link>
                 </th>
-                {pnl.months.map((m, i) => <td key={i} className={cell}>{m === it.month ? num(it.vnd) : ""}</td>)}
-                <td className={cn(cell, total, hoverTint)}>{num(it.vnd)}</td>
+                {pnl.months.map((m, i) => <td key={i} className={cell}>{m === it.month ? num(it.value) : ""}</td>)}
+                <td className={cn(cell, total, hoverTint)}>{num(it.value)}</td>
               </tr>
             ))}
           </Fragment>
@@ -99,8 +103,9 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
           </Button>
         }
       />
-      <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("subtitle")}</p>
-      {pnl.provisional > 0 && (
+      <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("subtitle", { currency })}</p>
+      {/* Provisional is about a VND estimate; the USD view is marked as an estimate already. */}
+      {pnl.provisional > 0 && currency === "VND" && (
         <p className="flex items-start gap-2 border-b border-border px-5 py-3 text-[13px] text-text-secondary">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden="true" />
           {t("provisionalNote", { count: pnl.provisional })}

@@ -72,6 +72,19 @@ export function cashPosition(accounts: { id: string; type: string; currency: str
   return { liquid, deposits, owner };
 }
 
+// How summaries are shown: in VND (the books' currency) or in USD. Each user
+// picks; it never changes what is stored, and accounts, bank, tax and the
+// handover stay in their real currency.
+export type View = { currency: "VND" | "USD"; rate: number };
+export const VND_VIEW: View = { currency: "VND", rate: 1 };
+
+// An amount in the view's currency: entries made in USD keep their real USD;
+// everything else converts its VND value at the view's rate (Settings rate).
+export const valueIn = (view: View, t: Money & { currency: string }) =>
+  view.currency === "VND" ? toVnd(t) : t.currency === "USD" ? t.amount : toVnd(t) / view.rate;
+// A figure already in VND, in the view's currency.
+export const vndIn = (view: View, vnd: number) => (view.currency === "VND" ? vnd : vnd / view.rate);
+
 export const fmtVnd = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " ₫";
 export const fmtMoney = (n: number, currency: string) =>
   currency === "VND" ? fmtVnd(n) : new Intl.NumberFormat("en-US", { style: "currency", currency }).format(n);

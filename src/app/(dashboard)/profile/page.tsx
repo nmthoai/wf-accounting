@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { CurrencyForm } from "@/components/profile/currency-form";
+import { defaultUsdRate } from "@/lib/fx";
+import { intlLocale } from "@/i18n/config";
 import { getTranslations, getLocale } from "next-intl/server";
 import { fmtDate } from "@/lib/format";
 import { PageHeader } from "@/components/wf/page-header";
@@ -14,9 +17,10 @@ export default async function ProfilePage() {
   const locale = await getLocale();
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { username: true, displayName: true, role: true, twoFactorEnabled: true, createdAt: true },
+    select: { username: true, displayName: true, displayCurrency: true, role: true, twoFactorEnabled: true, createdAt: true },
   });
   if (!user) return null;
+  const rate = new Intl.NumberFormat(intlLocale(locale)).format(await defaultUsdRate());
 
   const rows: [string, React.ReactNode][] = [
     [t("account.username"), <span key="u" className="wf-num font-semibold text-foreground">{user.username}</span>],
@@ -37,6 +41,14 @@ export default async function ProfilePage() {
           <CardContent className="grid gap-4">
             <p className="text-[13px] text-muted-foreground">{t("name.description")}</p>
             <ProfileForm displayName={user.displayName ?? ""} />
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-6">
+          <PanelHead title={t("currency.title")} />
+          <CardContent className="grid gap-4">
+            <p className="text-[13px] text-muted-foreground">{t("currency.description", { rate })}</p>
+            <CurrencyForm current={user.displayCurrency} />
           </CardContent>
         </Card>
 

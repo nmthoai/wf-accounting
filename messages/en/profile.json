@@ -27,10 +27,17 @@
   },
   "toast": {
     "saved": "Profile saved",
-    "connectionError": "Could not save — check your connection and try again."
+    "connectionError": "Could not save — check your connection and try again.",
+    "currencySaved": "Summaries now show in {currency}"
   },
   "errors": {
     "unauthorized": "Unauthorized",
-    "nameTooLong": "Use at most {max} characters for the name."
+    "nameTooLong": "Use at most {max} characters for the name.",
+    "badCurrency": "Choose VND or USD."
+  },
+  "currency": {
+    "title": "Summary currency",
+    "label": "Show summaries in",
+    "description": "For Dashboard, Reports, Projects and Invoices totals. Entries made in USD show their real USD; VND amounts convert at the Settings rate ({rate} ₫/USD), as an estimate. Ledger, Accounts, Bank, Tax and Handover always show the real currency."
   }
 }

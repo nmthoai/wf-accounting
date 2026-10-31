@@ -157,5 +157,9 @@
     "light": "Sáng",
     "dark": "Tối",
     "motion": "Nền chuyển động"
+  },
+  "view": {
+    "usdNote": "Xem bằng USD · {rate} ₫/USD",
+    "usdHint": "Khoản ghi bằng USD giữ đúng số USD; số tiền VND quy đổi theo tỷ giá hiện tại trong Cài đặt ({rate} ₫/USD), chỉ là số ước tính. Đổi lại trong Hồ sơ."
   }
 }

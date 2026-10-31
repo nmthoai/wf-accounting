@@ -1,7 +1,8 @@
 import { toVnd, isBooked } from "@/lib/money";
 
 // Profit & loss by month for a period: booked income and expense entries
-// only, in VND, per category and per item. Months are YYYY-MM; dates are
+// only, per category and per item — in VND, or valued another way (the USD
+// view) by the `value` the caller passes. Months are YYYY-MM; dates are
 // stored as UTC midnight of the day.
 
 export const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -41,7 +42,7 @@ export type PnlEntry = {
   id: string; date: Date; type: string; amount: number; currency: string; exchangeRate: number; vndAmount: number | null;
   rateSource: string | null; description: string | null; status: string; category: { name: string } | null; project: { name: string } | null;
 };
-export type PnlItem = { id: string; date: string; month: string; description: string; project: string | null; currency: string; amount: number; vnd: number; provisional: boolean };
+export type PnlItem = { id: string; date: string; month: string; description: string; project: string | null; currency: string; amount: number; value: number; provisional: boolean };
 export type PnlCategory = { name: string; perMonth: number[]; total: number; items: PnlItem[] };
 export type PnlSide = { perMonth: number[]; total: number; categories: PnlCategory[] };
 export type Pnl = { months: string[]; revenue: PnlSide; cost: PnlSide; net: number[]; netTotal: number; provisional: number };
@@ -51,7 +52,7 @@ export type Pnl = { months: string[]; revenue: PnlSide; cost: PnlSide; net: numb
 export const isProvisional = (t: { currency: string; vndAmount: number | null; rateSource: string | null }) =>
   t.currency !== "VND" && t.vndAmount == null && t.rateSource !== "BANK";
 
-function side(entries: PnlEntry[], months: string[], uncategorized: string): PnlSide {
+function side(entries: PnlEntry[], months: string[], uncategorized: string, value: (t: PnlEntry) => number): PnlSide {
   const at = new Map(months.map((m, i) => [m, i]));
   const cats = new Map<string, PnlCategory>();
   for (const t of entries) {
@@ -60,27 +61,27 @@ function side(entries: PnlEntry[], months: string[], uncategorized: string): Pnl
     if (i === undefined) continue;
     const name = t.category?.name || uncategorized;
     const c = cats.get(name) ?? { name, perMonth: months.map(() => 0), total: 0, items: [] };
-    const vnd = toVnd(t);
-    c.perMonth[i] += vnd;
-    c.total += vnd;
+    const v = value(t);
+    c.perMonth[i] += v;
+    c.total += v;
     c.items.push({
       id: t.id, date: t.date.toISOString().slice(0, 10), month, description: t.description ?? "", project: t.project?.name ?? null,
-      currency: t.currency, amount: t.amount, vnd, provisional: isProvisional(t),
+      currency: t.currency, amount: t.amount, value: v, provisional: isProvisional(t),
     });
     cats.set(name, c);
   }
   const categories = [...cats.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
-  for (const c of categories) c.items.sort((a, b) => a.date.localeCompare(b.date) || b.vnd - a.vnd);
+  for (const c of categories) c.items.sort((a, b) => a.date.localeCompare(b.date) || b.value - a.value);
   const perMonth = months.map((_, i) => categories.reduce((s, c) => s + c.perMonth[i], 0));
   return { perMonth, total: perMonth.reduce((s, v) => s + v, 0), categories };
 }
 
 // Drafts and rejected entries are not in the books, whatever the caller passes.
-export function buildPnl(entries: PnlEntry[], months: string[], uncategorized: string): Pnl {
+export function buildPnl(entries: PnlEntry[], months: string[], uncategorized: string, value: (t: PnlEntry) => number = toVnd): Pnl {
   const inPeriod = new Set(months);
   const booked = entries.filter((t) => isBooked(t) && inPeriod.has(t.date.toISOString().slice(0, 7)));
-  const revenue = side(booked.filter((t) => t.type === "INCOME"), months, uncategorized);
-  const cost = side(booked.filter((t) => t.type === "EXPENSE"), months, uncategorized);
+  const revenue = side(booked.filter((t) => t.type === "INCOME"), months, uncategorized, value);
+  const cost = side(booked.filter((t) => t.type === "EXPENSE"), months, uncategorized, value);
   const net = months.map((_, i) => revenue.perMonth[i] - cost.perMonth[i]);
   const provisional = booked.filter((t) => (t.type === "INCOME" || t.type === "EXPENSE") && isProvisional(t)).length;
   return { months, revenue, cost, net, netTotal: revenue.total - cost.total, provisional };

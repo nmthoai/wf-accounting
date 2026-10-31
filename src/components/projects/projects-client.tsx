@@ -24,15 +24,16 @@ type ProjectRow = {
 };
 type ClientOpt = { id: string; name: string };
 
-const vnd = (n: number) => fmtMoney(n, "VND");
-
-export function ProjectsClient({ projects, clients, isAdmin }: {
+// Income, expenses and net come in the viewer's summary currency.
+export function ProjectsClient({ projects, clients, isAdmin, currency }: {
   projects: ProjectRow[]; clients: ClientOpt[];
   isAdmin: boolean; // deleting a project is the owner's decision
+  currency: string;
 }) {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
   const router = useRouter();
+  const money = (n: number) => fmtMoney(n, currency);
   const [addingProject, setAddingProject] = useState(false);
   const [projectClientId, setProjectClientId] = useState("");
   const [err, setErr] = useState("");
@@ -153,9 +154,9 @@ export function ProjectsClient({ projects, clients, isAdmin }: {
                   <span className={cn("block max-w-[14rem] truncate", p.clientName ? "text-foreground" : "text-muted-foreground")} title={p.clientName ?? undefined}>{p.clientName || t("noClient")}</span>
                   <span className="block text-[12px] text-muted-foreground">{t("list.txnCount", { count: p.txnCount })}</span>
                 </TableCell>
-                <TableCell className="text-right text-pos">{vnd(p.income)}</TableCell>
-                <TableCell className="text-right">{p.expense ? "−" : ""}{vnd(p.expense)}</TableCell>
-                <TableCell className={cn("text-right font-semibold", p.net >= 0 ? "text-primary" : "text-neg")}>{vnd(p.net)}</TableCell>
+                <TableCell className="text-right text-pos">{money(p.income)}</TableCell>
+                <TableCell className="text-right">{p.expense ? "−" : ""}{money(p.expense)}</TableCell>
+                <TableCell className={cn("text-right font-semibold", p.net >= 0 ? "text-primary" : "text-neg")}>{money(p.net)}</TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1.5">
                     {p.status !== "ARCHIVED" ? (

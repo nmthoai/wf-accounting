@@ -35,7 +35,8 @@
     "overdue": "quá hạn",
     "due": "đến hạn {date}",
     "nothingToPay": "Không có khoản nào sắp trả.",
-    "nothingIn": "Không có khoản nào sắp thu."
+    "nothingIn": "Không có khoản nào sắp thu.",
+    "viewTotal": "≈ {amount} tổng quy đổi"
   },
   "topProjects": {
     "title": "Dự án có lợi nhuận cao nhất",
