@@ -94,7 +94,6 @@
   --shadow-float: var(--shadow-float);
   --shadow-modal: var(--shadow-modal);
 
-  --container-wf: 1320px;
   --ease-wf: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
