@@ -69,7 +69,7 @@ export function LoginForm() {
           type="text"
           inputMode="numeric"
           placeholder="123456"
-          className="h-11 font-mono text-[15px] tracking-[0.3em]"
+          className="h-11 font-mono text-[17px] tracking-[0.3em]"
         />
       </div>
       {error && <Notice tone="error">{error}</Notice>}

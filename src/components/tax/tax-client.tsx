@@ -412,7 +412,8 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
                 <TableHead colSpan={6} className="border-l border-border text-center">{t("forms.gtgt")}</TableHead>
                 <TableHead colSpan={4} className="border-l border-border text-center">{t("forms.tncn")}</TableHead>
               </TableRow>
-              <TableRow>
+              {/* The field heads may take two lines, so the quarters fit a 1920px screen at reading size. */}
+              <TableRow className="[&>th]:h-auto [&>th]:py-2 [&>th]:align-bottom [&>th]:whitespace-normal">
                 <TableHead className="border-l border-border text-right first:pl-3">{t("returns.sales")} [34]</TableHead>
                 <TableHead className="text-right">{t("returns.purchases")} [23]</TableHead>
                 <TableHead className="text-right">{t("returns.inputVat")} [25]</TableHead>

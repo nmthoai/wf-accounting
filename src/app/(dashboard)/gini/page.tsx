@@ -19,7 +19,7 @@ export default async function GiniPage() {
             <p className="wf-kicker"><span>AI</span><span>{t("page.kicker")}</span></p>
             <h1 className="wf-page-header__title">
               {t("page.title")}
-              <span className="ml-2 align-baseline text-[17px] font-semibold tracking-normal text-text-secondary">· {t("page.titleSub")}</span>
+              <span className="ml-2 align-baseline text-[19px] font-semibold tracking-normal text-text-secondary">· {t("page.titleSub")}</span>
             </h1>
             <p className="wf-page-header__lead">{t("page.lead")}</p>
           </div>

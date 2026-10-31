@@ -1332,10 +1332,20 @@
     linear-gradient(to left, color-mix(in oklab, var(--foreground) 12%, transparent), transparent) right center / 16px 100% no-repeat scroll;
 }
 
-/* Long status chips in a page header wrap on phones. */
+/* A select never pushes its form wider than the screen: its words end in an ellipsis. */
+[data-slot="select-trigger"] {
+  min-width: 0;
+}
+[data-slot="select-trigger"] > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Long chips in a page header (status chips, Gini's trust line) wrap on phones. */
 @media (max-width: 639px) {
-  .wf-page-header__meta .wf-chip,
-  .wf-page-header__actions .wf-chip {
+  .wf-page-header .wf-chip {
     height: auto;
     min-height: 22px;
     padding-block: 3px;

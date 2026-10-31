@@ -15,7 +15,7 @@ export function AccountSelect({
   return (
     <Select value={value} onValueChange={(v) => onChange(v || "")}>
       <SelectTrigger>
-        {sel ? <span className="truncate">{sel.name} · {sel.currency}</span> : <span className="truncate text-muted-foreground">{placeholder ?? t("select.placeholder")}</span>}
+        {sel ? <span>{sel.name} · {sel.currency}</span> : <span className="text-muted-foreground">{placeholder ?? t("select.placeholder")}</span>}
       </SelectTrigger>
       <SelectContent>
         {accounts.map((a) => (

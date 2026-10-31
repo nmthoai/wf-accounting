@@ -212,7 +212,7 @@ export function OnboardWizard({
                   onChange={(e) => setToken(e.target.value.replace(/\D/g, ""))}
                   required
                   maxLength={6}
-                  className="h-11 font-mono text-[15px] tracking-[0.3em] placeholder:font-sans placeholder:tracking-normal"
+                  className="h-11 font-mono text-[17px] tracking-[0.3em] placeholder:font-sans placeholder:tracking-normal"
                 />
               </div>
               {error && <Notice tone="error">{error}</Notice>}

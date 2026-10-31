@@ -25,7 +25,7 @@ function StatusSelect({ id, label, options, value, onChange, disabled }: {
   id: string; label: string; options: Record<string, string>; value: string; onChange: (v: string) => void; disabled?: boolean;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 grid-cols-1 gap-2">
       <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={(v) => onChange(v || "PENDING")} disabled={disabled}>
         <SelectTrigger id={id} className="w-full"><span>{options[value] ?? value}</span></SelectTrigger>
@@ -247,10 +247,10 @@ export function EntryForm({
           </fieldset>
 
           {/* Posted entries keep their money and classification. */}
-          <fieldset disabled={locked} className="m-0 grid min-w-0 gap-5 border-0 p-0 md:grid-cols-2">
-            <div className="grid gap-2 md:col-span-2">
+          <fieldset disabled={locked} className="m-0 grid min-w-0 grid-cols-1 gap-5 border-0 p-0 md:grid-cols-2">
+            <div className="grid min-w-0 grid-cols-1 gap-2 md:col-span-2">
               <Label>{type === "INCOME" ? t("form.receivedInto") : t("form.paidFrom")}</Label>
-              <div className="min-w-0 [&_[data-slot=select-trigger]]:w-full">
+              <div className="[&_[data-slot=select-trigger]]:w-full">
                 <AccountSelect
                   accounts={accounts.filter((a) => a.isActive || a.id === accountId)}
                   value={accountId}
@@ -261,14 +261,14 @@ export function EntryForm({
               <p className={hint}>{t("form.accountHint")}</p>
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid min-w-0 grid-cols-1 gap-2">
               <div className="flex min-h-8 items-center">
                 <Label htmlFor="date">{t("form.date")}</Label>
               </div>
               <Input id="date" name="date" type="date" required defaultValue={defaultDate} className="font-mono" />
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid min-w-0 grid-cols-1 gap-2">
               <div className="flex min-h-8 items-center justify-between gap-3">
                 <Label htmlFor="amount">{t("form.amount")}</Label>
                 <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
@@ -282,7 +282,7 @@ export function EntryForm({
             </div>
 
             {currency !== "VND" && (
-              <div className="grid gap-3 md:col-span-2">
+              <div className="grid min-w-0 grid-cols-1 gap-3 md:col-span-2">
                 <Label htmlFor={initialData && initialData.currency === currency ? undefined : rateMode === "BANK" ? "vndAmount" : rateMode === "MANUAL" ? "rate" : undefined}>
                   {t("form.vndValue")}
                 </Label>
@@ -312,7 +312,7 @@ export function EntryForm({
               </div>
             )}
 
-            <div className="grid gap-2 md:col-span-2">
+            <div className="grid min-w-0 grid-cols-1 gap-2 md:col-span-2">
               <Label htmlFor="categoryId">{t("form.category")}</Label>
               <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "")} required>
                 <SelectTrigger id="categoryId" className="w-full">
@@ -331,7 +331,7 @@ export function EntryForm({
               </Select>
             </div>
 
-            <div className="grid gap-2 md:col-span-2">
+            <div className="grid min-w-0 grid-cols-1 gap-2 md:col-span-2">
               <Label htmlFor="projectId">{t("form.project")}</Label>
               <Select value={projectId} onValueChange={(val) => setProjectId(val === "none" ? "" : (val || ""))}>
                 <SelectTrigger id="projectId" className="w-full">
@@ -351,7 +351,7 @@ export function EntryForm({
             </div>
 
             {type === "EXPENSE" && (
-              <div className="grid gap-2 md:col-span-2">
+              <div className="grid min-w-0 grid-cols-1 gap-2 md:col-span-2">
                 <Label htmlFor="vendorId">{t("form.vendor")}</Label>
                 <Select value={vendorId} onValueChange={(val) => setVendorId(val === "none" ? "" : (val || ""))}>
                   <SelectTrigger id="vendorId" className="w-full">
@@ -371,12 +371,12 @@ export function EntryForm({
               </div>
             )}
 
-            <div className="grid gap-2 md:col-span-2">
+            <div className="grid min-w-0 grid-cols-1 gap-2 md:col-span-2">
               <Label htmlFor="invoiceNumber">{t("form.invoiceNumber")}</Label>
               <Input id="invoiceNumber" name="invoiceNumber" placeholder={t("form.invoiceNumberPlaceholder")} defaultValue={init?.invoiceNumber || ""} />
             </div>
 
-            <div className="grid gap-2 md:col-span-2">
+            <div className="grid min-w-0 grid-cols-1 gap-2 md:col-span-2">
               <Label htmlFor="description">{t("form.description")}</Label>
               <Input id="description" name="description" placeholder={t("form.descriptionPlaceholder")} required defaultValue={init?.description || ""} />
             </div>
@@ -468,13 +468,13 @@ export function EntryForm({
                 <StatusSelect id="purposeStatus" label={t("form.purpose")} options={reviewOptions("purpose", PURPOSE_STATUS)} value={purposeStatus} onChange={setPurposeStatus} disabled={!isAdmin} />
                 <StatusSelect id="citStatus" label={t("form.cit")} options={reviewOptions("cit", CIT_STATUS)} value={citStatus} onChange={setCitStatus} disabled={!isAdmin} />
                 <StatusSelect id="vatStatus" label={t("form.vat")} options={reviewOptions("vat", VAT_STATUS)} value={vatStatus} onChange={setVatStatus} disabled={!isAdmin} />
-                <div className="grid gap-2">
+                <div className="grid min-w-0 grid-cols-1 gap-2">
                   <Label htmlFor="vatAmount">{t("form.vatAmount", { currency })}</Label>
                   <Input id="vatAmount" name="vatAmount" type="number" step="any" min="0" placeholder={t("form.vatAmountPlaceholder")} defaultValue={init?.vatAmount ?? ""} className="font-mono" />
                 </div>
               </>
             )}
-            <div className="grid gap-2 md:col-span-2">
+            <div className="grid min-w-0 grid-cols-1 gap-2 md:col-span-2">
               <Label htmlFor="reviewNote">{t("form.reviewNote")}</Label>
               <Input id="reviewNote" name="reviewNote" placeholder={t("form.reviewNotePlaceholder")} defaultValue={init?.reviewNote || ""} />
             </div>
@@ -485,7 +485,7 @@ export function EntryForm({
         </section>
 
         {isEdit && (
-          <div className="grid gap-2 border-t border-border p-5">
+          <div className="grid min-w-0 grid-cols-1 gap-2 border-t border-border p-5">
             <Label htmlFor="reason">{t("form.reason")}</Label>
             <Input id="reason" name="reason" placeholder={t("form.reasonPlaceholder")} />
           </div>
