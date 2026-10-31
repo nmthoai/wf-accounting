@@ -15,6 +15,7 @@ export const authConfig = {
         token.role = user.role;
         token.twoFactorEnabled = user.twoFactorEnabled;
         token.mustChangePassword = user.mustChangePassword;
+        token.sessionVersion = user.sessionVersion;
       }
       return token;
     },

@@ -1,7 +1,6 @@
-import NextAuth from "next-auth";
-import { authConfig } from "./auth.config";
-
-const { auth } = NextAuth(authConfig);
+// The full auth (proxy runs on Node), so a session ended by a reset or a
+// deactivation is signed out here too, rather than bouncing between pages.
+import { auth } from "./auth";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth?.user?.id;

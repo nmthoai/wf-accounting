@@ -19,6 +19,7 @@ model User {
   isActive         Boolean  @default(true)  // admin can deactivate without deleting
   failedLoginAttempts Int    @default(0)
   lockedUntil      DateTime?                 // set after 5 failed attempts; auto-clears
+  sessionVersion   Int      @default(0)      // bumped by an admin password/2FA reset or deactivation: ends older sessions
   role             String   @default("USER") // ADMIN, USER
   defaultUsdRate   Float    @default(25400)
   createdAt        DateTime @default(now())

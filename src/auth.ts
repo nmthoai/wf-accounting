@@ -3,10 +3,21 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import speakeasy from "speakeasy";
 import { prisma } from "@/lib/prisma";
+import { isSessionCurrent } from "@/lib/session-version";
 import { authConfig } from "./auth.config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    // Every request re-checks the session against the database; a stale one
+    // returns null, which signs it out (the cookie is cleared).
+    async jwt(params) {
+      const token = await authConfig.callbacks.jwt(params);
+      if (params.user) return token; // just signed in
+      return (await isSessionCurrent(token.id as string | undefined, token.sessionVersion as number | undefined)) ? token : null;
+    },
+  },
   providers: [
     Credentials({
       name: "Credentials",
@@ -77,6 +88,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           role: user.role,
           twoFactorEnabled: user.twoFactorEnabled,
           mustChangePassword: user.mustChangePassword,
+          sessionVersion: user.sessionVersion,
         };
       },
     }),

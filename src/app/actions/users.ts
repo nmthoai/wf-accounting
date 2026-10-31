@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { getT } from "@/i18n/server";
+import { endSessions } from "@/lib/session-version";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -83,7 +84,7 @@ export async function setUserActive(id: string, active: boolean) {
   if (!active && (await isLastActiveAdmin(id))) {
     return { success: false, message: t("errors.cantDeactivateLastAdmin") };
   }
-  await prisma.user.update({ where: { id }, data: { isActive: active } });
+  await prisma.user.update({ where: { id }, data: active ? { isActive: true } : { isActive: false, ...endSessions } });
   revalidatePath("/settings");
   return { success: true };
 }
@@ -96,10 +97,11 @@ export async function resetUserPassword(id: string, formData: FormData) {
     return { success: false, message: t("errors.passwordTooShort") };
   }
   const passwordHash = await bcrypt.hash(password, 10);
-  // Force the user back through the change-password step on next login.
+  // Force the user back through the change-password step on next login, and
+  // sign out their existing sessions so only the new password can do that.
   await prisma.user.update({
     where: { id },
-    data: { passwordHash, mustChangePassword: true },
+    data: { passwordHash, mustChangePassword: true, ...endSessions },
   });
   revalidatePath("/settings");
   return { success: true };
@@ -107,10 +109,11 @@ export async function resetUserPassword(id: string, formData: FormData) {
 
 export async function resetUser2FA(id: string) {
   await requireAdmin();
-  // Clears their authenticator; they re-enrol via the onboarding wizard.
+  // Clears their authenticator; they sign in again and re-enrol via the
+  // onboarding wizard (existing sessions end, so an old one can't enrol).
   await prisma.user.update({
     where: { id },
-    data: { twoFactorEnabled: false, twoFactorSecret: null },
+    data: { twoFactorEnabled: false, twoFactorSecret: null, ...endSessions },
   });
   revalidatePath("/settings");
   return { success: true };
