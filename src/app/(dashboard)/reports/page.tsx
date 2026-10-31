@@ -124,7 +124,6 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const short = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString(intlLocale(locale), { timeZone: "UTC", month: "short", year: "2-digit" });
   const labels = months.map(short);
   const period = months.length === 1 ? fmtMonth(from, locale) : tr("period.range", { from: fmtMonth(from, locale), to: fmtMonth(to, locale) });
-  const categoryRows = (s: typeof pnl.revenue) => s.categories.map((c) => [c.name, c.total] as [string, number]);
 
   return (
     <div>
@@ -163,15 +162,6 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       </StatStrip>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-6">
-          <PanelHead title={<><ArrowDownLeft className="size-4 shrink-0 text-pos" aria-hidden="true" />{tr("byCategory.income")}</>} />
-          <Lines rows={categoryRows(pnl.revenue)} total={totalIncome} tone="pos" emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
-        </Card>
-        <Card className="lg:col-span-6">
-          <PanelHead title={<><ArrowUpRight className="size-4 shrink-0 text-neg" aria-hidden="true" />{tr("byCategory.expenses")}</>} />
-          <Lines rows={categoryRows(pnl.cost)} total={totalExpense} tone="neg" emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
-        </Card>
-
         <Card className="lg:col-span-12">
           <PanelHead title={tr("trend.title")} />
           <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{tr("trend.subtitle")}</p>

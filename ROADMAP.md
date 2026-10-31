@@ -45,7 +45,10 @@ internal staff).
 - **Chart of accounts** — clean income/expense categories.
 - **P&L report** (Reports tab) — any period of months: a monthly trend chart of
   revenue, costs and profit, and a month-by-month table by category that opens
-  to each entry (Oct 2026; was one month at a time).
+  to each entry (Oct 2026; was one month at a time). By the owner's decision
+  (31 Oct 2026) there are **no separate "Income / Expenses by category"
+  panels**: the month-by-month table already breaks the period down by
+  category. Designs should not bring them back.
 
 ### Small additions (Sept 2026)
 - Edit invoices & bills in place; ZIP attachments with original filenames;

@@ -19,10 +19,6 @@
     "vsPrevious": "{arrow} {amount} so với {count, plural, =1 {tháng trước} other {# tháng trước đó}}",
     "noEarlier": "Sổ sách chưa có các tháng trước đó để so sánh"
   },
-  "byCategory": {
-    "income": "Doanh thu theo khoản mục",
-    "expenses": "Chi phí theo khoản mục"
-  },
   "byProject": {
     "title": "Lãi lỗ theo dự án",
     "project": "Dự án",

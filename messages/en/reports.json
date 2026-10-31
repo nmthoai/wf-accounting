@@ -19,10 +19,6 @@
     "vsPrevious": "{arrow} {amount} vs {count, plural, =1 {the previous month} other {the previous # months}}",
     "noEarlier": "No earlier months in the books to compare with"
   },
-  "byCategory": {
-    "income": "Income by category",
-    "expenses": "Expenses by category"
-  },
   "byProject": {
     "title": "Profit by project",
     "project": "Project",
