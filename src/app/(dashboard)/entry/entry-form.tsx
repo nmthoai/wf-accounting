@@ -216,21 +216,8 @@ export function EntryForm({
           {costItem && <Notice tone="info">{t.rich("form.fromCostItem", { label: costItem.label, b: strong })}</Notice>}
           {correction && <Notice tone="info">{t.rich("form.correcting", { label: correction.label, b: strong })}</Notice>}
 
-          {/* Type toggle */}
+          {/* Type toggle: Thu | Chi, as in the glossary */}
           <fieldset disabled={locked} aria-label={t("form.entryType")} className="wf-seg m-0 flex w-full min-w-0">
-            <button
-              type="button"
-              aria-pressed={type === "EXPENSE"}
-              className="h-9 flex-1 justify-center gap-2 disabled:cursor-not-allowed"
-              onClick={() => {
-                setType("EXPENSE");
-                if (init?.type === "EXPENSE") setCategoryId(init?.categoryId || "");
-                else setCategoryId("");
-              }}
-            >
-              <span className="size-2 rounded-full bg-neg" aria-hidden="true" />
-              {tc("type.EXPENSE")}
-            </button>
             <button
               type="button"
               aria-pressed={type === "INCOME"}
@@ -243,6 +230,19 @@ export function EntryForm({
             >
               <span className="size-2 rounded-full bg-pos" aria-hidden="true" />
               {tc("type.INCOME")}
+            </button>
+            <button
+              type="button"
+              aria-pressed={type === "EXPENSE"}
+              className="h-9 flex-1 justify-center gap-2 disabled:cursor-not-allowed"
+              onClick={() => {
+                setType("EXPENSE");
+                if (init?.type === "EXPENSE") setCategoryId(init?.categoryId || "");
+                else setCategoryId("");
+              }}
+            >
+              <span className="size-2 rounded-full bg-neg" aria-hidden="true" />
+              {tc("type.EXPENSE")}
             </button>
           </fieldset>
 
