@@ -27,13 +27,13 @@ export function ProfileForm({ displayName }: { displayName: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-2">
+    <form onSubmit={onSubmit} className="grid gap-4">
+      <div className="grid gap-2">
         <Label htmlFor="displayName">{t("form.displayName")}</Label>
         <Input key={displayName} id="displayName" name="displayName" defaultValue={displayName} maxLength={60} placeholder={t("form.displayNamePlaceholder")} autoComplete="name" />
       </div>
-      <Button type="submit" disabled={saving} className="gap-2">
-        {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+      <Button type="submit" disabled={saving} className="justify-self-start">
+        {saving && <Loader2 className="animate-spin" aria-hidden="true" />}
         {tc("actions.save")}
       </Button>
     </form>

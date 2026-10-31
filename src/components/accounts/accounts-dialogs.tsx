@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { CircleAlert, Loader2 } from "lucide-react";
 import { saveAccount, createLoan, recordMovement, updateMovement, createTransfer, updateTransfer } from "@/app/actions/accounts";
 import { ACCOUNT_TYPE_LABEL, vnToday } from "@/lib/money";
 import { AccountSelect, type AccountOpt } from "./account-select";
@@ -61,12 +61,12 @@ function useSubmit(close: () => void, done: string) {
   return { saving, err, submit };
 }
 
-function CurrencyToggle({ value, onChange, disabled }: { value: string; onChange: (c: string) => void; disabled?: boolean }) {
+function CurrencyToggle({ label, value, onChange, disabled }: { label: string; value: string; onChange: (c: string) => void; disabled?: boolean }) {
   return (
-    <div className={`flex bg-muted p-0.5 rounded text-xs font-medium w-fit ${disabled ? "opacity-50" : ""}`}>
+    <div className={`wf-seg wf-seg--mono w-fit ${disabled ? "opacity-(--opacity-disabled)" : ""}`} role="group" aria-label={label}>
       {["VND", "USD"].map((c) => (
-        <button key={c} type="button" disabled={disabled} onClick={() => onChange(c)}
-          className={`px-3 py-1 rounded-sm ${value === c ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{c}</button>
+        <button key={c} type="button" disabled={disabled} aria-pressed={value === c} onClick={() => onChange(c)}
+          className="disabled:cursor-not-allowed">{c}</button>
       ))}
     </div>
   );
@@ -75,8 +75,16 @@ function CurrencyToggle({ value, onChange, disabled }: { value: string; onChange
 function SaveButton({ saving, label }: { saving: boolean; label: string }) {
   return (
     <Button type="submit" className="w-full" disabled={saving}>
-      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : label}
+      {saving ? <Loader2 className="animate-spin" aria-hidden="true" /> : label}
     </Button>
+  );
+}
+
+function FormError({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+      <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{children}
+    </p>
   );
 }
 
@@ -97,13 +105,13 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader><DialogTitle>{account ? t("accountDialog.editTitle", { name: account.name }) : t("accountDialog.newTitle")}</DialogTitle></DialogHeader>
-        <form className="space-y-4 pt-2" onSubmit={(e) => submit(e, (fd) => saveAccount(account?.id ?? null, fd), { type, currency, isActive: String(active) })}>
-          <div className="space-y-2">
+        <form className="grid gap-4 pt-1" onSubmit={(e) => submit(e, (fd) => saveAccount(account?.id ?? null, fd), { type, currency, isActive: String(active) })}>
+          <div className="grid gap-2">
             <Label htmlFor="acc-name">{t("form.name")}</Label>
             <Input id="acc-name" name="name" defaultValue={account?.name} placeholder={t("accountDialog.namePlaceholder")} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label>{t("form.type")}</Label>
               <Select value={type} onValueChange={(v) => setType(v || "BANK")}>
                 <SelectTrigger><span>{tc(`accountType.${type}`)}</span></SelectTrigger>
@@ -112,37 +120,37 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label>{t("form.currency")}</Label>
-              <CurrencyToggle value={currency} onChange={setCurrency} disabled={locked} />
-              {locked && <p className="text-xs text-muted-foreground">{t("accountDialog.currencyFixed")}</p>}
+              <CurrencyToggle label={t("form.currency")} value={currency} onChange={setCurrency} disabled={locked} />
+              {locked && <p className="text-[12px] text-muted-foreground">{t("accountDialog.currencyFixed")}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="acc-open">{t("accountDialog.openingBalance", { currency })}</Label>
               <Input id="acc-open" name="openingBalance" type="number" step="any" defaultValue={account?.openingBalance ?? 0} />
             </div>
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="acc-odate">{t("accountDialog.asOfDate")}</Label>
               <Input id="acc-odate" name="openingDate" type="date" defaultValue={account?.openingDate ?? ""} />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[12px] text-muted-foreground">
             {t("accountDialog.openingHelp")}
             {type === "OWNER" && ` ${t("accountDialog.openingHelpOwner")}`}
           </p>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor="acc-notes">{t("form.notesOptional")}</Label>
             <Input id="acc-notes" name="notes" defaultValue={account?.notes ?? ""} placeholder={t("accountDialog.notesPlaceholder")} />
           </div>
           {account && (
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+            <label className="flex items-start gap-2 text-[13px] text-text-secondary">
+              <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} />
               {t("accountDialog.active")}
             </label>
           )}
-          {err && <p className="text-sm text-destructive">{err}</p>}
+          {err && <FormError>{err}</FormError>}
           <SaveButton saving={saving} label={account ? t("accountDialog.save") : t("accountDialog.add")} />
         </form>
       </DialogContent>
@@ -174,42 +182,42 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader><DialogTitle>{transfer ? t("transferDialog.editTitle") : t("transferDialog.newTitle")}</DialogTitle></DialogHeader>
-        <form className="space-y-4 pt-2" onSubmit={(e) => submit(
+        <form className="grid gap-4 pt-1" onSubmit={(e) => submit(
           e,
           (fd) => (transfer ? updateTransfer(transfer.transferId, fd) : createTransfer(fd)),
           { fromAccountId: fromId, toAccountId: toId, amountOut: out, amountIn: cross ? inn : out },
         )}>
-          <p className="text-xs text-muted-foreground">{t("transferDialog.intro")}</p>
+          <p className="text-[12px] text-muted-foreground">{t("transferDialog.intro")}</p>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>{t("transferDialog.from")}</Label><AccountSelect accounts={pick} value={fromId} onChange={setFromId} /></div>
-            <div className="space-y-2"><Label>{t("transferDialog.to")}</Label><AccountSelect accounts={pick} value={toId} onChange={setToId} /></div>
+            <div className="grid gap-2"><Label>{t("transferDialog.from")}</Label><AccountSelect accounts={pick} value={fromId} onChange={setFromId} /></div>
+            <div className="grid gap-2"><Label>{t("transferDialog.to")}</Label><AccountSelect accounts={pick} value={toId} onChange={setToId} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="tr-out">{from ? t("transferDialog.amountSentIn", { currency: from.currency }) : t("transferDialog.amountSent")}</Label>
               <Input id="tr-out" type="number" step="any" min="0" value={out} onChange={(e) => setOut(e.target.value)} required />
             </div>
             {cross && (
-              <div className="space-y-2">
+              <div className="grid gap-2">
                 <Label htmlFor="tr-in">{t("transferDialog.amountReceived", { currency: to!.currency })}</Label>
                 <Input id="tr-in" type="number" step="any" min="0" value={inn} onChange={(e) => setInn(e.target.value)} required />
               </div>
             )}
           </div>
           {cross && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               {t("transferDialog.exactFigures")}{" "}
               {rate && t.rich("transferDialog.rate", {
                 rate: new Intl.NumberFormat("vi-VN").format(Math.round(rate * 100) / 100),
-                b: (c) => <span className="font-medium text-foreground">{c}</span>,
+                b: (c) => <span className="wf-num font-semibold text-foreground">{c}</span>,
               })}
             </p>
           )}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2"><Label htmlFor="tr-date">{t("form.date")}</Label><Input id="tr-date" name="date" type="date" defaultValue={transfer?.date ?? today()} required /></div>
-            <div className="space-y-2"><Label htmlFor="tr-desc">{t("form.noteOptional")}</Label><Input id="tr-desc" name="description" defaultValue={transfer?.description ?? ""} placeholder={t("transferDialog.notePlaceholder")} /></div>
+            <div className="grid gap-2"><Label htmlFor="tr-date">{t("form.date")}</Label><Input id="tr-date" name="date" type="date" defaultValue={transfer?.date ?? today()} required /></div>
+            <div className="grid gap-2"><Label htmlFor="tr-desc">{t("form.noteOptional")}</Label><Input id="tr-desc" name="description" defaultValue={transfer?.description ?? ""} placeholder={t("transferDialog.notePlaceholder")} /></div>
           </div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
+          {err && <FormError>{err}</FormError>}
           <SaveButton saving={saving} label={transfer ? t("transferDialog.save") : t("transferDialog.record")} />
         </form>
       </DialogContent>
@@ -245,12 +253,12 @@ export function MovementDialog({ accounts, loans, movement, trigger }: {
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader><DialogTitle>{movement ? t("movementDialog.editTitle") : t("movementDialog.newTitle")}</DialogTitle></DialogHeader>
-        <form className="space-y-4 pt-2" onSubmit={(e) => submit(
+        <form className="grid gap-4 pt-1" onSubmit={(e) => submit(
           e,
           (fd) => (movement ? updateMovement(movement.id, fd) : recordMovement(fd)),
           { type: kind, accountId, loanId: isLoan ? loanId : "" },
         )}>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label>{t("movementDialog.whatIsIt")}</Label>
             <Select value={kind} onValueChange={(v) => setKind(v || "CAPITAL_IN")}>
               <SelectTrigger><span>{tc(`type.${kind}`)}</span></SelectTrigger>
@@ -258,11 +266,11 @@ export function MovementDialog({ accounts, loans, movement, trigger }: {
                 {kinds.map((k) => <SelectItem key={k} value={k}>{tc(`type.${k}`)}</SelectItem>)}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">{t("movementDialog.financingHelp")}</p>
+            <p className="text-[12px] text-muted-foreground">{t("movementDialog.financingHelp")}</p>
           </div>
-          <div className="space-y-2"><Label>{t("form.account")}</Label><AccountSelect accounts={pick} value={accountId} onChange={setAccountId} /></div>
+          <div className="grid gap-2"><Label>{t("form.account")}</Label><AccountSelect accounts={pick} value={accountId} onChange={setAccountId} /></div>
           {isLoan && (
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label>{t("form.loan")}</Label>
               <Select value={loanId} onValueChange={(v) => setLoanId(v || "")}>
                 <SelectTrigger>{loan ? <span>{loan.lender} · {loan.currency}</span> : <span className="text-muted-foreground">{t("movementDialog.chooseLoan")}</span>}</SelectTrigger>
@@ -274,14 +282,14 @@ export function MovementDialog({ accounts, loans, movement, trigger }: {
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="mv-amt">{account ? t("movementDialog.amountIn", { currency: account.currency }) : t("movementDialog.amount")}</Label>
               <Input id="mv-amt" name="amount" type="number" step="any" min="0" defaultValue={movement?.amount} required />
             </div>
-            <div className="space-y-2"><Label htmlFor="mv-date">{t("form.date")}</Label><Input id="mv-date" name="date" type="date" defaultValue={movement?.date ?? today()} required /></div>
+            <div className="grid gap-2"><Label htmlFor="mv-date">{t("form.date")}</Label><Input id="mv-date" name="date" type="date" defaultValue={movement?.date ?? today()} required /></div>
           </div>
-          <div className="space-y-2"><Label htmlFor="mv-desc">{t("form.noteOptional")}</Label><Input id="mv-desc" name="description" defaultValue={movement?.description ?? ""} /></div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
+          <div className="grid gap-2"><Label htmlFor="mv-desc">{t("form.noteOptional")}</Label><Input id="mv-desc" name="description" defaultValue={movement?.description ?? ""} /></div>
+          {err && <FormError>{err}</FormError>}
           <SaveButton saving={saving} label={movement ? t("movementDialog.save") : t("movementDialog.record")} />
         </form>
       </DialogContent>
@@ -301,12 +309,12 @@ export function LoanDialog({ trigger }: { trigger: React.ReactElement }) {
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader><DialogTitle>{t("loanDialog.title")}</DialogTitle></DialogHeader>
-        <form className="space-y-4 pt-2" onSubmit={(e) => submit(e, createLoan, { currency })}>
-          <div className="space-y-2"><Label htmlFor="ln-lender">{t("loanDialog.lender")}</Label><Input id="ln-lender" name="lender" placeholder={t("loanDialog.lenderPlaceholder")} required /></div>
-          <div className="space-y-2"><Label>{t("form.currency")}</Label><CurrencyToggle value={currency} onChange={setCurrency} /></div>
-          <div className="space-y-2"><Label htmlFor="ln-notes">{t("form.notesOptional")}</Label><Input id="ln-notes" name="notes" placeholder={t("loanDialog.notesPlaceholder")} /></div>
-          <p className="text-xs text-muted-foreground">{t("loanDialog.help")}</p>
-          {err && <p className="text-sm text-destructive">{err}</p>}
+        <form className="grid gap-4 pt-1" onSubmit={(e) => submit(e, createLoan, { currency })}>
+          <div className="grid gap-2"><Label htmlFor="ln-lender">{t("loanDialog.lender")}</Label><Input id="ln-lender" name="lender" placeholder={t("loanDialog.lenderPlaceholder")} required /></div>
+          <div className="grid gap-2"><Label>{t("form.currency")}</Label><CurrencyToggle label={t("form.currency")} value={currency} onChange={setCurrency} /></div>
+          <div className="grid gap-2"><Label htmlFor="ln-notes">{t("form.notesOptional")}</Label><Input id="ln-notes" name="notes" placeholder={t("loanDialog.notesPlaceholder")} /></div>
+          <p className="text-[12px] text-muted-foreground">{t("loanDialog.help")}</p>
+          {err && <FormError>{err}</FormError>}
           <SaveButton saving={saving} label={t("loanDialog.add")} />
         </form>
       </DialogContent>

@@ -19,6 +19,7 @@
     "rejected": "{count, plural, one {# rejected entry} other {# rejected entries}} not counted until corrected"
   },
   "tabs": {
+    "label": "View",
     "open": "To reconcile ({count})",
     "all": "All lines ({count})",
     "imports": "Imports ({count})"

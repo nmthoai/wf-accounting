@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { chartTicks } from "@/lib/pnl";
+import { fmtMoney } from "@/lib/money";
 
 // Revenue and costs per month as paired columns, profit as a line, all on one
 // VND axis. Hover or focus a month for its figures; the table below the chart
@@ -32,9 +33,9 @@ export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
   }, [empty]);
 
   const n = labels.length;
-  if (empty) return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+  if (empty) return <p className="text-muted-foreground">{t("empty")}</p>;
 
-  const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }); // as everywhere in the app
+  const vnd = (v: number) => fmtMoney(v, "VND"); // as everywhere in the app
   const short = new Intl.NumberFormat(locale === "vi" ? "vi-VN" : "en-US", { notation: "compact", maximumFractionDigits: 1 });
   const all = [...revenue, ...cost, ...net];
   const tk = chartTicks(Math.min(...all), Math.max(...all));
@@ -64,11 +65,11 @@ export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-text-secondary">
         {series.slice(0, 2).map(([k, c]) => (
-          <span key={k} className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm" style={{ background: c }} />{t(k)}</span>
+          <span key={k} className="inline-flex items-center gap-2"><span className="size-2.5 rounded-xs" style={{ background: c }} aria-hidden="true" />{t(k)}</span>
         ))}
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-2">
           <svg width="18" height="10" aria-hidden><line x1="0" y1="5" x2="18" y2="5" stroke="var(--chart-net)" strokeWidth="2" /><circle cx="9" cy="5" r="3" fill="var(--chart-net)" /></svg>
           {t("net")}
         </span>
@@ -79,13 +80,13 @@ export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
             {tk.map((v) => (
               <g key={v} aria-hidden>
                 <line x1={M.left} x2={width - M.right} y1={y(v)} y2={y(v)} stroke="var(--border)" strokeWidth={1} />
-                <text x={M.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums">{short.format(v)}</text>
+                <text x={M.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-muted-foreground font-mono text-[10.5px] tabular-nums">{short.format(v)}</text>
               </g>
             ))}
             {labels.map((l, i) => (
               <g key={l} aria-hidden>
-                {hover === i && <rect x={M.left + band * i} y={M.top} width={band} height={ih} className="fill-muted" />}
-                {i % every === 0 && <text x={cx(i)} y={H - M.bottom + 18} textAnchor="middle" className="fill-muted-foreground text-[11px]">{l}</text>}
+                {hover === i && <rect x={M.left + band * i} y={M.top} width={band} height={ih} className="fill-secondary/60" />}
+                {i % every === 0 && <text x={cx(i)} y={H - M.bottom + 18} textAnchor="middle" className="fill-muted-foreground font-mono text-[10.5px]">{l}</text>}
               </g>
             ))}
             {labels.map((l, i) => (
@@ -101,21 +102,21 @@ export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
             ))}
             {labels.map((l, i) => (
               <rect key={`h${l}`} x={M.left + band * i} y={M.top} width={band} height={ih} fill="transparent" tabIndex={0} role="img"
-                aria-label={`${l}: ${t("revenue")} ${money.format(revenue[i])}, ${t("cost")} ${money.format(cost[i])}, ${t("net")} ${money.format(net[i])}`}
+                aria-label={`${l}: ${t("revenue")} ${vnd(revenue[i])}, ${t("cost")} ${vnd(cost[i])}, ${t("net")} ${vnd(net[i])}`}
                 onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(i)} onBlur={() => setHover(null)}
                 className="outline-none focus-visible:stroke-ring focus-visible:[stroke-width:2]" />
             ))}
           </svg>
         )}
         {w !== null && hover !== null && (
-          <div className="pointer-events-none absolute z-10 rounded-md border bg-popover p-3 text-sm text-popover-foreground shadow-md" style={{ left: tipX, top: M.top, width: TIP }} aria-hidden>
-            <p className="mb-2 font-medium">{labels[hover]}</p>
+          <div className="pointer-events-none absolute z-10 rounded-lg border border-border-strong bg-popover p-3 text-[13px] text-popover-foreground shadow-float" style={{ left: tipX, top: M.top, width: TIP }} aria-hidden>
+            <p className="wf-label mb-2">{labels[hover]}</p>
             {series.map(([k, c]) => {
               const v = k === "revenue" ? revenue[hover] : k === "cost" ? cost[hover] : net[hover];
               return (
-                <div key={k} className="flex items-center justify-between gap-3">
-                  <span className="inline-flex items-center gap-1.5 text-muted-foreground"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: c }} />{t(k)}</span>
-                  <span className="tabular-nums font-medium">{money.format(v)}</span>
+                <div key={k} className="flex items-center justify-between gap-3 py-0.5">
+                  <span className="inline-flex items-center gap-2 text-text-secondary"><span className="size-2.5 rounded-xs" style={{ background: c }} />{t(k)}</span>
+                  <span className={k === "net" && v < 0 ? "wf-figure text-neg" : "wf-figure"}>{vnd(v)}</span>
                 </div>
               );
             })}

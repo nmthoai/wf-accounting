@@ -3,7 +3,8 @@
     "title": "Accounting Entry Tracker",
     "metaTitle": "Workfactory Accounting Entry Tracker",
     "metaDescription": "Agentic AI Platform Accounting Tool",
-    "logoAlt": "Logo"
+    "logoAlt": "Logo",
+    "product": "Accounting"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -19,7 +20,19 @@
     "handover": "Handover",
     "settings": "Settings",
     "openSidebar": "Open sidebar",
-    "menu": "Navigation Menu"
+    "menu": "Navigation Menu",
+    "gini": "Gini",
+    "tagline": "Intelligence, Orchestrated.",
+    "groups": {
+      "overview": "Overview",
+      "assistant": "Assistant",
+      "books": "Books",
+      "work": "Work",
+      "cash": "Cash & costs",
+      "monthEnd": "Month-end",
+      "system": "System",
+      "account": "Account"
+    }
   },
   "header": {
     "hello": "Hello, <b>{name}</b>",
@@ -130,5 +143,12 @@
   },
   "upload": {
     "tooBig": "Attachments are limited to {max} MB per save — these come to {mb} MB. Save them in smaller batches."
+  },
+  "theme": {
+    "label": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark",
+    "motion": "Moving background"
   }
 }

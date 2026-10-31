@@ -15,6 +15,7 @@ import enTax from "../../messages/en/tax.json";
 import enHandover from "../../messages/en/handover.json";
 import enSettings from "../../messages/en/settings.json";
 import enProfile from "../../messages/en/profile.json";
+import enGini from "../../messages/en/gini.json";
 
 import viCommon from "../../messages/vi/common.json";
 import viAuth from "../../messages/vi/auth.json";
@@ -31,6 +32,7 @@ import viTax from "../../messages/vi/tax.json";
 import viHandover from "../../messages/vi/handover.json";
 import viSettings from "../../messages/vi/settings.json";
 import viProfile from "../../messages/vi/profile.json";
+import viGini from "../../messages/vi/gini.json";
 
 // Static imports (not a dynamic import per locale), so the same loader works in
 // Next and in the plain-Node test runner.
@@ -40,11 +42,13 @@ const en: Messages = {
   common: enCommon, auth: enAuth, dashboard: enDashboard, ledger: enLedger, invoices: enInvoices,
   projects: enProjects, contacts: enContacts, accounts: enAccounts, bank: enBank, costs: enCosts,
   reports: enReports, tax: enTax, handover: enHandover, settings: enSettings, profile: enProfile,
+  gini: enGini,
 };
 const vi: Messages = {
   common: viCommon, auth: viAuth, dashboard: viDashboard, ledger: viLedger, invoices: viInvoices,
   projects: viProjects, contacts: viContacts, accounts: viAccounts, bank: viBank, costs: viCosts,
   reports: viReports, tax: viTax, handover: viHandover, settings: viSettings, profile: viProfile,
+  gini: viGini,
 };
 
 // A message missing in Vietnamese shows in English rather than as a raw key.

@@ -15,6 +15,7 @@
     "title": "Project profitability",
     "description": "Net = income − expenses from transactions tagged to each project (actual cash). Click a project for its cost breakdown.",
     "newProject": "New project",
+    "name": "Project name",
     "namePlaceholder": "e.g. AI Character Dev",
     "client": "Client",
     "unpaidTitle": "{count} unpaid invoice/bill · {amounts}",
@@ -24,7 +25,16 @@
     "archive": "Archive",
     "reactivate": "Reactivate",
     "confirmDelete": "Delete project {name}?",
-    "empty": "No projects yet."
+    "deleteLabel": "Delete {name}",
+    "empty": "No projects yet.",
+    "columns": {
+      "project": "Project",
+      "client": "Client",
+      "income": "Income",
+      "expenses": "Expenses",
+      "net": "Net profit",
+      "actions": "Actions"
+    }
   },
   "toast": {
     "created": "Project created",

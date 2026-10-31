@@ -11,7 +11,8 @@
   },
   "filter": {
     "all": "Tất cả",
-    "openOnly": "Còn nợ"
+    "openOnly": "Còn nợ",
+    "label": "Hóa đơn hiển thị"
   },
   "newButton": "Thêm hóa đơn",
   "label": {
@@ -23,6 +24,7 @@
     "FEE": "Phí có CT"
   },
   "form": {
+    "direction": "Loại công nợ",
     "receivable": "Phải thu — khách hàng nợ công ty",
     "payable": "Phải trả — công ty nợ nhà cung cấp",
     "client": "Khách hàng",
@@ -40,6 +42,7 @@
     "number": "Số hóa đơn (không bắt buộc)",
     "numberPlaceholder": "theo tệp PDF",
     "amount": "Số tiền",
+    "currency": "Loại tiền",
     "issueDate": "Ngày lập hóa đơn",
     "dueDate": "Hạn thanh toán",
     "notes": "Ghi chú (không bắt buộc)",
@@ -47,6 +50,11 @@
     "attach": "Đính kèm tệp PDF (không bắt buộc)"
   },
   "list": {
+    "columns": {
+      "invoice": "Hóa đơn",
+      "party": "Khách hàng · NCC",
+      "actions": "Thao tác"
+    },
     "overdue": "Quá hạn",
     "viewPdf": "Xem tệp PDF",
     "due": "đến hạn {date}",
@@ -129,6 +137,7 @@
   },
   "link": {
     "trigger": "Liên kết bút toán đã có",
+    "kind": "Liên kết dưới dạng",
     "title": "Liên kết bút toán — {label}",
     "paymentHelp": "Dùng khi một lần chuyển khoản ngân hàng thanh toán cho nhiều hóa đơn, hoặc khoản thanh toán đã có trong sổ thu chi.",
     "feeHelp": "Chỉ khoản phí có chứng từ đính kèm (giấy báo Nợ của ngân hàng hoặc biên lai) mới được dùng để giải trình một phần số tiền hóa đơn. Khoản chênh lệch đơn thuần không bao giờ được coi là phí.",

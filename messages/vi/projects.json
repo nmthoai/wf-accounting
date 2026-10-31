@@ -15,6 +15,7 @@
     "title": "Lãi lỗ theo dự án",
     "description": "Lãi (lỗ) = doanh thu − chi phí từ các bút toán gắn với từng dự án (thực thu, thực chi). Nhấn vào một dự án để xem cơ cấu chi phí.",
     "newProject": "Dự án mới",
+    "name": "Tên dự án",
     "namePlaceholder": "Ví dụ: AI Character Dev",
     "client": "Khách hàng",
     "unpaidTitle": "{count} hóa đơn bán ra/mua vào chưa thanh toán · {amounts}",
@@ -24,7 +25,16 @@
     "archive": "Lưu trữ",
     "reactivate": "Kích hoạt lại",
     "confirmDelete": "Xóa dự án {name}?",
-    "empty": "Chưa có dự án nào."
+    "deleteLabel": "Xóa {name}",
+    "empty": "Chưa có dự án nào.",
+    "columns": {
+      "project": "Dự án",
+      "client": "Khách hàng",
+      "income": "Doanh thu",
+      "expenses": "Chi phí",
+      "net": "Lãi/lỗ",
+      "actions": "Thao tác"
+    }
   },
   "toast": {
     "created": "Đã tạo dự án",

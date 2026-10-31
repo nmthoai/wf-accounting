@@ -4,17 +4,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Upload, Loader2, X, Plus, Link2, Trash2, AlertTriangle } from "lucide-react";
+import { Upload, Loader2, X, Plus, Link2, Trash2, CircleAlert, CircleCheck } from "lucide-react";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { previewStatement, importStatement, matchLine, unmatchEntry, deleteStatement } from "@/app/actions/bank";
 import { fmtMoney, EPS } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import { notify, notifyResult } from "@/components/ui/toast";
+import { Chip, Notice, type Tone } from "@/components/wf/ledger-ui";
 
 export type EntryOpt = { id: string; accountId: string; date: string; amount: number; label: string; href: string }; // amount: signed, account currency
 type Linked = { id: string; label: string; date: string; amount: number; href: string };
@@ -38,17 +40,21 @@ type Preview = Extract<Awaited<ReturnType<typeof previewStatement>>, { success: 
 
 const tol = (currency: string) => (currency === "VND" ? 0.5 : EPS);
 const signed = (n: number, c: string) => `${n < 0 ? "−" : "+"}${fmtMoney(Math.abs(n), c)}`;
-const STATUS: Record<LineRow["status"], string> = {
-  MATCHED: "bg-green-100 text-green-700",
-  PARTIAL: "bg-amber-100 text-amber-700",
-  UNMATCHED: "bg-red-100 text-red-700",
-};
+const STATUS_TONE: Record<LineRow["status"], Tone> = { MATCHED: "pos", PARTIAL: "warn", UNMATCHED: "neg" };
 
 async function act(fn: () => Promise<{ success: boolean; message?: string }>, refresh: () => void, done: string, somethingWrong: string) {
   let res;
   try { res = await fn(); } catch { notify.error(somethingWrong); return; }
   notifyResult(res, done);
   refresh();
+}
+
+function FormError({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+      <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{children}
+    </p>
+  );
 }
 
 // Upload a statement, check it adds up, then append its new lines.
@@ -102,78 +108,94 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
   const cur = account?.currency ?? "VND";
   const o = parseFloat(opening), c = parseFloat(closing);
   const expected = preview ? o + preview.inflows - preview.outflows : NaN;
-  const addsUp = preview !== null && Number.isFinite(expected) && Number.isFinite(c) && Math.abs(expected - c) <= tol(cur);
+  const complete = Number.isFinite(expected) && Number.isFinite(c);
+  const addsUp = preview !== null && complete && Math.abs(expected - c) <= tol(cur);
   const fresh = preview ? preview.count - preview.duplicates : 0;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { reset(); setFile(null); } }}>
-      <DialogTrigger render={<Button className="gap-2" />}><Upload className="h-4 w-4" />{t("import.trigger")}</DialogTrigger>
+      <DialogTrigger render={<Button />}><Upload aria-hidden="true" />{t("import.trigger")}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader><DialogTitle>{t("import.title")}</DialogTitle></DialogHeader>
-        <div className="space-y-4 pt-2">
+        <div className="grid gap-4 pt-1">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label>{t("import.account")}</Label>
               <AccountSelect accounts={accounts.filter((a) => a.type === "BANK")} value={accountId} onChange={(id) => { setAccountId(id); reset(); }} />
             </div>
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="statement-file">{t("import.file")}</Label>
               <Input id="statement-file" type="file" accept=".xlsx,.xls,.csv" onChange={(e) => { setFile(e.target.files?.[0] ?? null); reset(); }} />
             </div>
           </div>
           {!preview && !done && (
             <Button type="button" variant="outline" className="w-full" disabled={!file || !accountId || busy} onClick={read}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("import.read")}
+              {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("import.read")}
             </Button>
           )}
 
           {preview && (
-            <div className="space-y-3 rounded-md border p-3 bg-muted/30 text-sm">
-              <p>
-                {t.rich(preview.duplicates > 0 ? "import.summaryWithDuplicates" : "import.summary", {
-                  count: preview.count, from: preview.periodFrom, to: preview.periodTo, sheet: preview.sheet, duplicates: preview.duplicates,
-                  b: (c) => <span className="font-medium">{c}</span>,
-                  muted: (c) => <span className="text-muted-foreground">{c}</span>,
-                })}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t("import.columnsRead", { columns: Object.entries(preview.columns).map(([f, h]) => `${t(`fields.${f}`)} ← ${h}`).join(" · ") })}
-              </p>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-2">
+            <div className="grid gap-4 border-t border-border pt-4">
+              <div className="grid gap-1">
+                <p className="text-text-secondary">
+                  {t.rich(preview.duplicates > 0 ? "import.summaryWithDuplicates" : "import.summary", {
+                    count: preview.count, from: preview.periodFrom, to: preview.periodTo, sheet: preview.sheet, duplicates: preview.duplicates,
+                    b: (c) => <span className="font-semibold text-foreground">{c}</span>,
+                    muted: (c) => <span className="text-muted-foreground">{c}</span>,
+                  })}
+                </p>
+                <p className="text-[12px] text-muted-foreground">
+                  {t("import.columnsRead", { columns: Object.entries(preview.columns).map(([f, h]) => `${t(`fields.${f}`)} ← ${h}`).join(" · ") })}
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
                   <Label htmlFor="st-opening">{t("import.opening", { currency: cur })}</Label>
                   <Input id="st-opening" type="number" step="any" value={opening} onChange={(e) => setOpening(e.target.value)} placeholder={t("import.balancePlaceholder")} />
                 </div>
-                <div className="space-y-2">
+                <div className="grid gap-2">
                   <Label htmlFor="st-closing">{t("import.closing", { currency: cur })}</Label>
                   <Input id="st-closing" type="number" step="any" value={closing} onChange={(e) => setClosing(e.target.value)} placeholder={t("import.balancePlaceholder")} />
                 </div>
               </div>
-              <div className={`rounded-md p-2 ${addsUp ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}>
-                {t(addsUp ? "import.check.matches" : Number.isFinite(expected) && Number.isFinite(c) ? "import.check.off" : "import.check.incomplete", {
-                  opening: Number.isFinite(o) ? fmtMoney(o, cur) : "?", inflows: fmtMoney(preview.inflows, cur), outflows: fmtMoney(preview.outflows, cur),
-                  expected: Number.isFinite(expected) ? fmtMoney(expected, cur) : "?",
-                  closing: fmtMoney(c, cur), diff: fmtMoney(expected - c, cur),
-                })}
-              </div>
-              {preview.warnings.map((w) => <p key={w} className="text-xs text-amber-700 flex gap-1"><AlertTriangle className="h-3.5 w-3.5 shrink-0" />{w}</p>)}
-              <div className="space-y-1">
-                <p className="text-xs font-medium">{t("import.firstLines")}</p>
-                {preview.sample.map((l, i) => (
-                  <div key={i} className="flex justify-between gap-3 text-xs">
-                    <span className="truncate">{l.date} · {l.reference ?? "—"} · {l.details ?? ""}</span>
-                    <span className={`shrink-0 font-medium ${l.amount > 0 ? "text-green-700" : ""}`}>{signed(l.amount, cur)}</span>
-                  </div>
-                ))}
+              {/* The statement must add up before anything is imported. */}
+              <Notice tone={addsUp ? "success" : complete ? "error" : "warning"}>
+                <p className="font-mono text-[12.5px] tabular-nums">
+                  {t(addsUp ? "import.check.matches" : complete ? "import.check.off" : "import.check.incomplete", {
+                    opening: Number.isFinite(o) ? fmtMoney(o, cur) : "?", inflows: fmtMoney(preview.inflows, cur), outflows: fmtMoney(preview.outflows, cur),
+                    expected: Number.isFinite(expected) ? fmtMoney(expected, cur) : "?",
+                    closing: fmtMoney(c, cur), diff: fmtMoney(expected - c, cur),
+                  })}
+                </p>
+              </Notice>
+              {preview.warnings.length > 0 && (
+                <Notice tone="warning">
+                  {preview.warnings.map((w) => <p key={w}>{w}</p>)}
+                </Notice>
+              )}
+              <div>
+                <p className="wf-label">{t("import.firstLines")}</p>
+                <ul className="mt-2 divide-y divide-border border-y border-border text-[12.5px]">
+                  {preview.sample.map((l, i) => (
+                    <li key={i} className="flex justify-between gap-3 py-1.5">
+                      <span className="min-w-0 truncate text-text-secondary"><span className="wf-num">{l.date}</span> · {l.reference ?? "—"} · {l.details ?? ""}</span>
+                      <span className={cn("wf-num shrink-0 font-semibold", l.amount > 0 && "text-pos")}>{signed(l.amount, cur)}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           )}
 
-          {err && <p className="text-sm text-destructive">{err}</p>}
-          {done && <p className="text-sm text-green-700">{done}</p>}
+          {err && <FormError>{err}</FormError>}
+          {done && (
+            <p className="flex items-center gap-1.5 text-[13px] text-pos">
+              <CircleCheck className="size-4 shrink-0" aria-hidden="true" />{done}
+            </p>
+          )}
           {preview && (
             <Button type="button" className="w-full" disabled={busy || !addsUp || fresh === 0} onClick={save}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : fresh === 0 ? t("import.nothingNew") : t("import.submit", { count: fresh })}
+              {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : fresh === 0 ? t("import.nothingNew") : t("import.submit", { count: fresh })}
             </Button>
           )}
         </div>
@@ -212,37 +234,39 @@ function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={t("match.trigger")} />}>
-        <Link2 className="h-4 w-4" />
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label={t("match.trigger")} title={t("match.trigger")} />}>
+        <Link2 aria-hidden="true" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader><DialogTitle>{t("match.title", { amount: signed(line.amount, line.currency), date: line.txnDate })}</DialogTitle></DialogHeader>
-        <div className="space-y-3 pt-2">
-          <p className="text-xs text-muted-foreground">
+        <div className="grid gap-4 pt-1">
+          <p className="text-[12px] text-muted-foreground">
             {t("match.help", { account: line.accountName })}
           </p>
-          <div className="max-h-72 overflow-y-auto space-y-1">
+          <ul className="max-h-72 divide-y divide-border overflow-y-auto border-y border-border">
             {choices.map((e) => (
-              <label key={e.id} className="flex items-center justify-between gap-3 bg-muted/50 p-2 rounded-md text-sm cursor-pointer">
-                <span className="flex items-center gap-2 min-w-0">
-                  <input type="checkbox" checked={picked.includes(e.id)}
-                    onChange={(ev) => setPicked((p) => (ev.target.checked ? [...p, e.id] : p.filter((x) => x !== e.id)))} />
-                  <span className="truncate">{e.date} · {e.label}</span>
-                </span>
-                <span className="shrink-0 font-medium">{fmtMoney(Math.abs(e.amount), line.currency)}</span>
-              </label>
+              <li key={e.id}>
+                <label className="flex cursor-pointer items-center justify-between gap-3 px-1 py-2.5 transition-colors duration-150 hover:bg-secondary/45">
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <input type="checkbox" className="size-4 shrink-0 accent-primary" checked={picked.includes(e.id)}
+                      onChange={(ev) => setPicked((p) => (ev.target.checked ? [...p, e.id] : p.filter((x) => x !== e.id)))} />
+                    <span className="truncate text-text-secondary"><span className="wf-num">{e.date}</span> · {e.label}</span>
+                  </span>
+                  <span className="wf-figure shrink-0">{fmtMoney(Math.abs(e.amount), line.currency)}</span>
+                </label>
+              </li>
             ))}
-            {choices.length === 0 && <p className="text-sm text-muted-foreground">{t(line.amount > 0 ? "match.noneIn" : "match.noneOut", { account: line.accountName })}</p>}
-          </div>
-          <p className="text-sm">
+            {choices.length === 0 && <li className="py-3 text-muted-foreground">{t(line.amount > 0 ? "match.noneIn" : "match.noneOut", { account: line.accountName })}</li>}
+          </ul>
+          <p className="text-[13px] text-text-secondary">
             {t.rich(total > line.remaining + tol(line.currency) ? "match.selectedOver" : "match.selected", {
               total: fmtMoney(total, line.currency), remaining: fmtMoney(line.remaining, line.currency),
               over: (c) => <span className="text-destructive">{c}</span>,
             })}
           </p>
-          {err && <p className="text-sm text-destructive">{err}</p>}
+          {err && <FormError>{err}</FormError>}
           <Button type="button" className="w-full" disabled={busy || picked.length === 0} onClick={submit}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("match.submit", { count: picked.length })}
+            {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("match.submit", { count: picked.length })}
           </Button>
         </div>
       </DialogContent>
@@ -269,47 +293,52 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {summaries.map((s) => {
           const diff = s.appBalance !== null && s.bankClosing !== null ? s.appBalance - s.bankClosing : null;
           const agrees = diff !== null && Math.abs(diff) <= tol(s.currency);
           return (
             <Card key={s.id}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">{s.name}</CardTitle>
-                <p className="text-xs text-muted-foreground">{s.asOf ? t("summary.statementTo", { currency: s.currency, date: s.asOf }) : s.currency}</p>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
+              <div className="border-b border-border px-5 py-4">
+                <p className="wf-label">{s.asOf ? t("summary.statementTo", { currency: s.currency, date: s.asOf }) : s.currency}</p>
+                <h2 className="mt-2 truncate text-[15px] leading-snug font-bold text-foreground">{s.name}</h2>
+              </div>
+              <div className="grid flex-1 content-start gap-2 p-5 text-[13.5px]">
                 {s.bankClosing === null ? (
                   <p className="text-muted-foreground">{t("summary.noStatement")}</p>
                 ) : (
                   <>
-                    <div className="flex justify-between"><span>{t("summary.bankStatement")}</span><span className="font-medium">{fmtMoney(s.bankClosing, s.currency)}</span></div>
-                    <div className="flex justify-between"><span>{t("summary.inApp")}</span><span className="font-medium">{fmtMoney(s.appBalance!, s.currency)}</span></div>
-                    <div className="border-t pt-1 flex justify-between font-semibold">
-                      <span>{t("summary.difference")}</span>
-                      <span className={agrees ? "text-green-700" : "text-red-600"}>{agrees ? t("summary.agrees") : signed(diff!, s.currency)}</span>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-text-secondary">{t("summary.bankStatement")}</span>
+                      <span className="wf-figure">{fmtMoney(s.bankClosing, s.currency)}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground pt-1">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-text-secondary">{t("summary.inApp")}</span>
+                      <span className="wf-figure">{fmtMoney(s.appBalance!, s.currency)}</span>
+                    </div>
+                    <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-border pt-3 font-semibold text-foreground">
+                      <span>{t("summary.difference")}</span>
+                      <span className={cn("wf-figure", agrees ? "text-pos" : "text-neg")}>{agrees ? t("summary.agrees") : signed(diff!, s.currency)}</span>
+                    </div>
+                    <p className="pt-1 text-[12.5px] text-muted-foreground">
                       {s.notOnStatement.length > 0
                         ? t("summary.toReconcileNotOnStatement", { open: s.open, lines: s.lines, count: s.notOnStatement.length })
                         : t("summary.toReconcile", { open: s.open, lines: s.lines })}
                     </p>
-                    {s.drafts > 0 && <p className="text-xs text-amber-700">{t("summary.drafts", { count: s.drafts })}</p>}
-                    {s.rejected > 0 && <p className="text-xs text-red-700">{t("summary.rejected", { count: s.rejected })}</p>}
+                    {s.drafts > 0 && <p className="text-[12.5px] text-warn">{t("summary.drafts", { count: s.drafts })}</p>}
+                    {s.rejected > 0 && <p className="text-[12.5px] text-neg">{t("summary.rejected", { count: s.rejected })}</p>}
                   </>
                 )}
-              </CardContent>
+              </div>
             </Card>
           );
         })}
       </div>
 
-      <div className="flex justify-between items-center gap-2 flex-wrap">
-        <div className="flex bg-muted p-1 rounded-lg text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="wf-seg" role="group" aria-label={t("tabs.label")}>
           {([["open", t("tabs.open", { count: openLines.length })], ["all", t("tabs.all", { count: lines.length })], ["imports", t("tabs.imports", { count: statements.length })]] as const).map(([v, text]) => (
-            <Link key={v} href={v === "open" ? "/bank" : `/bank?view=${v}`}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${view === v ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</Link>
+            <Link key={v} href={v === "open" ? "/bank" : `/bank?view=${v}`} aria-current={view === v ? "page" : undefined}>{text}</Link>
           ))}
         </div>
         <ImportDialog accounts={accounts} />
@@ -318,125 +347,127 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
       {view === "imports" ? (
         <Card>
           <CardHeader>
-            <CardTitle>{t("imports.title")}</CardTitle>
+            <h2 className="wf-panel__title">
+              {t("imports.title")}
+              <span className="wf-panel__count">{statements.length}</span>
+            </h2>
             <CardDescription>{t("imports.description")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <ul className="wf-rows">
             {statements.map((s) => (
-              <div key={s.id} className="flex items-center justify-between gap-3 bg-muted/50 p-3 rounded-md text-sm flex-wrap">
-                <div className="flex flex-col min-w-[220px]">
-                  <span className="font-medium">{s.accountName} · {s.periodFrom} → {s.periodTo}</span>
-                  <span className="text-xs text-muted-foreground">{s.importedBy
+              <li key={s.id} className="flex-wrap">
+                <div className="min-w-0">
+                  <p className="text-foreground">{s.accountName} · <span className="wf-num">{s.periodFrom} → {s.periodTo}</span></p>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">{s.importedBy
                     ? t("imports.metaBy", { file: s.fileName, lines: s.lineCount, added: s.added, date: s.importedAt, name: s.importedBy })
-                    : t("imports.meta", { file: s.fileName, lines: s.lineCount, added: s.added, date: s.importedAt })}</span>
+                    : t("imports.meta", { file: s.fileName, lines: s.lineCount, added: s.added, date: s.importedAt })}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">
-                    {fmtMoney(s.opening, s.currency)} + {fmtMoney(s.inflows, s.currency)} − {fmtMoney(s.outflows, s.currency)} = <span className="font-semibold">{fmtMoney(s.closing, s.currency)}</span> <span className="text-green-700">✓</span>
-                  </span>
+                <div className="ml-auto flex items-center gap-3">
+                  <p className="wf-num flex items-center gap-1.5 text-[12px] text-text-secondary">
+                    {fmtMoney(s.opening, s.currency)} + {fmtMoney(s.inflows, s.currency)} − {fmtMoney(s.outflows, s.currency)} = <span className="font-semibold text-foreground">{fmtMoney(s.closing, s.currency)}</span>
+                    <CircleCheck className="size-3.5 text-pos" aria-hidden="true" />
+                  </p>
                   {isAdmin && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === s.id} title={t("imports.undo")}
+                    <Button variant="ghost" size="icon-sm" className="hover:text-destructive" disabled={busyId === s.id} aria-label={t("imports.undo")} title={t("imports.undo")}
                       onClick={() => { if (confirm(t("imports.confirmUndo", { count: s.added }))) run(s.id, () => deleteStatement(s.id), t("imports.removed")); }}>
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 />
                     </Button>
                   )}
                 </div>
-              </div>
+              </li>
             ))}
-            {statements.length === 0 && <p className="text-sm text-muted-foreground">{t("imports.empty")}</p>}
-          </CardContent>
+            {statements.length === 0 && <li className="text-muted-foreground">{t("imports.empty")}</li>}
+          </ul>
         </Card>
       ) : (
         <Card>
-          <CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>{t("lines.date")}</TableHead>
-                  <TableHead>{t("lines.account")}</TableHead>
-                  <TableHead>{t("lines.bankDetails")}</TableHead>
-                  <TableHead className="text-right">{t("lines.amount")}</TableHead>
-                  <TableHead>{t("lines.inLedger")}</TableHead>
-                  <TableHead className="w-[90px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {shown.map((l) => (
-                  <TableRow key={l.id}>
-                    <TableCell className="whitespace-nowrap">
-                      <div className="font-medium">{l.txnDate}</div>
-                      {l.postingDate && l.postingDate !== l.txnDate && <div className="text-xs text-muted-foreground">{t("lines.posted", { date: l.postingDate })}</div>}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">{l.accountName}</TableCell>
-                    <TableCell className="max-w-[280px]">
-                      <div className="truncate" title={[l.counterparty, l.description].filter(Boolean).join("\n")}>{l.counterparty ?? l.description ?? "—"}</div>
-                      <div className="text-xs text-muted-foreground truncate" title={l.locator}>
-                        {l.reference ?? t("lines.noReference")}{l.counterparty && l.description ? ` · ${l.description}` : ""}
-                      </div>
-                    </TableCell>
-                    <TableCell className={`text-right font-semibold whitespace-nowrap ${l.amount > 0 ? "text-green-700" : ""}`}>{signed(l.amount, l.currency)}</TableCell>
-                    <TableCell className="min-w-[220px]">
-                      <div className="flex flex-col gap-1 items-start">
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${STATUS[l.status]}`}>
-                          {l.status === "PARTIAL" ? t("status.partialLeft", { amount: fmtMoney(l.remaining, l.currency) }) : t(`status.${l.status}`)}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("lines.date")}</TableHead>
+                <TableHead>{t("lines.account")}</TableHead>
+                <TableHead>{t("lines.bankDetails")}</TableHead>
+                <TableHead className="text-right">{t("lines.amount")}</TableHead>
+                <TableHead>{t("lines.inLedger")}</TableHead>
+                <TableHead className="w-[90px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {shown.map((l) => (
+                <TableRow key={l.id} className="[&>td]:align-top [&>td]:py-3">
+                  <TableCell>
+                    <span className="wf-num block text-foreground">{l.txnDate}</span>
+                    {l.postingDate && l.postingDate !== l.txnDate && <span className="block text-[12px] text-muted-foreground">{t("lines.posted", { date: l.postingDate })}</span>}
+                  </TableCell>
+                  <TableCell className="text-text-secondary">{l.accountName}</TableCell>
+                  <TableCell className="max-w-[280px]">
+                    <span className="block truncate text-foreground" title={[l.counterparty, l.description].filter(Boolean).join("\n")}>{l.counterparty ?? l.description ?? "—"}</span>
+                    <span className="block truncate font-mono text-[12px] text-muted-foreground" title={l.locator}>
+                      {l.reference ?? t("lines.noReference")}{l.counterparty && l.description ? ` · ${l.description}` : ""}
+                    </span>
+                  </TableCell>
+                  <TableCell className={cn("text-right font-semibold", l.amount > 0 ? "text-pos" : "text-foreground")}>{signed(l.amount, l.currency)}</TableCell>
+                  <TableCell className="min-w-[220px]">
+                    <div className="flex flex-col items-start gap-1.5">
+                      <Chip tone={STATUS_TONE[l.status]} mono dot>
+                        {l.status === "PARTIAL" ? t("status.partialLeft", { amount: fmtMoney(l.remaining, l.currency) }) : t(`status.${l.status}`)}
+                      </Chip>
+                      {l.entries.map((e) => (
+                        <span key={e.id} className="flex items-center gap-1 text-[12px]">
+                          <Link href={e.href} className="max-w-[220px] truncate text-primary hover:underline" title={`${e.date} · ${e.label}`}>{e.label}</Link>
+                          <Button variant="ghost" size="icon-xs" className="hover:text-destructive" aria-label={t("lines.unmatch")} title={t("lines.unmatch")} disabled={busyId === e.id}
+                            onClick={() => run(e.id, () => unmatchEntry(e.id), t("lines.unmatched"))}><X /></Button>
                         </span>
-                        {l.entries.map((e) => (
-                          <span key={e.id} className="flex items-center gap-1 text-xs">
-                            <Link href={e.href} className="text-primary hover:underline truncate max-w-[220px]" title={`${e.date} · ${e.label}`}>{e.label}</Link>
-                            <button type="button" className="text-muted-foreground hover:text-destructive" title={t("lines.unmatch")} disabled={busyId === e.id}
-                              onClick={() => run(e.id, () => unmatchEntry(e.id), t("lines.unmatched"))}><X className="h-3 w-3" /></button>
-                          </span>
-                        ))}
-                        {l.suggestion && (
-                          <span className="flex items-center gap-1 text-xs">
-                            <span className="text-muted-foreground truncate max-w-[180px]" title={`${l.suggestion.date} · ${l.suggestion.label}`}>{t("lines.suggested", { label: l.suggestion.label, date: l.suggestion.date })}</span>
-                            <Button size="sm" variant="outline" className="h-6 px-2 text-xs text-green-700" disabled={busyId === l.id}
-                              onClick={() => run(l.id, () => matchLine(l.id, [l.suggestion!.id]), t("match.toast.matched"))}>{t("lines.match")}</Button>
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {l.remaining > 0 && (
-                        <div className="flex justify-end gap-1">
-                          <MatchDialog line={l} entries={entries} />
-                          <Link href={`/entry?bankLine=${l.id}`} title={t("lines.newEntry")}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary"><Plus className="h-4 w-4" /></Button>
-                          </Link>
-                        </div>
+                      ))}
+                      {l.suggestion && (
+                        <span className="flex items-center gap-2 text-[12px]">
+                          <span className="max-w-[180px] truncate text-muted-foreground" title={`${l.suggestion.date} · ${l.suggestion.label}`}>{t("lines.suggested", { label: l.suggestion.label, date: l.suggestion.date })}</span>
+                          <Button size="xs" variant="outline" className="text-pos" disabled={busyId === l.id}
+                            onClick={() => run(l.id, () => matchLine(l.id, [l.suggestion!.id]), t("match.toast.matched"))}>{t("lines.match")}</Button>
+                        </span>
                       )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {shown.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {lines.length === 0 ? t("lines.empty") : t("lines.allMatched")}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {l.remaining > 0 && (
+                      <div className="flex justify-end gap-1">
+                        <MatchDialog line={l} entries={entries} />
+                        <Button variant="ghost" size="icon-sm" render={<Link href={`/entry?bankLine=${l.id}`} />} nativeButton={false}
+                          aria-label={t("lines.newEntry")} title={t("lines.newEntry")}>
+                          <Plus aria-hidden="true" />
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {shown.length === 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    {lines.length === 0 ? t("lines.empty") : t("lines.allMatched")}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </Card>
       )}
 
       {notOnStatement.length > 0 && view !== "imports" && (
-        <Card className="border-amber-300 bg-amber-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-800">
-              <AlertTriangle className="h-4 w-4" />{t("notOnStatement.title")}
-            </CardTitle>
-            <CardDescription className="text-amber-800/80">{t("notOnStatement.description")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <Card className="border-warn/50">
+          <Notice tone="warning" title={t("notOnStatement.title")} className="rounded-none border-0 px-5 py-4">
+            <p>{t("notOnStatement.description")}</p>
+          </Notice>
+          <ul className="wf-rows border-t border-border">
             {notOnStatement.flatMap((s) => s.notOnStatement.map((e) => (
-              <div key={e.id} className="flex items-center justify-between gap-2 bg-white/70 p-2 rounded-md text-sm">
-                <Link href={e.href} className="hover:underline truncate">{e.date} · {s.name} · {e.label}</Link>
-                <span className="font-semibold shrink-0">{signed(e.amount, s.currency)}</span>
-              </div>
+              <li key={e.id}>
+                <Link href={e.href} className="min-w-0 truncate text-text-secondary hover:text-primary">
+                  <span className="wf-num text-foreground">{e.date}</span> · {s.name} · {e.label}
+                </Link>
+                <span className={cn("wf-figure shrink-0", e.amount > 0 && "text-pos")}>{signed(e.amount, s.currency)}</span>
+              </li>
             )))}
-          </CardContent>
+          </ul>
         </Card>
       )}
     </div>

@@ -29,14 +29,6 @@ export const VAT_STATUS: Record<string, string> = {
   NO_VAT: "No VAT on document",
 };
 
-export const DOC_BADGE: Record<string, string> = {
-  PENDING: "bg-slate-100 text-slate-600",
-  INVOICE: "bg-green-100 text-green-700",
-  RECEIPT: "bg-blue-100 text-blue-700",
-  PAYMENT_ONLY: "bg-amber-100 text-amber-700",
-  MISSING: "bg-red-100 text-red-700",
-};
-
 // Documents still to be found or confirmed.
 export const DOC_OPEN = ["PENDING", "PAYMENT_ONLY", "MISSING"];
 

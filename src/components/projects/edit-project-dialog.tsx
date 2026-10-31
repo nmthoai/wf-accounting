@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Pencil, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Pencil, Loader2, CircleAlert } from "lucide-react";
 import { updateProject } from "@/app/actions/projects";
 import { notify } from "@/components/ui/toast";
 
@@ -49,31 +49,31 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2" />}>
-        <Pencil className="h-4 w-4" /> {tc("actions.edit")}
+      <DialogTrigger render={<Button variant="outline" />}>
+        <Pencil aria-hidden="true" />{tc("actions.edit")}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>{t("edit.title")}</DialogTitle></DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4 pt-2">
-          <div className="space-y-2">
+        <form onSubmit={onSubmit} className="grid gap-4">
+          <div className="grid gap-2">
             <Label htmlFor="name">{t("edit.name")}</Label>
             <Input id="name" name="name" defaultValue={project.name} required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label>{t("edit.client")}</Label>
               <Select value={clientId} onValueChange={(v) => setClientId(v === "none" ? "" : v || "")}>
-                <SelectTrigger>{clientId ? <span>{clients.find(c => c.id === clientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}</SelectTrigger>
+                <SelectTrigger className="w-full">{clientId ? <span className="truncate">{clients.find(c => c.id === clientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}</SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("noClient")}</SelectItem>
                   {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label>{t("edit.status")}</Label>
               <Select value={status} onValueChange={(v) => setStatus(v || "ACTIVE")}>
-                <SelectTrigger><span>{t.has(`status.${status}`) ? t(`status.${status}`) : status}</span></SelectTrigger>
+                <SelectTrigger className="w-full"><span>{t.has(`status.${status}`) ? t(`status.${status}`) : status}</span></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NOT_STARTED">{t("status.NOT_STARTED")}</SelectItem>
                   <SelectItem value="ACTIVE">{t("status.ACTIVE")}</SelectItem>
@@ -84,26 +84,33 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor="startDate">{t("edit.startDate")}</Label>
-              <Input id="startDate" name="startDate" type="date" defaultValue={project.startDate ?? ""} />
+              <Input id="startDate" name="startDate" type="date" defaultValue={project.startDate ?? ""} className="wf-num" />
             </div>
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor="endDate">{t("edit.endDate")}</Label>
-              <Input id="endDate" name="endDate" type="date" defaultValue={project.endDate ?? ""} />
+              <Input id="endDate" name="endDate" type="date" defaultValue={project.endDate ?? ""} className="wf-num" />
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor="description">{t("edit.description")}</Label>
             <textarea id="description" name="description" defaultValue={project.description ?? ""} rows={3}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="w-full min-w-0 rounded-lg border border-input bg-card px-3 py-2 text-[13.5px] text-foreground transition-colors duration-150 ease-wf outline-none placeholder:text-muted-foreground hover:border-muted-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
               placeholder={t("edit.descriptionPlaceholder")} />
           </div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
-          <Button type="submit" className="w-full" disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("edit.saveChanges")}
-          </Button>
+          {err && (
+            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+              <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="animate-spin" aria-hidden="true" />}
+              {t("edit.saveChanges")}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

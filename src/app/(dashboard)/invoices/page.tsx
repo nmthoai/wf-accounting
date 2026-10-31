@@ -4,6 +4,7 @@ import { requirePageSession } from "@/lib/session";
 import { defaultUsdRate } from "@/lib/fx";
 import { EPS, settlement, type Totals , vnTodayStart, isBooked } from "@/lib/money";
 import { InvoicesClient } from "@/components/invoices/invoices-client";
+import { PageHeader } from "@/components/wf/page-header";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
@@ -93,11 +94,8 @@ export default async function InvoicesPage() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
-      </div>
+    <div>
+      <PageHeader section="invoices" title={t("page.title")} description={t("page.subtitle")} />
       <InvoicesClient
         isAdmin={session.user.role === "ADMIN"}
         invoices={rows}

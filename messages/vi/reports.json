@@ -19,6 +19,10 @@
     "vsPrevious": "{arrow} {amount} so với {count, plural, =1 {tháng trước} other {# tháng trước đó}}",
     "noEarlier": "Sổ sách chưa có các tháng trước đó để so sánh"
   },
+  "byCategory": {
+    "income": "Doanh thu theo khoản mục",
+    "expenses": "Chi phí theo khoản mục"
+  },
   "byProject": {
     "title": "Lãi lỗ theo dự án",
     "project": "Dự án",
@@ -41,7 +45,8 @@
   },
   "monthPicker": {
     "previous": "Tháng trước",
-    "next": "Tháng sau"
+    "next": "Tháng sau",
+    "month": "Tháng"
   },
   "downloads": {
     "title": "Tải về tệp Excel",
@@ -119,7 +124,8 @@
     "last12": "12 tháng",
     "ytd": "Từ đầu năm",
     "all": "Tất cả",
-    "range": "{from} – {to}"
+    "range": "{from} – {to}",
+    "presets": "Kỳ"
   },
   "trend": {
     "title": "Xu hướng theo tháng",

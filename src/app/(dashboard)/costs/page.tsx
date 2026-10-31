@@ -3,6 +3,7 @@ import { requirePageSession } from "@/lib/session";
 import type { Prisma } from "@prisma/client";
 import { getTranslations } from "next-intl/server";
 import { CostsClient, type CostRow } from "@/components/costs/costs-client";
+import { PageHeader } from "@/components/wf/page-header";
 import type { Totals } from "@/lib/money";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
@@ -51,11 +52,8 @@ export default async function CostsPage({ searchParams }: { searchParams: Promis
   }));
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
-      </div>
+    <div>
+      <PageHeader section="costs" title={t("page.title")} description={t("page.subtitle")} />
       <CostsClient
         isAdmin={session?.user?.role === "ADMIN"}
         view={view}

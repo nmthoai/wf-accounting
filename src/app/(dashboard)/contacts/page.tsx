@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { ContactsClient } from "@/components/contacts/contacts-client";
+import { PageHeader } from "@/components/wf/page-header";
 import { toVnd, BOOKED } from "@/lib/money";
 
 export default async function ContactsPage() {
@@ -35,11 +36,8 @@ export default async function ContactsPage() {
   }));
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
-      </div>
+    <div>
+      <PageHeader section="contacts" title={t("page.title")} description={t("page.subtitle")} />
       <ContactsClient clients={clientRows} vendors={vendorRows} />
     </div>
   );

@@ -7,13 +7,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Check, Loader2, Lock, Undo2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Check, CircleAlert, Loader2, Lock, Undo2 } from "lucide-react";
 import { postEntries, reverseEntry, reviewEntries } from "@/app/actions/ledger";
 import { notify } from "@/components/ui/toast";
 import { RejectDialog } from "@/components/ledger/reject-dialog";
+import { Notice } from "@/components/wf/ledger-ui";
 
 type Ref = { id: string; label: string } | null;
+
+const refLink = "font-semibold text-primary underline-offset-4 hover:underline";
 
 // Where an entry stands in Draft → Reviewed → Posted, and what the owner can do next.
 export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, correctionOf, withFee = false, rejection = null }: {
@@ -54,69 +57,71 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
     finally { setBusy(false); }
   }
 
-  const tone = status === "DRAFT" ? "border-amber-300 bg-amber-50" : status === "REJECTED" ? "border-red-300 bg-red-50"
-    : status === "POSTED" ? "border-slate-300 bg-slate-50" : "border-blue-200 bg-blue-50";
+  const tone = status === "DRAFT" ? "warning" : status === "REJECTED" ? "error" : "info";
   const text = reversalOf
-    ? t.rich("status.reversalOf", { label: reversalOf.label, link: (c) => <Link className="underline" href={`/entry/${reversalOf.id}`}>{c}</Link> })
+    ? t.rich("status.reversalOf", { label: reversalOf.label, link: (c) => <Link className={refLink} href={`/entry/${reversalOf.id}`}>{c}</Link> })
     : reversedBy
-      ? t.rich("status.reversedBy", { label: reversedBy.label, link: (c) => <Link className="underline" href={`/entry/${reversedBy.id}`}>{c}</Link> })
+      ? t.rich("status.reversedBy", { label: reversedBy.label, link: (c) => <Link className={refLink} href={`/entry/${reversedBy.id}`}>{c}</Link> })
       : status === "DRAFT" ? t("status.draft")
         : status === "REJECTED" ? (isAdmin ? t("status.rejectedOwner") : t("status.rejected"))
         : status === "REVIEWED" ? t("status.reviewed")
           : t("status.posted");
 
   return (
-    <div className={`rounded-md border p-3 text-sm flex items-center justify-between gap-3 flex-wrap ${tone}`}>
-      <div className="flex items-start gap-2">
-        {status === "POSTED" && <Lock className="h-4 w-4 mt-0.5 shrink-0" />}
-        <div>
+    <Notice tone={tone} icon={status === "POSTED" ? Lock : undefined}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 basis-64">
           <p>{text}</p>
           {status === "REJECTED" && rejection && (
-            <p className="mt-1 font-medium text-red-800">
+            <p className="mt-1 font-semibold text-neg">
               {rejection.by ? t("status.rejectedReasonBy", { reason: rejection.reason, name: rejection.by }) : t("status.rejectedReason", { reason: rejection.reason })}
             </p>
           )}
-          {correctionOf && <p className="text-xs mt-1">{t.rich("status.correctionOf", { label: correctionOf.label, link: (c) => <Link className="underline" href={`/entry/${correctionOf.id}`}>{c}</Link> })}</p>}
+          {correctionOf && <p className="mt-1 text-[12px]">{t.rich("status.correctionOf", { label: correctionOf.label, link: (c) => <Link className={refLink} href={`/entry/${correctionOf.id}`}>{c}</Link> })}</p>}
         </div>
-      </div>
-      {isAdmin && !reversalOf && !reversedBy && (
-        <div className="flex gap-2">
-          {(status === "DRAFT" || status === "REJECTED") && (
-            <Button size="sm" className="gap-1" disabled={busy} onClick={() => run(() => reviewEntries([id]), t("toast.approved"))}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {t("buttons.approve")}
-            </Button>
-          )}
-          {status === "DRAFT" && <RejectDialog id={id} />}
-          {status === "REVIEWED" && (
-            <Button size="sm" variant="outline" className="gap-1" disabled={busy}
-              onClick={() => { if (confirm(t("status.confirmPost"))) run(() => postEntries([id]), t("toast.posted")); }}>
-              <Lock className="h-3.5 w-3.5" /> {t("buttons.post")}
-            </Button>
-          )}
-          {status === "POSTED" && (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger render={<Button size="sm" variant="outline" className="gap-1" />}><Undo2 className="h-3.5 w-3.5" /> {t("buttons.reverse")}</DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>{t("reverse.title")}</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <p className="text-sm text-muted-foreground">
-                    {t("reverse.body")}
-                  </p>
-                  {withFee && <p className="text-sm text-muted-foreground">{t("reverse.withFee")}</p>}
-                  <div className="space-y-2">
+        {isAdmin && !reversalOf && !reversedBy && (
+          <div className="flex flex-wrap gap-2">
+            {(status === "DRAFT" || status === "REJECTED") && (
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => run(() => reviewEntries([id]), t("toast.approved"))}>
+                {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Check className="text-pos" aria-hidden="true" />}{t("buttons.approve")}
+              </Button>
+            )}
+            {status === "DRAFT" && <RejectDialog id={id} />}
+            {status === "REVIEWED" && (
+              <Button size="sm" variant="outline" disabled={busy}
+                onClick={() => { if (confirm(t("status.confirmPost"))) run(() => postEntries([id]), t("toast.posted")); }}>
+                <Lock aria-hidden="true" />{t("buttons.post")}
+              </Button>
+            )}
+            {status === "POSTED" && (
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger render={<Button size="sm" variant="outline" />}><Undo2 aria-hidden="true" />{t("buttons.reverse")}</DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t("reverse.title")}</DialogTitle>
+                    <DialogDescription>{t("reverse.body")}</DialogDescription>
+                    {withFee && <p className="text-[13.5px] text-text-secondary">{t("reverse.withFee")}</p>}
+                  </DialogHeader>
+                  <div className="grid gap-2">
                     <Label htmlFor="reverse-reason">{t("reverse.reason")}</Label>
                     <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reverse.reasonPlaceholder")} />
                   </div>
-                  {err && <p className="text-sm text-destructive">{err}</p>}
-                  <Button className="w-full" disabled={busy || !reason.trim()} onClick={reverse}>
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("reverse.submit")}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      )}
-    </div>
+                  {err && (
+                    <p className="flex items-start gap-1.5 text-[12px] text-destructive">
+                      <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />{err}
+                    </p>
+                  )}
+                  <DialogFooter>
+                    <Button disabled={busy || !reason.trim()} onClick={reverse}>
+                      {busy && <Loader2 className="animate-spin" aria-hidden="true" />}{t("reverse.submit")}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+        )}
+      </div>
+    </Notice>
   );
 }

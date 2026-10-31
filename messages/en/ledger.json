@@ -8,6 +8,7 @@
   },
   "tabs": {
     "all": "All",
+    "label": "Ledger views",
     "drafts": "Drafts ({count})",
     "docs": "Documents to find ({count})",
     "tax": "Tax review pending ({count})",
@@ -21,7 +22,8 @@
     "description": "Description",
     "invoiceNumber": "Invoice #",
     "evidence": "Evidence",
-    "amountVnd": "Amount (VND)"
+    "amountVnd": "Amount (VND)",
+    "actions": "Actions"
   },
   "row": {
     "reversal": "{status} · reversal",
@@ -164,12 +166,14 @@
     "fromBankLine": "From bank line <b>{label}</b> — saving matches this entry to it.",
     "fromCostItem": "From the cost register: <b>{label}</b> — saving adds it to the ledger once, with its receipt.",
     "correcting": "Correcting <b>{label}</b>, which has been reversed — enter the right values. Saving records this as its correction.",
+    "entryType": "Entry type",
     "receivedInto": "Received into",
     "paidFrom": "Paid from",
     "accountPlaceholder": "Choose the account the money moved through",
     "accountHint": "Bank, company cash, or Owner-paid if you paid it personally.",
     "date": "Date",
     "amount": "Amount",
+    "currency": "Currency",
     "vndValue": "VND value",
     "rateBank": "Actual VND settled",
     "rateManual": "Enter rate",
@@ -198,7 +202,7 @@
     "attachments": "Attachments (Receipts / Invoices)",
     "removeReceipt": "Remove receipt",
     "confirmRemoveReceipt": "Remove this receipt? This deletes the file.",
-    "toUpload": "· to upload",
+    "toUpload": "to upload",
     "addMoreFiles": "Add more files",
     "uploadFiles": "Upload files",
     "orTakePhoto": "or take a photo",

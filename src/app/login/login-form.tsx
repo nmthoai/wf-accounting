@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/wf/ledger-ui";
 
 export function LoginForm() {
   const t = useTranslations("auth");
@@ -46,39 +48,36 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      {justOnboarded && (
-        <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700 text-center">
-          {t("loginForm.onboarded")}
-        </div>
-      )}
-      {timedOut && (
-        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700 text-center">
-          {t("loginForm.timedOut")}
-        </div>
-      )}
-      <div className="space-y-4">
-        <div className="space-y-2 text-left">
-          <Label htmlFor="username">{t("username")}</Label>
-          <Input id="username" name="username" type="text" required className="bg-background/50" />
-        </div>
-        <div className="space-y-2 text-left">
-          <Label htmlFor="password">{t("password")}</Label>
-          <Input id="password" name="password" type="password" required className="bg-background/50" />
-        </div>
-        <div className="space-y-2 text-left">
-          <Label htmlFor="token">{t("token")} <span className="text-muted-foreground font-normal">{t("tokenHint")}</span></Label>
-          <Input id="token" name="token" type="text" inputMode="numeric" placeholder="123456" className="bg-background/50 tracking-widest text-lg" />
-        </div>
+    <form onSubmit={onSubmit} className="mt-7 grid gap-4">
+      {justOnboarded && <Notice tone="success">{t("loginForm.onboarded")}</Notice>}
+      {timedOut && <Notice tone="warning">{t("loginForm.timedOut")}</Notice>}
+      <div className="grid gap-2">
+        <Label htmlFor="username">{t("username")}</Label>
+        <Input id="username" name="username" type="text" required className="h-11" />
       </div>
-      <Button className="w-full py-6 text-md shadow-md" type="submit" disabled={loading}>
-        {loading ? "..." : t("login")}
+      <div className="grid gap-2">
+        <Label htmlFor="password">{t("password")}</Label>
+        <Input id="password" name="password" type="password" required className="h-11" />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="token">
+          {t("token")} <span className="font-normal text-muted-foreground">{t("tokenHint")}</span>
+        </Label>
+        <Input
+          id="token"
+          name="token"
+          type="text"
+          inputMode="numeric"
+          placeholder="123456"
+          className="h-11 font-mono text-[15px] tracking-[0.3em]"
+        />
+      </div>
+      {error && <Notice tone="error">{error}</Notice>}
+      <Button className="mt-2 h-11 w-full" type="submit" disabled={loading}>
+        {loading && <Loader2 className="animate-spin" aria-hidden="true" />}
+        {t("login")}
+        {!loading && <ArrowRight aria-hidden="true" />}
       </Button>
-      {error && (
-        <div className="text-sm text-destructive text-center font-medium">
-          {error}
-        </div>
-      )}
     </form>
   );
 }

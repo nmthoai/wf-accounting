@@ -43,7 +43,7 @@
     "empty": "Tag transactions to a project to see profit here."
   },
   "recent": {
-    "title": "Recent Transactions",
+    "title": "Recent Entries",
     "viewAll": "View All",
     "uncategorized": "Uncategorized",
     "draft": "draft",
@@ -53,6 +53,11 @@
     "title": "Quick Actions",
     "logIncome": "Log Income",
     "logExpense": "Log Expense",
-    "transfers": "Transfers, capital & loans"
+    "transfers": "Transfers, capital & loans",
+    "gini": "Gini",
+    "giniSub": "Assistant",
+    "logIncomeSub": "Money in from a client",
+    "logExpenseSub": "A cost, paid or owed",
+    "transfersSub": "Between your accounts"
   }
 }

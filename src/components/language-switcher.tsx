@@ -6,8 +6,7 @@ import { setLocale } from "@/app/actions/locale";
 import { LOCALES } from "@/i18n/config";
 import { cn } from "@/lib/utils";
 
-// EN | VI, styled like the currency toggle on the entry form. Signed in, the
-// choice is saved on the profile.
+// .en | .vi as a mono segmented control. Signed in, the choice is saved on the profile.
 export function LanguageSwitcher() {
   const locale = useLocale();
   const t = useTranslations("common.language");
@@ -22,7 +21,7 @@ export function LanguageSwitcher() {
   }
 
   return (
-    <div role="group" aria-label={t("label")} className={cn("flex bg-muted p-0.5 rounded text-xs font-medium", busy && "opacity-60")}>
+    <div role="group" aria-label={t("label")} className={cn("wf-seg wf-seg--mono", busy && "opacity-60")}>
       {LOCALES.map((l) => (
         <button
           key={l}
@@ -32,9 +31,8 @@ export function LanguageSwitcher() {
           aria-pressed={locale === l}
           disabled={busy}
           onClick={() => choose(l)}
-          className={cn("px-2 py-0.5 rounded-sm uppercase transition-all", locale === l ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
         >
-          {l}
+          .{l}
         </button>
       ))}
     </div>

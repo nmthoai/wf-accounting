@@ -8,6 +8,7 @@
   },
   "tabs": {
     "all": "Tất cả",
+    "label": "Chế độ xem sổ thu chi",
     "drafts": "Nháp ({count})",
     "docs": "Thiếu chứng từ ({count})",
     "tax": "Chờ rà soát thuế ({count})",
@@ -21,7 +22,8 @@
     "description": "Diễn giải",
     "invoiceNumber": "Số HĐ",
     "evidence": "Chứng từ",
-    "amountVnd": "Quy đổi VND"
+    "amountVnd": "Quy đổi VND",
+    "actions": "Thao tác"
   },
   "row": {
     "reversal": "{status} · bút toán đảo",
@@ -164,12 +166,14 @@
     "fromBankLine": "Từ dòng sao kê <b>{label}</b> — khi lưu, bút toán này sẽ được khớp với dòng sao kê đó.",
     "fromCostItem": "Từ bảng kê chi phí: <b>{label}</b> — khi lưu, khoản này được thêm vào sổ thu chi một lần duy nhất, kèm tệp chứng từ.",
     "correcting": "Đang điều chỉnh bút toán đã đảo <b>{label}</b> — hãy nhập các giá trị đúng. Khi lưu, bút toán này được ghi nhận là bút toán điều chỉnh cho bút toán đó.",
+    "entryType": "Loại nghiệp vụ",
     "receivedInto": "Thu vào tài khoản",
     "paidFrom": "Chi từ tài khoản",
     "accountPlaceholder": "Chọn tài khoản tiền đã dùng để thu hoặc chi khoản tiền này",
     "accountHint": "Ngân hàng, tiền mặt của công ty, hoặc chủ DN chi hộ nếu bạn tự trả bằng tiền cá nhân.",
     "date": "Ngày giao dịch",
     "amount": "Số tiền (nguyên tệ)",
+    "currency": "Loại tiền",
     "vndValue": "Giá trị quy đổi VND",
     "rateBank": "VND thực tế",
     "rateManual": "Nhập tỷ giá",
@@ -198,7 +202,7 @@
     "attachments": "Chứng từ đính kèm (hóa đơn, biên lai)",
     "removeReceipt": "Xóa tệp",
     "confirmRemoveReceipt": "Xóa chứng từ này? Thao tác này sẽ xóa tệp.",
-    "toUpload": "· chờ tải lên",
+    "toUpload": "chờ tải lên",
     "addMoreFiles": "Thêm tệp",
     "uploadFiles": "Tải tệp lên",
     "orTakePhoto": "hoặc chụp ảnh",

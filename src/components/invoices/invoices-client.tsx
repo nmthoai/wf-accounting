@@ -1,14 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Plus, Loader2, Ban, Trash2, AlertTriangle, Paperclip, ArrowDownLeft, ArrowUpRight, X } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, X, Loader2, Ban, Trash2, TriangleAlert, Paperclip, ArrowDownLeft, ArrowUpRight, ChevronDown, CircleAlert } from "lucide-react";
 import { createInvoice, voidInvoice, deleteInvoice, unlinkAllocation } from "@/app/actions/invoices";
 import { uploadProblem } from "@/lib/upload-limit";
 import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
@@ -16,6 +17,8 @@ import { RecordPaymentDialog, LinkEntryDialog, type Candidate } from "@/componen
 import { notify, notifyResult } from "@/components/ui/toast";
 import type { AccountOpt } from "@/components/accounts/account-select";
 import { EPS, fmtMoney, fmtVnd, totalsList, type Totals , vnToday } from "@/lib/money";
+import { Chip, ENTRY_STATUS_TONE, INVOICE_STATUS_TONE, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
+import { cn } from "@/lib/utils";
 
 type Invoice = {
   id: string; number: string | null; direction: string; party: string | null; projectName: string | null; categoryName: string | null;
@@ -28,11 +31,12 @@ type Invoice = {
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
 
-// One line per currency — currencies are never added together.
-const Totals = ({ t, className }: { t: Totals; className: string }) => {
+// One line per currency — currencies are never added together. The first is the
+// figure; any other currency sits under it, smaller.
+const statLines = (t: Totals) => {
   const lines = totalsList(t);
-  if (lines.length === 0) return <div className={className}>{fmtVnd(0)}</div>;
-  return <>{lines.map(([c, v]) => <div key={c} className={className}>{fmtMoney(v, c)}</div>)}</>;
+  if (lines.length === 0) return fmtVnd(0);
+  return lines.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>));
 };
 const totalsText = (t: Totals) => totalsList(t).map(([c, v]) => fmtMoney(v, c)).join(" · ");
 
@@ -106,64 +110,62 @@ export function InvoicesClient({
     }
   }
 
-  function statusBadge(i: Invoice) {
-    if (i.overdue) return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{t("list.overdue")}</span>;
-    const map: Record<string, string> = {
-      OPEN: "bg-amber-100 text-amber-700", PARTIAL: "bg-orange-100 text-orange-700",
-      PAID: "bg-green-100 text-green-700", VOID: "bg-gray-100 text-gray-400 line-through",
-    };
+  function statusChip(i: Invoice) {
+    if (i.overdue) {
+      return (
+        <Chip tone={INVOICE_STATUS_TONE.OVERDUE} mono dot>
+          <TriangleAlert className="size-3" aria-hidden="true" />{t("list.overdue")}
+        </Chip>
+      );
+    }
     const key = `invoiceStatus.${i.status}`;
-    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map[i.status] || ""}`}>{tc.has(key) ? tc(key) : i.status}</span>;
+    return <Chip tone={INVOICE_STATUS_TONE[i.status] ?? "neutral"} mono dot>{tc.has(key) ? tc(key) : i.status}</Chip>;
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium inline-flex items-center gap-2"><ArrowDownLeft className="h-4 w-4 text-green-600" />{t("summary.owedToYou")}</CardTitle></CardHeader>
-          <CardContent>
-            <Totals t={summary.ar} className="text-2xl font-bold text-green-600" />
-            <p className="text-xs text-muted-foreground mt-1">{totalsList(summary.arOverdue).length > 0 ? <span className="text-red-600">{t("summary.overdue", { amount: totalsText(summary.arOverdue) })}</span> : t("summary.nothingOverdue")}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium inline-flex items-center gap-2"><ArrowUpRight className="h-4 w-4 text-red-600" />{t("summary.youOwe")}</CardTitle></CardHeader>
-          <CardContent>
-            <Totals t={summary.ap} className="text-2xl font-bold text-red-600" />
-            <p className="text-xs text-muted-foreground mt-1">{totalsList(summary.apOverdue).length > 0 ? <span className="text-red-600">{t("summary.overdue", { amount: totalsText(summary.apOverdue) })}</span> : t("summary.nothingOverdue")}</p>
-          </CardContent>
-        </Card>
-      </div>
+  const overdueSub = (o: Totals) => totalsList(o).length > 0
+    ? <span className="text-neg">{t("summary.overdue", { amount: totalsText(o) })}</span>
+    : t("summary.nothingOverdue");
 
-      <div className="flex justify-between items-center gap-2 flex-wrap">
-        <div className="flex bg-muted p-1 rounded-lg text-sm">
-          <button type="button" onClick={() => setOpenOnly(false)}
-            className={`px-3 py-1 rounded-md font-medium transition-all ${!openOnly ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{t("filter.all")}</button>
-          <button type="button" onClick={() => setOpenOnly(true)}
-            className={`px-3 py-1 rounded-md font-medium transition-all ${openOnly ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{t("filter.openOnly")}</button>
+  return (
+    <>
+      <StatStrip className="lg:grid-cols-2">
+        <Stat label={t("summary.owedToYou")} icon={ArrowDownLeft} tone="pos" sub={overdueSub(summary.arOverdue)}>
+          {statLines(summary.ar)}
+        </Stat>
+        <Stat label={t("summary.youOwe")} icon={ArrowUpRight} tone="neg" sub={overdueSub(summary.apOverdue)}>
+          {statLines(summary.ap)}
+        </Stat>
+      </StatStrip>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="wf-seg" role="group" aria-label={t("filter.label")}>
+          <button type="button" aria-pressed={!openOnly} onClick={() => setOpenOnly(false)}>{t("filter.all")}</button>
+          <button type="button" aria-pressed={openOnly} onClick={() => setOpenOnly(true)}>{t("filter.openOnly")}</button>
         </div>
-        <Button onClick={() => setShowForm((s) => !s)} className="gap-2"><Plus className="h-4 w-4" />{showForm ? tc("actions.close") : t("newButton")}</Button>
+        <Button variant={showForm ? "outline" : "default"} aria-expanded={showForm} onClick={() => setShowForm((s) => !s)}>
+          {showForm ? <X aria-hidden="true" /> : <Plus aria-hidden="true" />}
+          {showForm ? tc("actions.close") : t("newButton")}
+        </Button>
       </div>
 
       {showForm && (
-        <Card>
-          <CardContent className="pt-6">
-            <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
-              <div className="md:col-span-2 flex bg-muted p-1 rounded-lg">
-                <button type="button" onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); setCategoryId(""); }}
-                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${direction === "RECEIVABLE" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>
+        <Card className="mt-4">
+          <PanelHead title={t("newButton")} />
+          <CardContent>
+            <form onSubmit={handleCreate} className="grid gap-5 md:grid-cols-2">
+              <div className="wf-seg justify-self-start md:col-span-2" role="group" aria-label={t("form.direction")}>
+                <button type="button" aria-pressed={direction === "RECEIVABLE"} onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); setCategoryId(""); }}>
                   {t("form.receivable")}
                 </button>
-                <button type="button" onClick={() => { setDirection("PAYABLE"); setPartyId(""); setCategoryId(""); }}
-                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${direction === "PAYABLE" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>
+                <button type="button" aria-pressed={direction === "PAYABLE"} onClick={() => { setDirection("PAYABLE"); setPartyId(""); setCategoryId(""); }}>
                   {t("form.payable")}
                 </button>
               </div>
 
-              <div className="space-y-2">
-                <Label>{direction === "PAYABLE" ? t("form.vendor") : t("form.client")}</Label>
+              <div className="grid gap-2">
+                <Label htmlFor="inv-party">{direction === "PAYABLE" ? t("form.vendor") : t("form.client")}</Label>
                 <Select value={partyId} onValueChange={(v) => setPartyId(v === "none" ? "" : v || "")}>
-                  <SelectTrigger>{partyId ? <span>{parties.find(p => p.id === partyId)?.name}</span> : <span className="text-muted-foreground">{direction === "PAYABLE" ? t("form.selectVendor") : t("form.selectClient")}</span>}</SelectTrigger>
+                  <SelectTrigger id="inv-party" className="w-full">{partyId ? <span>{parties.find(p => p.id === partyId)?.name}</span> : <span className="text-muted-foreground">{direction === "PAYABLE" ? t("form.selectVendor") : t("form.selectClient")}</span>}</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("form.none")}</SelectItem>
                     {parties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
@@ -171,20 +173,20 @@ export function InvoicesClient({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>{t("form.project")}</Label>
+              <div className="grid gap-2">
+                <Label htmlFor="inv-project">{t("form.project")}</Label>
                 <Select value={projectId} onValueChange={(v) => setProjectId(v === "none" ? "" : v || "")}>
-                  <SelectTrigger>{projectId ? <span>{projects.find(p => p.id === projectId)?.name}</span> : <span className="text-muted-foreground">{t("form.noProject")}</span>}</SelectTrigger>
+                  <SelectTrigger id="inv-project" className="w-full">{projectId ? <span>{projects.find(p => p.id === projectId)?.name}</span> : <span className="text-muted-foreground">{t("form.noProject")}</span>}</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("form.noProject")}</SelectItem>
                     {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>{t("form.category")}</Label>
+              <div className="grid gap-2">
+                <Label htmlFor="inv-category">{t("form.category")}</Label>
                 <Select value={categoryId} onValueChange={(v) => setCategoryId(v === "none" ? "" : v || "")}>
-                  <SelectTrigger>{categoryId ? <span>{cats.find(c => c.id === categoryId)?.name}</span> : <span className="text-muted-foreground">{t("form.noCategory")}</span>}</SelectTrigger>
+                  <SelectTrigger id="inv-category" className="w-full">{categoryId ? <span>{cats.find(c => c.id === categoryId)?.name}</span> : <span className="text-muted-foreground">{t("form.noCategory")}</span>}</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("form.noCategory")}</SelectItem>
                     {cats.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -192,143 +194,193 @@ export function InvoicesClient({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div className="grid gap-2">
                 <Label htmlFor="number">{t("form.number")}</Label>
                 <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} />
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between gap-2">
                   <Label htmlFor="amount">{t("form.amount")}</Label>
-                  <div className="flex bg-muted p-0.5 rounded text-xs font-medium">
-                    <span onClick={() => setCurrency("VND")} className={`px-2 py-0.5 rounded-sm cursor-pointer ${currency === "VND" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>VND</span>
-                    <span onClick={() => setCurrency("USD")} className={`px-2 py-0.5 rounded-sm cursor-pointer ${currency === "USD" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>USD</span>
+                  <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
+                    {["VND", "USD"].map((c) => (
+                      <button key={c} type="button" aria-pressed={currency === c} onClick={() => setCurrency(c)}>{c}</button>
+                    ))}
                   </div>
                 </div>
                 <Input id="amount" name="amount" type="number" step="0.01" min="0" placeholder="0.00" required />
-                {currency === "USD" && <p className="text-xs text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
+                {currency === "USD" && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
               </div>
-              <div className="space-y-2">
+              <div className="grid gap-2">
                 <Label htmlFor="issueDate">{t("form.issueDate")}</Label>
                 <Input id="issueDate" name="issueDate" type="date" defaultValue={today} required />
               </div>
-              <div className="space-y-2">
+              <div className="grid gap-2">
                 <Label htmlFor="dueDate">{t("form.dueDate")}</Label>
                 <Input id="dueDate" name="dueDate" type="date" defaultValue={today} required />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="grid gap-2 md:col-span-2">
                 <Label htmlFor="notes">{t("form.notes")}</Label>
                 <Input id="notes" name="notes" placeholder={t("form.notesPlaceholder")} />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="grid gap-2 md:col-span-2">
                 <Label htmlFor="files">{t("form.attach")}</Label>
                 <Input id="files" name="files" type="file" multiple accept="image/*,application/pdf" />
               </div>
-              {err && <p className="text-sm text-destructive md:col-span-2">{err}</p>}
-              <Button type="submit" disabled={creating} className="md:col-span-2">
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : tc("actions.save")}
-              </Button>
+              {err && (
+                <p className="flex items-center gap-1.5 text-[12px] text-destructive md:col-span-2" role="alert">
+                  <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
+                </p>
+              )}
+              <div className="flex justify-end md:col-span-2">
+                <Button type="submit" disabled={creating}>
+                  {creating && <Loader2 className="animate-spin" aria-hidden="true" />}{tc("actions.save")}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardContent className="p-0 divide-y">
-          {shown.map((i) => (
-            <div key={i.id} className="p-4 space-y-2">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex flex-col min-w-[180px]">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  {i.direction === "PAYABLE"
-                    ? <ArrowUpRight className="h-3.5 w-3.5 text-red-500" />
-                    : <ArrowDownLeft className="h-3.5 w-3.5 text-green-600" />}
-                  {i.number || (i.direction === "PAYABLE" ? tc("direction.PAYABLE") : tc("direction.RECEIVABLE"))} {statusBadge(i)}
-                  {i.attachment && <a href={`/api/uploads/${i.attachment.split('/').pop()}`} target="_blank" rel="noreferrer" className="text-blue-500" title={t("list.viewPdf")}><Paperclip className="h-3.5 w-3.5" /></a>}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {[i.party, i.projectName, i.categoryName].filter(Boolean).join(" · ") || "—"} · {t("list.due", { date: i.dueDate })}
-                  {i.paidDate && ` · ${t("list.paidOn", { date: i.paidDate })}`}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className={`text-sm font-semibold ${i.direction === "PAYABLE" ? "text-red-600" : "text-green-700"}`}>{fmtMoney(i.amount, i.currency)}</div>
-                  {i.allocations.length > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      {i.direction === "PAYABLE" ? t("list.paidAmount", { amount: fmtMoney(i.received, i.currency) }) : t("list.receivedAmount", { amount: fmtMoney(i.received, i.currency) })}
-                      {i.fees > EPS && ` · ${t("list.fees", { amount: fmtMoney(i.fees, i.currency) })}`}
-                    </div>
-                  )}
-                  {i.allocations.length > 0 && i.difference > EPS && i.status !== "VOID" && (
-                    <div className="text-xs font-medium text-amber-700" title={t("list.differenceTitle")}>
-                      {t("list.unmatchedDifference", { amount: fmtMoney(i.difference, i.currency) })}
-                    </div>
-                  )}
-                  {i.difference < -EPS && <div className="text-xs font-medium text-red-600">{t("list.overpaidBy", { amount: fmtMoney(-i.difference, i.currency) })}</div>}
-                </div>
-                <div className="flex items-center gap-1">
-                  {i.status !== "VOID" && (
-                    <EditInvoiceDialog invoice={i} clients={clients} vendors={vendors} projects={projects} categories={categories} defaultUsdRate={defaultUsdRate} />
-                  )}
-                  {(i.status === "OPEN" || i.status === "PARTIAL") && <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} feeCategories={feeCategories} />}
-                  {i.status !== "VOID" && <LinkEntryDialog invoice={i} candidates={candidates} />}
-                  {isAdmin && i.allocations.length === 0 && i.status === "OPEN" && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title={t("list.void")} disabled={busyId === i.id}
-                      onClick={() => { if (confirm(t("confirm.void"))) run(i.id, () => voidInvoice(i.id), i.direction === "PAYABLE" ? t("toast.billVoided") : t("toast.invoiceVoided")); }}>
-                      <Ban className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {isAdmin && i.allocations.length === 0 && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title={tc("actions.delete")} disabled={busyId === i.id}
-                      onClick={() => { if (confirm(t("confirm.delete"))) run(i.id, () => deleteInvoice(i.id), i.direction === "PAYABLE" ? t("toast.billDeleted") : t("toast.invoiceDeleted")); }}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-            {i.allocations.length > 0 && (
-              <div>
-                <button type="button" className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                  onClick={() => setExpanded(expanded === i.id ? null : i.id)}>
-                  {expanded === i.id ? t("list.hideLinked", { count: i.allocations.length }) : t("list.showLinked", { count: i.allocations.length })}
-                </button>
-                {expanded === i.id && (
-                  <div className="mt-2 space-y-1">
-                    {i.allocations.map((a) => (
-                      <div key={a.id} className="flex items-center justify-between gap-2 bg-muted/50 rounded-md px-3 py-1.5 text-xs">
-                        <span>
-                          <span className={`mr-2 px-1.5 py-0.5 rounded font-medium ${a.kind === "FEE" ? "bg-slate-200 text-slate-700" : "bg-green-100 text-green-700"}`}>
-                            {a.kind === "FEE" ? t("kind.FEE") : t("kind.PAYMENT")}
-                          </span>
-                          {a.date} · {a.accountName}{a.description ? ` · ${a.description}` : ""}
-                          {a.draft && <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{t("list.draftBadge")}</span>}
-                          {a.rejected && <span className="ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tc("status.REJECTED")}</span>}
-                          {a.feeDeducted ? (
-                            <span className="block mt-0.5 text-muted-foreground">
-                              {t("list.feeDeducted", { fee: fmtMoney(a.feeDeducted, i.currency), net: fmtMoney(a.amount - a.feeDeducted, i.currency), account: a.accountName })}
-                            </span>
-                          ) : null}
+      <Card className="mt-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("list.columns.invoice")}</TableHead>
+              <TableHead>{t("list.columns.party")}</TableHead>
+              <TableHead>{t("form.dueDate")}</TableHead>
+              <TableHead className="text-right">{t("form.amount")}</TableHead>
+              <TableHead><span className="sr-only">{t("list.columns.actions")}</span></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {shown.map((i) => {
+              const payable = i.direction === "PAYABLE";
+              const kind = payable ? tc("direction.PAYABLE") : tc("direction.RECEIVABLE");
+              const linked = i.allocations.length > 0;
+              const isExpanded = expanded === i.id;
+              const sub = [i.projectName, i.categoryName].filter(Boolean).join(" · ");
+              return (
+                <Fragment key={i.id}>
+                  <TableRow className={cn(linked && "border-b-0")}>
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-3">
+                        <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg border", payable ? "border-neg/40 text-neg" : "border-pos/40 text-pos")}>
+                          {payable ? <ArrowUpRight className="size-4" aria-hidden="true" /> : <ArrowDownLeft className="size-4" aria-hidden="true" />}
                         </span>
-                        <span className="flex items-center gap-2">
-                          <span className="font-medium">{fmtMoney(a.amount, i.currency)}</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" title={t("list.unlinkTitle")}
-                            disabled={busyId === a.id}
-                            onClick={() => { if (confirm(t("confirm.unlink"))) run(a.id, () => unlinkAllocation(a.id), t("toast.unlinked")); }}>
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </span>
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-2">
+                            <span className="font-mono font-semibold text-foreground">{i.number || kind}</span>
+                            {statusChip(i)}
+                            {i.attachment && (
+                              <a href={`/api/uploads/${i.attachment.split('/').pop()}`} target="_blank" rel="noreferrer"
+                                className="text-muted-foreground transition-colors duration-150 hover:text-primary" title={t("list.viewPdf")} aria-label={t("list.viewPdf")}>
+                                <Paperclip className="size-3.5" aria-hidden="true" />
+                              </a>
+                            )}
+                          </p>
+                          <p className="wf-label mt-1.5">{kind} · {i.currency}</p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="block text-foreground">{i.party ?? "—"}</span>
+                      {sub && <span className="block max-w-[16rem] truncate text-[12px] text-muted-foreground">{sub}</span>}
+                    </TableCell>
+                    <TableCell>
+                      <span className={cn("wf-num block", i.overdue ? "font-semibold text-neg" : "text-text-secondary")}>{t("list.due", { date: i.dueDate })}</span>
+                      {i.paidDate && <span className="wf-num block text-[12px] text-muted-foreground">{t("list.paidOn", { date: i.paidDate })}</span>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={cn("wf-figure block text-[14.5px]", i.status === "VOID" ? "text-muted-foreground line-through" : payable ? "text-neg" : "text-pos")}>
+                        {fmtMoney(i.amount, i.currency)}
+                      </span>
+                      {linked && (
+                        <span className="block text-[12px] text-muted-foreground">
+                          {payable ? t("list.paidAmount", { amount: fmtMoney(i.received, i.currency) }) : t("list.receivedAmount", { amount: fmtMoney(i.received, i.currency) })}
+                          {i.fees > EPS && ` · ${t("list.fees", { amount: fmtMoney(i.fees, i.currency) })}`}
+                        </span>
+                      )}
+                      {linked && i.difference > EPS && i.status !== "VOID" && (
+                        <span className="block text-[12px] font-medium text-warn" title={t("list.differenceTitle")}>
+                          {t("list.unmatchedDifference", { amount: fmtMoney(i.difference, i.currency) })}
+                        </span>
+                      )}
+                      {i.difference < -EPS && <span className="block text-[12px] font-medium text-neg">{t("list.overpaidBy", { amount: fmtMoney(-i.difference, i.currency) })}</span>}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        {i.status !== "VOID" && (
+                          <EditInvoiceDialog invoice={i} clients={clients} vendors={vendors} projects={projects} categories={categories} defaultUsdRate={defaultUsdRate} />
+                        )}
+                        {(i.status === "OPEN" || i.status === "PARTIAL") && <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} feeCategories={feeCategories} />}
+                        {i.status !== "VOID" && <LinkEntryDialog invoice={i} candidates={candidates} />}
+                        {isAdmin && !linked && i.status === "OPEN" && (
+                          <Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label={t("list.void")} title={t("list.void")} disabled={busyId === i.id}
+                            onClick={() => { if (confirm(t("confirm.void"))) run(i.id, () => voidInvoice(i.id), payable ? t("toast.billVoided") : t("toast.invoiceVoided")); }}>
+                            <Ban />
+                          </Button>
+                        )}
+                        {isAdmin && !linked && (
+                          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")} disabled={busyId === i.id}
+                            onClick={() => { if (confirm(t("confirm.delete"))) run(i.id, () => deleteInvoice(i.id), payable ? t("toast.billDeleted") : t("toast.invoiceDeleted")); }}>
+                            <Trash2 />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {linked && (
+                    <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
+                      <TableCell colSpan={5} className="pt-0 pb-3 whitespace-normal first:pl-[68px]">
+                        <button type="button" aria-expanded={isExpanded} onClick={() => setExpanded(isExpanded ? null : i.id)}
+                          className="inline-flex items-center gap-1.5 text-[12.5px] text-text-secondary transition-colors duration-150 hover:text-primary">
+                          <ChevronDown className={cn("size-3.5 transition-transform duration-150", isExpanded && "rotate-180")} aria-hidden="true" />
+                          {isExpanded ? t("list.hideLinked", { count: i.allocations.length }) : t("list.showLinked", { count: i.allocations.length })}
+                        </button>
+                        {isExpanded && (
+                          <ul className="mt-2 divide-y divide-border border-y border-border">
+                            {i.allocations.map((a) => (
+                              <li key={a.id} className="flex items-start justify-between gap-3 py-2.5">
+                                <div className="min-w-0 text-[13px]">
+                                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <Chip tone={a.kind === "FEE" ? "neutral" : "pos"}>{a.kind === "FEE" ? t("kind.FEE") : t("kind.PAYMENT")}</Chip>
+                                    <span className="wf-num text-muted-foreground">{a.date}</span>
+                                    <span className="text-text-secondary">{a.accountName}{a.description ? ` · ${a.description}` : ""}</span>
+                                    {a.draft && <Chip tone={ENTRY_STATUS_TONE.DRAFT}>{t("list.draftBadge")}</Chip>}
+                                    {a.rejected && <Chip tone={ENTRY_STATUS_TONE.REJECTED} mono>{tc("status.REJECTED")}</Chip>}
+                                  </p>
+                                  {a.feeDeducted ? (
+                                    <span className="mt-1 block text-[12px] text-muted-foreground">
+                                      {t("list.feeDeducted", { fee: fmtMoney(a.feeDeducted, i.currency), net: fmtMoney(a.amount - a.feeDeducted, i.currency), account: a.accountName })}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                  <span className="wf-figure">{fmtMoney(a.amount, i.currency)}</span>
+                                  <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-destructive" aria-label={t("list.unlinkTitle")} title={t("list.unlinkTitle")}
+                                    disabled={busyId === a.id}
+                                    onClick={() => { if (confirm(t("confirm.unlink"))) run(a.id, () => unlinkAllocation(a.id), t("toast.unlinked")); }}>
+                                    <X />
+                                  </Button>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })}
+            {shown.length === 0 && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={5} className="py-10 text-center whitespace-normal text-muted-foreground">{openOnly ? t("list.emptyOpen") : t("list.empty")}</TableCell>
+              </TableRow>
             )}
-            </div>
-          ))}
-          {shown.length === 0 && <div className="p-8 text-center text-muted-foreground text-sm">{openOnly ? t("list.emptyOpen") : t("list.empty")}</div>}
-        </CardContent>
+          </TableBody>
+        </Table>
       </Card>
-    </div>
+    </>
   );
 }

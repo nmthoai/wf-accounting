@@ -4,9 +4,11 @@ import { EntryForm } from "../entry-form";
 import { redirect } from "next/navigation";
 import { defaultUsdRate } from "@/lib/fx";
 import { requirePageSession } from "@/lib/session";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { EntryStatus } from "@/components/ledger/entry-status";
 import { fmtMoney } from "@/lib/money";
+import { PageHeader } from "@/components/wf/page-header";
+import { Chip, ENTRY_STATUS_TONE, ENTRY_TYPE_TONE, PanelHead } from "@/components/wf/ledger-ui";
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -58,64 +60,75 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const action = (a: string) => (t.has(`history.action.${a}`) ? t(`history.action.${a}`) : a);
   const fieldName = (f: string) => (t.has(`history.field.${f}`) ? t(`history.field.${f}`) : f);
 
+  const status = label(`status.${transaction.status}`, transaction.status);
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{transaction.status === "POSTED" ? t("edit.titlePosted") : t("edit.title")}</h1>
-        <p className="text-muted-foreground mt-1">
-          {transaction.createdBy ? t("edit.enteredBy", { name: transaction.createdBy }) : t("edit.subtitle")}
-        </p>
-      </div>
-
-      <EntryStatus
-        id={transaction.id}
-        status={transaction.status}
-        isAdmin={session?.user?.role === "ADMIN"}
-        reversalOf={ref(transaction.reversalOf)}
-        reversedBy={ref(transaction.reversedBy)}
-        correctionOf={ref(correctionOf)}
-        withFee={!!transaction.deductedFee || !!transaction.deductedFromId}
-        rejection={rejection}
+    <div className="mx-auto max-w-3xl">
+      <PageHeader
+        section="ledger"
+        title={transaction.status === "POSTED" ? t("edit.titlePosted") : t("edit.title")}
+        description={transaction.createdBy ? t("edit.enteredBy", { name: transaction.createdBy }) : t("edit.subtitle")}
+        meta={
+          <>
+            <Chip tone={ENTRY_TYPE_TONE[transaction.type] ?? "neutral"}>{label(`type.${transaction.type}`, transaction.type)}</Chip>
+            <Chip tone={ENTRY_STATUS_TONE[transaction.status] ?? "neutral"} mono dot>
+              {transaction.reversalOfId ? t("row.reversal", { status }) : transaction.reversedBy ? t("row.reversed", { status }) : status}
+            </Chip>
+          </>
+        }
       />
 
-      <EntryForm
-        categories={categories}
-        projects={projects}
-        vendors={vendors}
-        accounts={accounts}
-        defaultUsdRate={usdRate}
-        isAdmin={session?.user?.role === "ADMIN"}
-        initialData={transaction}
-        locked={transaction.status === "POSTED"}
-      />
+      <div className="grid gap-6">
+        <EntryStatus
+          id={transaction.id}
+          status={transaction.status}
+          isAdmin={session?.user?.role === "ADMIN"}
+          reversalOf={ref(transaction.reversalOf)}
+          reversedBy={ref(transaction.reversedBy)}
+          correctionOf={ref(correctionOf)}
+          withFee={!!transaction.deductedFee || !!transaction.deductedFromId}
+          rejection={rejection}
+        />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">{t("history.title")}</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {history.map((h) => (
-            <div key={h.id} className="text-sm border-b last:border-0 pb-2">
-              <div className="flex justify-between gap-3">
-                <span className="font-medium">
-                  {h.field && h.action !== "MATCH" && h.action !== "UNMATCH"
-                    ? t("history.actionField", { action: action(h.action), field: fieldName(h.field) })
-                    : action(h.action)}
-                </span>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+        <EntryForm
+          categories={categories}
+          projects={projects}
+          vendors={vendors}
+          accounts={accounts}
+          defaultUsdRate={usdRate}
+          isAdmin={session?.user?.role === "ADMIN"}
+          initialData={transaction}
+          locked={transaction.status === "POSTED"}
+        />
+
+        <Card>
+          <PanelHead title={t("history.title")} count={history.length} />
+          <ul className="wf-rows">
+            {history.map((h) => (
+              <li key={h.id} className="flex-wrap items-start">
+                <div className="min-w-48 flex-1">
+                  <p className="font-semibold text-foreground">
+                    {h.field && h.action !== "MATCH" && h.action !== "UNMATCH"
+                      ? t("history.actionField", { action: action(h.action), field: fieldName(h.field) })
+                      : action(h.action)}
+                  </p>
+                  {(h.action === "UPDATE" || h.action === "REVALUE") && (
+                    <p className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">{show(h.field, h.oldValue)} → <span className="text-foreground">{show(h.field, h.newValue)}</span></p>
+                  )}
+                  {(h.action === "CREATE" || h.action === "DELETE" || h.action === "LINK" || h.action === "UNLINK") && (
+                    <p className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">{h.newValue ?? h.oldValue}</p>
+                  )}
+                  {h.reason && <p className="text-[12px] text-text-secondary">{t("history.reason", { reason: h.reason })}</p>}
+                </div>
+                <span className="wf-num shrink-0 text-[12px] text-muted-foreground">
                   {h.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC{h.user ? ` · ${h.user}` : ""}
                 </span>
-              </div>
-              {(h.action === "UPDATE" || h.action === "REVALUE") && (
-                <p className="text-xs text-muted-foreground">{show(h.field, h.oldValue)} → <span className="text-foreground">{show(h.field, h.newValue)}</span></p>
-              )}
-              {(h.action === "CREATE" || h.action === "DELETE" || h.action === "LINK" || h.action === "UNLINK") && (
-                <p className="text-xs text-muted-foreground">{h.newValue ?? h.oldValue}</p>
-              )}
-              {h.reason && <p className="text-xs">{t("history.reason", { reason: h.reason })}</p>}
-            </div>
-          ))}
-          {history.length === 0 && <p className="text-sm text-muted-foreground">{t("history.empty")}</p>}
-        </CardContent>
-      </Card>
+              </li>
+            ))}
+            {history.length === 0 && <li className="text-muted-foreground">{t("history.empty")}</li>}
+          </ul>
+        </Card>
+      </div>
     </div>
   );
 }

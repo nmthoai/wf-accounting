@@ -1,35 +1,23 @@
-import Image from "next/image";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { LoginForm } from "./login-form";
-import { LanguageSwitcher } from "@/components/language-switcher";
+import { AuthShell } from "@/components/auth/auth-header";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 relative">
-      <div className="absolute top-4 right-4">
-        <LanguageSwitcher />
-      </div>
-      <div className="w-full max-w-md space-y-8 bg-card/50 backdrop-blur-sm p-8 rounded-2xl border shadow-lg">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center mb-6">
-            <Image src="/logo.svg" alt={t("logoAlt")} width={80} height={50} priority unoptimized className="dark:brightness-150" />
-          </div>
-          <h2 className="font-serif text-4xl font-bold tracking-tight">
-            <span className="text-primary">Work</span>
-            <span className="text-[#0EA5E9]">Factory</span>
-          </h2>
-          <div className="mt-2 text-sm text-muted-foreground flex flex-col gap-1">
-            <p>{t("subtitle1")}</p>
-            <p>{t("subtitle2")}</p>
-          </div>
-        </div>
-        <Suspense fallback={null}>
-          <LoginForm />
-        </Suspense>
-      </div>
-    </div>
+    <AuthShell lead={t("lead")}>
+      <Card className="w-full max-w-[440px]">
+        <CardContent className="p-6 sm:p-8">
+          <p className="wf-label">{t("note")}</p>
+          <h2 className="mt-3 text-[26px] leading-tight font-extrabold tracking-[-0.025em] text-foreground">{t("login")}</h2>
+          <Suspense fallback={null}>
+            <LoginForm />
+          </Suspense>
+        </CardContent>
+      </Card>
+    </AuthShell>
   );
 }

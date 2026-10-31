@@ -11,19 +11,19 @@ import {
   finishOnboarding,
 } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/toast";
-import { Loader2, KeyRound, ShieldCheck } from "lucide-react";
+import { Notice } from "@/components/wf/ledger-ui";
+import { Loader2 } from "lucide-react";
 
 type Step = "password" | "twofa";
 
 export function OnboardWizard({
-  username,
   needsPasswordChange,
   needs2FA,
 }: {
-  username: string;
   needsPasswordChange: boolean;
   needs2FA: boolean;
 }) {
@@ -123,89 +123,76 @@ export function OnboardWizard({
 
   const totalSteps = (needsPasswordChange ? 1 : 0) + (needs2FA ? 1 : 0);
   const currentIndex = step === "password" ? 1 : needsPasswordChange ? 2 : 1;
+  const titleClass = "mt-3 text-[26px] leading-tight font-extrabold tracking-[-0.025em] text-foreground";
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="font-serif text-3xl font-bold tracking-tight text-primary">
+    <Card className="w-full max-w-[440px]">
+      <CardContent className="p-6 sm:p-8">
+        <p className="wf-label">
           {t("title")}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {t.rich("signedInAs", { username, b: (c) => <span className="font-medium">{c}</span> })}
+          {totalSteps > 1 && <> · {t("step", { current: currentIndex, total: totalSteps })}</>}
         </p>
-        {totalSteps > 1 && (
-          <p className="text-xs text-muted-foreground">
-            {t("step", { current: currentIndex, total: totalSteps })}
-          </p>
-        )}
-      </div>
 
-      <div className="rounded-xl bg-card p-6 shadow-sm border space-y-6">
         {step === "password" ? (
-          <form onSubmit={handlePassword} className="space-y-4">
-            <div className="flex items-center gap-2 text-primary">
-              <KeyRound className="h-5 w-5" />
-              <h3 className="font-semibold">{t("password.title")}</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t("password.intro")}
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">{t("password.newLabel")}</Label>
-              <Input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                required
-                minLength={8}
-                placeholder={t("password.newPlaceholder")}
-                autoComplete="new-password"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">{t("password.confirmLabel")}</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                minLength={8}
-                placeholder={t("password.confirmPlaceholder")}
-                autoComplete="new-password"
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={busy}>
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("password.save")}
-            </Button>
-          </form>
+          <>
+            <h2 className={titleClass}>{t("password.title")}</h2>
+            <p className="mt-2 text-text-secondary">{t("password.intro")}</p>
+            <form onSubmit={handlePassword} className="mt-7 grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="newPassword">{t("password.newLabel")}</Label>
+                <Input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  required
+                  minLength={8}
+                  placeholder={t("password.newPlaceholder")}
+                  autoComplete="new-password"
+                  className="h-11"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">{t("password.confirmLabel")}</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  minLength={8}
+                  placeholder={t("password.confirmPlaceholder")}
+                  autoComplete="new-password"
+                  className="h-11"
+                />
+              </div>
+              {error && <Notice tone="error">{error}</Notice>}
+              <Button type="submit" className="mt-2 h-11 w-full" disabled={busy}>
+                {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("password.save")}
+              </Button>
+            </form>
+          </>
         ) : (
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 text-primary">
-              <ShieldCheck className="h-5 w-5" />
-              <h3 className="font-semibold">{t("twoFactor.title")}</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {t("twoFactor.intro")}
-            </p>
+          <>
+            <h2 className={titleClass}>{t("twoFactor.title")}</h2>
+            <p className="mt-2 text-text-secondary">{t("twoFactor.intro")}</p>
 
-            <div className="flex flex-col items-center text-center gap-4">
+            <div className="mt-6 flex flex-col items-center gap-4 text-center">
               {loadingQr ? (
-                <div className="flex h-48 w-48 items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex size-48 items-center justify-center">
+                  <Loader2 className="size-8 animate-spin text-muted-foreground" aria-hidden="true" />
                 </div>
               ) : qrCodeUrl ? (
                 <>
+                  {/* The QR image carries its own white quiet zone, so it scans in either theme. */}
                   <Image
                     src={qrCodeUrl}
                     alt={t("twoFactor.qrAlt")}
                     width={192}
                     height={192}
-                    className="w-48 h-48 border rounded-lg bg-white p-2"
+                    className="size-48 rounded-lg border border-border-strong"
                   />
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">{t("twoFactor.manualKey")}</p>
-                    <code className="bg-muted px-2 py-1 rounded text-xs text-primary tracking-widest break-all">
+                  <div className="grid w-full gap-2">
+                    <p className="wf-label">{t("twoFactor.manualKey")}</p>
+                    <code className="rounded-md bg-muted/40 px-2.5 py-1.5 font-mono text-[13px] tracking-[0.12em] break-all text-foreground">
                       {secret}
                     </code>
                   </div>
@@ -213,8 +200,8 @@ export function OnboardWizard({
               ) : null}
             </div>
 
-            <form onSubmit={handleVerify2FA} className="space-y-4 pt-4 border-t">
-              <div className="space-y-2 text-left">
+            <form onSubmit={handleVerify2FA} className="mt-6 grid gap-4 border-t border-border pt-6">
+              <div className="grid gap-2">
                 <Label htmlFor="token">{t("twoFactor.codeLabel")}</Label>
                 <Input
                   id="token"
@@ -225,17 +212,17 @@ export function OnboardWizard({
                   onChange={(e) => setToken(e.target.value.replace(/\D/g, ""))}
                   required
                   maxLength={6}
-                  className="text-center tracking-widest text-lg"
+                  className="h-11 font-mono text-[15px] tracking-[0.3em] placeholder:font-sans placeholder:tracking-normal"
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button className="w-full" type="submit" disabled={busy || token.length < 6 || !qrCodeUrl}>
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("twoFactor.verify")}
+              {error && <Notice tone="error">{error}</Notice>}
+              <Button className="mt-2 h-11 w-full" type="submit" disabled={busy || token.length < 6 || !qrCodeUrl}>
+                {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("twoFactor.verify")}
               </Button>
             </form>
-          </div>
+          </>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

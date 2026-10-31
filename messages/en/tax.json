@@ -6,11 +6,19 @@
     "disclaimer": "Your own record of the declarations your accountant filed, typed from the filed PDFs. It is kept apart from your entries, invoices and their files, and is only compared with the books, quarter by quarter, to show gaps. It is not a declaration and not a statement of compliance — the flags are questions, not conclusions. Only you can see this page.",
     "addReturn": "Record a declaration"
   },
+  "stats": {
+    "severityCount": "{count} {severity}",
+    "knownDetail": "Set apart, each with your note",
+    "returns": "Declarations recorded",
+    "quarters": "{count, plural, one {# quarter} other {# quarters}} in the table",
+    "difference": "Books − declared [34]",
+    "differenceDetail": "{period}: {books} in the books, {declared} declared"
+  },
   "flags": {
-    "title": "To look at ({count})",
+    "title": "To look at",
     "subtitle": "Gaps between the declarations and the books. When you've looked at one, mark it as known with your note — it stays here, set apart.",
     "none": "Nothing to look at.",
-    "known": "Known ({count})",
+    "known": "Known",
     "markKnown": "Mark as known",
     "reopen": "Reopen",
     "reopenConfirm": "Reopen this flag? Your note comes off it; the history keeps it.",

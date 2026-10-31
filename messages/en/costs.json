@@ -28,6 +28,7 @@
     "renewalsNote": "From the renewal dates recorded"
   },
   "views": {
+    "label": "View",
     "pending": "Pending ({count})",
     "converted": "In the ledger ({count})",
     "dismissed": "Not company costs ({count})",
@@ -66,6 +67,7 @@
     "providerPlaceholder": "e.g. Google Workspace, OpenAI, Contabo",
     "receiptDate": "Receipt date",
     "amount": "Amount as printed",
+    "currency": "Currency",
     "periodFrom": "Service period from",
     "periodTo": "to",
     "receiptNumber": "Invoice / receipt number",

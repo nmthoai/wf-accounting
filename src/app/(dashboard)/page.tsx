@@ -1,12 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ArrowDownLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { computeBalances, cashPosition, totalsList, settlement, isMoneyIn, isPnl, isBooked, toVnd, fmtMoney, BOOKED_ALLOCATIONS, type Totals , vnTodayStart } from "@/lib/money";
 import { getTranslations, getLocale } from "next-intl/server";
 import { fmtDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/wf/page-header";
+import { Chip, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
+import { GiniBadge } from "@/components/gini/gini-avatar";
 
 export default async function DashboardPage() {
   await requirePageSession(); // second line behind the proxy
@@ -89,244 +93,206 @@ export default async function DashboardPage() {
     .sort((x, y) => y.net - x.net)
     .slice(0, 5);
 
-  const formatVnd = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
   const cashSubtitle = accounts.length > 0
     ? tr("cards.cashSubtitle", { count: accounts.filter((a) => a.type === "BANK" || a.type === "CASH").length })
     : tr("cards.cashNoAccounts");
+  const vnd = (v: number) => fmtMoney(v, "VND");
+
+  const comingRows = (items: ReturnType<typeof comingItem>[]) => items.slice(0, 4).map((i) => (
+    <li key={i.id}>
+      <div className="min-w-0">
+        <p className="truncate text-foreground">{i.label}</p>
+        {i.sub && <p className="truncate text-[12px] text-muted-foreground">{i.sub}</p>}
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        {i.overdue && <Chip tone="neg" mono>{tr("coming.overdue")}</Chip>}
+        <span className="wf-num hidden text-[12px] text-muted-foreground sm:inline">{tr("coming.due", { date: i.due })}</span>
+        <span className="wf-figure min-w-[7.5rem] text-right">{fmtMoney(i.amount, i.currency)}</span>
+      </div>
+    </li>
+  ));
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">{tr("page.title")}</h1>
-          <p className="text-muted-foreground mt-1">{tr("page.subtitle")}</p>
-          {drafts > 0 && (
-            <Link href="/ledger?view=drafts" className="inline-block mt-2 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 hover:underline">
-              {tr("page.draftsWaiting", { count: drafts })}
-            </Link>
-          )}
-          {rejected > 0 && (
-            <Link href="/ledger?view=rejected" className="inline-block mt-2 ml-2 text-xs px-2 py-1 rounded bg-red-100 text-red-800 hover:underline">
-              {tr("page.rejectedWaiting", { count: rejected })}
-            </Link>
-          )}
-        </div>
-        <Link href="/entry">
-          <Button className="gap-2"><Plus className="h-4 w-4" />{tr("page.newEntry")}</Button>
-        </Link>
-      </div>
+    <div>
+      <PageHeader
+        section="dashboard"
+        title={tr("page.title")}
+        description={tr("page.subtitle")}
+        meta={(drafts > 0 || rejected > 0) && (
+          <>
+            {drafts > 0 && (
+              <Link href="/ledger?view=drafts" className="wf-chip wf-chip--warn wf-chip--dot">{tr("page.draftsWaiting", { count: drafts })}</Link>
+            )}
+            {rejected > 0 && (
+              <Link href="/ledger?view=rejected" className="wf-chip wf-chip--neg wf-chip--dot">{tr("page.rejectedWaiting", { count: rejected })}</Link>
+            )}
+          </>
+        )}
+        actions={
+          <Button render={<Link href="/entry" />} nativeButton={false}><Plus />{tr("page.newEntry")}</Button>
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{tr("cards.cashTitle")}</CardTitle>
-            <Wallet className="h-4 w-4 opacity-75" />
-          </CardHeader>
-          <CardContent>
-            {liquid.length === 0 && <div className="text-2xl font-bold">{formatVnd(0)}</div>}
-            {liquid.map(([c, v], i) => (
-              <div key={c} className={i === 0 ? "text-2xl font-bold" : "text-lg font-semibold"}>{fmtMoney(v, c)}</div>
-            ))}
-            <p className="text-xs opacity-75 mt-1">{cashSubtitle}</p>
-          </CardContent>
-        </Card>
+      <StatStrip className="lg:grid-cols-4">
+        <Stat label={tr("cards.cashTitle")} icon={Wallet} emphasis sub={cashSubtitle}>
+          {liquid.length === 0 && vnd(0)}
+          {liquid.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>))}
+        </Stat>
+        <Stat label={tr("cards.netSurplusTitle")} icon={TrendingUp} tone={netSurplus >= 0 ? "pos" : "neg"} sub={tr("cards.netSurplusSubtitle")}>
+          {vnd(netSurplus)}
+        </Stat>
+        <Stat label={tr("cards.totalIncomeTitle")} icon={ArrowDownLeft} tone="pos" sub={tr("cards.entries", { count: income.filter(counted).length })}>
+          {vnd(totalIncome)}
+        </Stat>
+        <Stat label={tr("cards.totalExpensesTitle")} icon={ArrowUpRight} tone="neg" sub={tr("cards.entries", { count: expense.filter(counted).length })}>
+          {vnd(totalExpense)}
+        </Stat>
+      </StatStrip>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{tr("cards.netSurplusTitle")}</CardTitle>
-            <TrendingUp className={`h-4 w-4 ${netSurplus >= 0 ? "text-green-500" : "text-red-500"}`} />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${netSurplus >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {formatVnd(netSurplus)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">{tr("cards.netSurplusSubtitle")}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{tr("cards.totalIncomeTitle")}</CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatVnd(totalIncome)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{tr("cards.entries", { count: income.filter(counted).length })}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{tr("cards.totalExpensesTitle")}</CardTitle>
-            <ArrowDownRight className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{formatVnd(totalExpense)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{tr("cards.entries", { count: expense.filter(counted).length })}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{tr("accounts.title")}</CardTitle>
-            <Link href="/accounts"><Button variant="outline" size="sm">{tr("accounts.manage")}</Button></Link>
-          </CardHeader>
-          <CardContent className="space-y-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        <Card className="lg:col-span-4">
+          <PanelHead
+            title={tr("accounts.title")}
+            count={accountList.length}
+            actions={<Button variant="outline" size="sm" render={<Link href="/accounts" />} nativeButton={false}>{tr("accounts.manage")}</Button>}
+          />
+          <ul className="wf-rows flex-1">
             {accountList.map((a) => {
               const b = balances.get(a.id) ?? 0;
               return (
-                <div key={a.id} className="flex items-center justify-between text-sm">
-                  <span className="truncate">{a.name}</span>
-                  <span className={`font-medium ${b < 0 ? "text-red-600" : ""}`}>{fmtMoney(b, a.currency)}</span>
-                </div>
+                <li key={a.id}>
+                  <div className="min-w-0">
+                    <p className="truncate text-foreground">{a.name}</p>
+                    <p className="wf-label mt-1">{tc(`accountType.${a.type}`)} · {a.currency}</p>
+                  </div>
+                  <span className={cn("wf-figure", b < 0 && "text-neg")}>{fmtMoney(b, a.currency)}</span>
+                </li>
               );
             })}
-            {accountList.length === 0 && <p className="text-xs text-muted-foreground">{tr("accounts.empty")}</p>}
-            {ownerTotals.map(([c, v]) => (
-              <p key={c} className={`text-xs border-t pt-2 ${v < 0 ? "text-red-600" : "text-amber-700"}`}>
-                {v < 0 ? tr("accounts.companyOwesOwner", { amount: fmtMoney(-v, c) }) : tr("accounts.ownerHolds", { amount: fmtMoney(v, c) })}
-              </p>
-            ))}
-            {unclassified > 0 && (
-              <Link href="/accounts" className="block text-xs text-amber-700 border-t pt-2 hover:underline">
-                {tr("accounts.needClassifying", { count: unclassified })}
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{tr("coming.title")}</CardTitle>
-            <Link href="/invoices"><Button variant="outline" size="sm">{tr("coming.viewAll")}</Button></Link>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="font-medium text-red-600">{tr("coming.goingOut")}</span>
-                <span className="font-semibold text-red-600">{apOutstanding}</span>
-              </div>
-              <div className="space-y-1">
-                {comingOut.slice(0, 4).map((i) => (
-                  <div key={i.id} className="flex items-center justify-between text-sm">
-                    <span className="truncate">{i.label}{i.sub ? <span className="text-muted-foreground"> · {i.sub}</span> : null}</span>
-                    <span className="flex items-center gap-2 shrink-0">
-                      {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tr("coming.overdue")}</span>}
-                      <span className="text-muted-foreground text-xs">{tr("coming.due", { date: i.due })}</span>
-                      <span className="font-medium">{fmtMoney(i.amount, i.currency)}</span>
-                    </span>
-                  </div>
-                ))}
-                {comingOut.length === 0 && <p className="text-xs text-muted-foreground">{tr("coming.nothingToPay")}</p>}
-              </div>
-            </div>
-            <div className="border-t pt-3">
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="font-medium text-green-700">{tr("coming.comingIn")}</span>
-                <span className="font-semibold text-green-700">{arOutstanding}</span>
-              </div>
-              <div className="space-y-1">
-                {comingIn.slice(0, 4).map((i) => (
-                  <div key={i.id} className="flex items-center justify-between text-sm">
-                    <span className="truncate">{i.label}{i.sub ? <span className="text-muted-foreground"> · {i.sub}</span> : null}</span>
-                    <span className="flex items-center gap-2 shrink-0">
-                      {i.overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tr("coming.overdue")}</span>}
-                      <span className="text-muted-foreground text-xs">{tr("coming.due", { date: i.due })}</span>
-                      <span className="font-medium">{fmtMoney(i.amount, i.currency)}</span>
-                    </span>
-                  </div>
-                ))}
-                {comingIn.length === 0 && <p className="text-xs text-muted-foreground">{tr("coming.nothingIn")}</p>}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{tr("topProjects.title")}</CardTitle>
-            <Link href="/projects"><Button variant="outline" size="sm">{tr("topProjects.projects")}</Button></Link>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {topProjects.map((p) => (
-              <div key={p.id} className="flex items-center justify-between text-sm">
-                <span className="truncate">{p.name}</span>
-                <span className={`font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{formatVnd(p.net)}</span>
-              </div>
-            ))}
-            {topProjects.length === 0 && <p className="text-sm text-muted-foreground">{tr("topProjects.empty")}</p>}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>{tr("recent.title")}</CardTitle>
-            </div>
-            <Link href="/ledger">
-              <Button variant="outline" size="sm">{tr("recent.viewAll")}</Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-8">
-              {recentTransactions.map(t => (
-                <div key={t.id} className="flex items-center">
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-full ${isMoneyIn(t) ? "bg-green-100" : "bg-red-100"}`}>
-                    {isMoneyIn(t) ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownRight className="h-4 w-4 text-red-600" />}
-                  </div>
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">{isPnl(t.type) ? (t.category?.name || tr("recent.uncategorized")) : tc(`type.${t.type}`)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {t.description}
-                      {t.status === "DRAFT" && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">{tr("recent.draft")}</span>}
-                      {t.status === "REJECTED" && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">{tc("status.REJECTED")}</span>}
-                    </p>
-                  </div>
-                  <div className={`ml-auto font-medium ${isMoneyIn(t) ? "text-green-600" : ""}`}>
-                    {isMoneyIn(t) ? "+" : "-"}{fmtMoney(Math.abs(t.amount), t.currency)}
-                  </div>
-                </div>
+            {accountList.length === 0 && <li className="text-muted-foreground">{tr("accounts.empty")}</li>}
+          </ul>
+          {(ownerTotals.length > 0 || unclassified > 0) && (
+            <div className="grid gap-2 border-t border-border bg-muted/40 px-5 py-4 text-[13px]">
+              {ownerTotals.map(([c, v]) => (
+                <p key={c} className={cn("flex items-center gap-2", v < 0 ? "text-neg" : "text-warn")}>
+                  <ArrowLeftRight className="size-4 shrink-0" aria-hidden="true" />
+                  {v < 0 ? tr("accounts.companyOwesOwner", { amount: fmtMoney(-v, c) }) : tr("accounts.ownerHolds", { amount: fmtMoney(v, c) })}
+                </p>
               ))}
-              {recentTransactions.length === 0 && (
-                <div className="text-center py-4 text-muted-foreground text-sm">
-                  {tr("recent.empty")}
-                </div>
+              {unclassified > 0 && (
+                <Link href="/accounts" className="wf-chip wf-chip--warn wf-chip--dot justify-self-start">
+                  {tr("accounts.needClassifying", { count: unclassified })}
+                </Link>
               )}
             </div>
-          </CardContent>
+          )}
         </Card>
 
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>{tr("quickActions.title")}</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <Link href="/entry" className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <ArrowUpRight className="h-4 w-4 text-primary" />
-              </div>
-              <div className="font-medium">{tr("quickActions.logIncome")}</div>
-            </Link>
-            <Link href="/entry" className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <ArrowDownRight className="h-4 w-4 text-primary" />
-              </div>
-              <div className="font-medium">{tr("quickActions.logExpense")}</div>
-            </Link>
-            <Link href="/accounts" className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Wallet className="h-4 w-4 text-primary" />
-              </div>
-              <div className="font-medium">{tr("quickActions.transfers")}</div>
-            </Link>
-          </CardContent>
+        <Card className="lg:col-span-8">
+          <PanelHead
+            title={tr("coming.title")}
+            count={comingOut.length + comingIn.length}
+            actions={<Button variant="outline" size="sm" render={<Link href="/invoices" />} nativeButton={false}>{tr("coming.viewAll")}</Button>}
+          />
+          <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3 text-neg">
+            <p className="flex items-center gap-2 font-semibold"><ArrowUpRight className="size-4" aria-hidden="true" />{tr("coming.goingOut")}</p>
+            <p className="wf-figure">{apOutstanding}</p>
+          </div>
+          <ul className="wf-rows">
+            {comingRows(comingOut)}
+            {comingOut.length === 0 && <li className="text-muted-foreground">{tr("coming.nothingToPay")}</li>}
+          </ul>
+          <div className="flex items-center justify-between gap-3 border-y border-border px-5 py-3 text-pos">
+            <p className="flex items-center gap-2 font-semibold"><ArrowDownLeft className="size-4" aria-hidden="true" />{tr("coming.comingIn")}</p>
+            <p className="wf-figure">{arOutstanding}</p>
+          </div>
+          <ul className="wf-rows">
+            {comingRows(comingIn)}
+            {comingIn.length === 0 && <li className="text-muted-foreground">{tr("coming.nothingIn")}</li>}
+          </ul>
         </Card>
+
+        <Card className="lg:col-span-8">
+          <PanelHead
+            title={tr("recent.title")}
+            actions={<Button variant="outline" size="sm" render={<Link href="/ledger" />} nativeButton={false}>{tr("recent.viewAll")}</Button>}
+          />
+          <ul className="wf-rows">
+            {recentTransactions.map((t) => {
+              const moneyIn = isMoneyIn(t);
+              return (
+                <li key={t.id}>
+                  <div className="flex min-w-0 items-center gap-3">
+                    {moneyIn
+                      ? <ArrowDownLeft className="size-4 shrink-0 text-pos" aria-hidden="true" />
+                      : <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 text-foreground">
+                        <span className="truncate">{isPnl(t.type) ? (t.category?.name || tr("recent.uncategorized")) : tc(`type.${t.type}`)}</span>
+                        {t.status === "DRAFT" && <Chip tone="warn" mono>{tc("status.DRAFT")}</Chip>}
+                        {t.status === "REJECTED" && <Chip tone="neg" mono>{tc("status.REJECTED")}</Chip>}
+                      </p>
+                      <p className="truncate text-[12px] text-muted-foreground">
+                        <span className="wf-num">{fmtDate(t.date, locale)}</span>{t.description ? ` · ${t.description}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={cn("wf-figure", moneyIn && "text-pos")}>
+                    {moneyIn ? "+" : "\u2212"}{fmtMoney(Math.abs(t.amount), t.currency)}
+                  </span>
+                </li>
+              );
+            })}
+            {recentTransactions.length === 0 && <li className="text-muted-foreground">{tr("recent.empty")}</li>}
+          </ul>
+        </Card>
+
+        <div className="grid content-start gap-6 lg:col-span-4">
+          <Card>
+            <PanelHead title={tr("quickActions.title")} />
+            <ul className="wf-rows">
+              {[
+                { href: "/gini", title: tr("quickActions.gini"), sub: tr("quickActions.giniSub"), gini: true },
+                { href: "/entry", title: tr("quickActions.logIncome"), sub: tr("quickActions.logIncomeSub"), icon: ArrowDownLeft },
+                { href: "/entry", title: tr("quickActions.logExpense"), sub: tr("quickActions.logExpenseSub"), icon: ArrowUpRight },
+                { href: "/accounts", title: tr("quickActions.transfers"), sub: tr("quickActions.transfersSub"), icon: ArrowLeftRight },
+              ].map((a) => (
+                <li key={a.title} className="p-0!">
+                  <Link href={a.href} className="group flex w-full items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-secondary/45">
+                    {a.gini ? (
+                      <GiniBadge className="size-9" />
+                    ) : (
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border-strong text-primary">
+                        {a.icon && <a.icon className="size-4" aria-hidden="true" />}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-foreground">{a.title}</span>
+                      <span className={cn("block truncate text-[12px]", a.gini ? "wf-label mt-1 text-agent-text" : "text-muted-foreground")}>{a.sub}</span>
+                    </span>
+                    <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:translate-x-[3px] group-hover:text-primary" aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <Card>
+            <PanelHead
+              title={tr("topProjects.title")}
+              actions={<Button variant="outline" size="sm" render={<Link href="/projects" />} nativeButton={false}>{tr("topProjects.projects")}</Button>}
+            />
+            <ul className="wf-rows">
+              {topProjects.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/projects/${p.id}`} className="min-w-0 truncate text-foreground hover:text-primary">{p.name}</Link>
+                  <span className={cn("wf-figure", p.net >= 0 ? "text-primary" : "text-neg")}>{vnd(p.net)}</span>
+                </li>
+              ))}
+              {topProjects.length === 0 && <li className="text-muted-foreground">{tr("topProjects.empty")}</li>}
+            </ul>
+          </Card>
+        </div>
       </div>
     </div>
   );

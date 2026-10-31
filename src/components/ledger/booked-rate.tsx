@@ -67,41 +67,40 @@ export function BookedRate({ entry, isAdmin, locked, defaultUsdRate }: { entry: 
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-sm">
+    <div className="grid gap-2">
+      <p className="text-[13.5px] text-foreground tabular-nums">
         {t("revalue.booked", {
           rate: rateFmt.format(entry.exchangeRate), currency: entry.currency, vnd: vndFmt.format(booked),
           source: entry.rateSource ? tc(`rateSource.${entry.rateSource}`) : "—",
         })}
       </p>
-      {fee > 0 && <p className="text-xs text-muted-foreground">{t("revalue.withFee", { fee: fmtMoney(fee, entry.currency) })}</p>}
-      <p className="text-xs text-muted-foreground">
+      {fee > 0 && <p className="text-[12px] text-muted-foreground">{t("revalue.withFee", { fee: fmtMoney(fee, entry.currency) })}</p>}
+      <p className="text-[12px] text-muted-foreground">
         {locked ? t("revalue.postedHint") : entry.deductedFromId ? t("revalue.feeHint") : entry.transferId ? t("revalue.transferHint") : isAdmin ? t("revalue.keptHint") : t("revalue.adminOnly")}
       </p>
       {canRevalue && !open && (
-        <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>{t("revalue.open")}</Button>
+        <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setOpen(true)}>{t("revalue.open")}</Button>
       )}
       {canRevalue && open && (
-        <div className="space-y-3 rounded-md border bg-background p-3"
+        <div className="mt-2 grid gap-3 border-t border-border pt-4"
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!saving) save(); } }}>
-          <div className="flex bg-muted p-0.5 rounded text-xs font-medium w-fit">
+          <div className="wf-seg justify-self-start" role="group" aria-label={t("form.vndValue")}>
             {modes.map(([m, text]) => (
-              <button key={m} type="button" onClick={() => setMode(m)}
-                className={`px-2 py-1 rounded-sm ${mode === m ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</button>
+              <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}>{text}</button>
             ))}
           </div>
-          {mode === "MANUAL" && <Input type="number" step="any" min="0" value={rate} onChange={(e) => setRate(e.target.value)} placeholder={t("form.ratePlaceholder", { currency: entry.currency })} />}
-          {mode === "BANK" && <Input type="number" step="1" min="0" value={vnd} onChange={(e) => setVnd(e.target.value)} placeholder={fee ? t("revalue.netPlaceholder") : t("form.vndPlaceholder")} />}
-          <p className="text-sm font-medium tabular-nums">
+          {mode === "MANUAL" && <Input type="number" step="any" min="0" value={rate} onChange={(e) => setRate(e.target.value)} placeholder={t("form.ratePlaceholder", { currency: entry.currency })} className="font-mono" />}
+          {mode === "BANK" && <Input type="number" step="1" min="0" value={vnd} onChange={(e) => setVnd(e.target.value)} placeholder={fee ? t("revalue.netPlaceholder") : t("form.vndPlaceholder")} className="font-mono" />}
+          <p className="text-[13.5px] font-semibold text-foreground tabular-nums">
             {t("revalue.preview", { before: vndFmt.format(booked), after: after === null ? "…" : vndFmt.format(after) })}
           </p>
-          <div className="space-y-1">
+          <div className="grid gap-2">
             <Label htmlFor={`rv-${entry.id}`}>{t("revalue.reason")}</Label>
             <Input id={`rv-${entry.id}`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("revalue.reasonPlaceholder")} />
           </div>
           <div className="flex gap-2">
-            <Button type="button" size="sm" disabled={saving} onClick={save} className="gap-2">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}{t("revalue.confirm")}
+            <Button type="button" size="sm" variant="outline" disabled={saving} onClick={save}>
+              {saving && <Loader2 className="animate-spin" aria-hidden="true" />}{t("revalue.confirm")}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>{tc("actions.cancel")}</Button>
           </div>

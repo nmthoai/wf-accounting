@@ -6,8 +6,8 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Pencil, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CircleAlert, Pencil, Loader2 } from "lucide-react";
 import { notify } from "@/components/ui/toast";
 
 type Contact = { id: string; name: string; email: string | null; phone: string | null };
@@ -47,28 +47,34 @@ export function EditContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={tc("actions.edit")} />}>
-        <Pencil className="h-4 w-4" />
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" aria-label={tc("actions.edit")} title={tc("actions.edit")} />}>
+        <Pencil />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>{kind === "client" ? t("edit.clientTitle") : t("edit.vendorTitle")}</DialogTitle></DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4 pt-2">
-          <div className="space-y-2">
+        <form onSubmit={onSubmit} className="grid gap-4">
+          <div className="grid gap-2">
             <Label htmlFor={`n-${contact.id}`}>{t("form.name")}</Label>
             <Input id={`n-${contact.id}`} name="name" defaultValue={contact.name} required />
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor={`e-${contact.id}`}>{t("form.email")}</Label>
             <Input id={`e-${contact.id}`} name="email" type="email" defaultValue={contact.email ?? ""} />
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor={`p-${contact.id}`}>{t("form.phone")}</Label>
             <Input id={`p-${contact.id}`} name="phone" type="tel" defaultValue={contact.phone ?? ""} placeholder="+84 …" />
           </div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
-          <Button type="submit" className="w-full" disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("edit.save")}
-          </Button>
+          {err && (
+            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+              <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="animate-spin" aria-hidden="true" />}{t("edit.save")}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

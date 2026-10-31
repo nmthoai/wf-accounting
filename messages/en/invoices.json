@@ -11,7 +11,8 @@
   },
   "filter": {
     "all": "All",
-    "openOnly": "Open only"
+    "openOnly": "Open only",
+    "label": "Which invoices and bills to show"
   },
   "newButton": "New invoice / bill",
   "label": {
@@ -23,6 +24,7 @@
     "FEE": "Evidenced fee"
   },
   "form": {
+    "direction": "Direction",
     "receivable": "Receivable — a client owes me",
     "payable": "Payable — I owe a vendor",
     "client": "Client",
@@ -40,6 +42,7 @@
     "number": "Invoice/bill number (optional)",
     "numberPlaceholder": "from the PDF",
     "amount": "Amount",
+    "currency": "Currency",
     "issueDate": "Issue date",
     "dueDate": "Due date",
     "notes": "Notes (optional)",
@@ -47,6 +50,11 @@
     "attach": "Attach the PDF (optional)"
   },
   "list": {
+    "columns": {
+      "invoice": "Invoice / bill",
+      "party": "Client · Vendor",
+      "actions": "Actions"
+    },
     "overdue": "Overdue",
     "viewPdf": "View PDF",
     "due": "due {date}",
@@ -129,6 +137,7 @@
   },
   "link": {
     "trigger": "Link an existing ledger entry",
+    "kind": "Link as",
     "title": "Link a ledger entry — {label}",
     "paymentHelp": "Use this when one bank transfer covers several invoices, or the payment is already in the ledger.",
     "feeHelp": "Only a fee with evidence attached (bank advice or receipt) can explain part of an invoice. A difference on its own is never treated as a fee.",

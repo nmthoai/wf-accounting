@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { linkCostItem } from "@/app/actions/costs";
 import { notify, notifyResult } from "@/components/ui/toast";
+import { Notice } from "@/components/wf/ledger-ui";
 
 export type Lookalike = { id: string; date: string; label: string; amount: string };
 
@@ -29,20 +30,21 @@ export function CostDuplicates({ itemId, lookalikes }: { itemId: string; lookali
     } finally { setBusy(null); }
   }
   return (
-    <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-2 text-sm">
-      <p className="font-medium text-amber-800">{t("duplicates.intro")}</p>
-      {lookalikes.map((l) => (
-        <div key={l.id} className="flex items-center justify-between gap-2 bg-white/70 p-2 rounded-md">
-          <span className="truncate">{l.date} · {l.label}</span>
-          <span className="flex items-center gap-2 shrink-0">
-            <span className="font-medium">{l.amount}</span>
-            <Button size="sm" variant="outline" className="h-7" disabled={!!busy} onClick={() => link(l.id)}>
-              {busy === l.id ? <Loader2 className="h-4 w-4 animate-spin" /> : t("duplicates.link")}
-            </Button>
-          </span>
-        </div>
-      ))}
-      <p className="text-xs text-amber-800/80">{t("duplicates.otherwise")}</p>
-    </div>
+    <Notice tone="warning" title={t("duplicates.intro")}>
+      <ul className="mt-2 divide-y divide-border border-y border-border">
+        {lookalikes.map((l) => (
+          <li key={l.id} className="flex items-center justify-between gap-3 py-2">
+            <span className="min-w-0 truncate"><span className="wf-num text-foreground">{l.date}</span> · {l.label}</span>
+            <span className="flex shrink-0 items-center gap-3">
+              <span className="wf-figure text-foreground">{l.amount}</span>
+              <Button size="xs" variant="outline" disabled={!!busy} onClick={() => link(l.id)}>
+                {busy === l.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("duplicates.link")}
+              </Button>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[12px] text-muted-foreground">{t("duplicates.otherwise")}</p>
+    </Notice>
   );
 }

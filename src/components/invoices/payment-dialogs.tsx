@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CheckCircle2, Link2, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CircleAlert, CircleCheck, Link2, Loader2 } from "lucide-react";
 import { recordPayment, linkToInvoice } from "@/app/actions/invoices";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { fmtMoney , vnToday } from "@/lib/money";
@@ -97,48 +97,50 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
 
   return (
     <Dialog open={open} onOpenChange={openDialog}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1 text-green-700" />}>
-        <CheckCircle2 className="h-3.5 w-3.5" /> {t("payment.record")}
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-pos hover:text-pos" aria-label={t("payment.record")} title={t("payment.record")} />}>
+        <CircleCheck />
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>{t("payment.title", { label: label(invoice, t) })}</DialogTitle></DialogHeader>
-        <form className="space-y-4 pt-2" onSubmit={(e) => {
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("payment.title", { label: label(invoice, t) })}</DialogTitle>
+          <DialogDescription>
+            {t.rich("payment.intro", {
+              direction: invoice.direction, label: label(invoice, t), amount: fmtMoney(invoice.difference, invoice.currency),
+              b: (c) => <span className="wf-num font-semibold text-foreground">{c}</span>,
+            })}
+          </DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-4" onSubmit={(e) => {
           const tooBig = uploadProblem(new FormData(e.currentTarget).getAll("files") as File[], tc);
           if (tooBig) { e.preventDefault(); notify.error(tooBig); return; }
           submit(e, (fd) => recordPayment(invoice.id, fd), { accountId, rateMode: foreign ? mode : "", requestId, feeCategoryId: fee > 0 ? feeCategoryId : "" });
         }}>
-          <p className="text-sm text-muted-foreground">
-            {t.rich("payment.intro", {
-              direction: invoice.direction, label: label(invoice, t), amount: fmtMoney(invoice.difference, invoice.currency),
-              b: (c) => <span className="font-medium text-foreground">{c}</span>,
-            })}
-          </p>
-          <div className="space-y-2">
+          <div className="grid gap-2 *:data-[slot=select-trigger]:w-full">
             <Label>{invoice.direction === "PAYABLE" ? t("payment.paidFrom") : t("payment.receivedInto")}</Label>
             <AccountSelect accounts={usable} value={accountId} onChange={setAccountId} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor={`pa-${invoice.id}`}>{receipt ? t("payment.amountSettled", { currency: invoice.currency }) : t("payment.amount", { currency: invoice.currency })}</Label>
               <Input id={`pa-${invoice.id}`} name="amount" type="number" step="any" min="0" value={amountText} onChange={(e) => setAmountText(e.target.value)} required />
             </div>
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor={`pd-${invoice.id}`}>{t("payment.date")}</Label>
               <Input id={`pd-${invoice.id}`} name="paidDate" type="date" defaultValue={today} required />
             </div>
           </div>
           {receipt && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
                 <Label htmlFor={`pf-${invoice.id}`}>{t("payment.feeDeducted", { currency: invoice.currency })}</Label>
                 <Input id={`pf-${invoice.id}`} name="feeDeducted" type="number" step="any" min="0" placeholder={t("payment.feePlaceholder")} value={feeText} onChange={(e) => setFeeText(e.target.value)} />
               </div>
               {fee > 0 && (
-                <div className="space-y-2">
+                <div className="grid gap-2">
                   <Label htmlFor={`pc-${invoice.id}`}>{t("payment.feeCategory")}</Label>
                   <Select value={feeCategoryId} onValueChange={(v) => setFeeCategoryId(v || "")}
                     items={feeCategories.map((c) => ({ value: c.id, label: c.name }))}>
-                    <SelectTrigger id={`pc-${invoice.id}`}><SelectValue placeholder={t("payment.feeCategoryPlaceholder")} /></SelectTrigger>
+                    <SelectTrigger id={`pc-${invoice.id}`} className="w-full"><SelectValue placeholder={t("payment.feeCategoryPlaceholder")} /></SelectTrigger>
                     <SelectContent>
                       {feeCategories.length === 0
                         ? <SelectItem value="none" disabled>{t("payment.noFeeCategories")}</SelectItem>
@@ -150,34 +152,39 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
             </div>
           )}
           {fee > 0 && (
-            <dl className="rounded-md border p-3 text-sm space-y-1 tabular-nums">
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("payment.breakdown.settled")}</dt><dd>{fmtMoney(settled, invoice.currency)}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("payment.breakdown.fee")}</dt><dd>− {fmtMoney(fee, invoice.currency)}</dd></div>
-              <div className="flex justify-between gap-4 border-t pt-1 font-medium">
-                <dt>{t("payment.breakdown.net", { account: account?.name ?? "—" })}</dt><dd>{fmtMoney(settled - fee, invoice.currency)}</dd>
+            <dl className="grid gap-1.5 border-y border-border py-3 text-[13px]">
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("payment.breakdown.settled")}</dt><dd className="wf-num">{fmtMoney(settled, invoice.currency)}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("payment.breakdown.fee")}</dt><dd className="wf-num">{"−"}{fmtMoney(fee, invoice.currency)}</dd></div>
+              <div className="flex justify-between gap-4 border-t border-border pt-1.5 font-semibold text-foreground">
+                <dt>{t("payment.breakdown.net", { account: account?.name ?? "—" })}</dt><dd className="wf-figure">{fmtMoney(settled - fee, invoice.currency)}</dd>
               </div>
             </dl>
           )}
-          <p className="text-xs text-muted-foreground">{receipt ? t("payment.feeNote") : t("payment.shortfallNote")}</p>
+          <p className="text-[12px] text-muted-foreground">{receipt ? t("payment.feeNote") : t("payment.shortfallNote")}</p>
           {foreign && (
-            <div className="space-y-2 rounded-md border p-3 bg-muted/30">
-              <Label>{t("payment.vndValue")}</Label>
-              <div className="flex bg-muted p-0.5 rounded text-xs font-medium w-fit">
+            <div className="grid gap-2 border-t border-border pt-4">
+              <Label htmlFor={mode === "DEFAULT" ? undefined : `pv-${invoice.id}`}>{t("payment.vndValue")}</Label>
+              <div className="wf-seg justify-self-start" role="group" aria-label={t("payment.vndValue")}>
                 {modes.map(([m, text]) => (
-                  <button key={m} type="button" onClick={() => setRateMode(m)}
-                    className={`px-2 py-1 rounded-sm ${mode === m ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</button>
+                  <button key={m} type="button" aria-pressed={mode === m} onClick={() => setRateMode(m)}>{text}</button>
                 ))}
               </div>
-              {mode === "BANK" && <Input name="vndAmount" type="number" step="1" min="0" required placeholder={t("payment.vndPlaceholder")} />}
-              {mode === "MANUAL" && <Input name="rate" type="number" step="any" min="0" required placeholder={t("payment.ratePlaceholder", { currency: invoice.currency })} />}
+              {mode === "BANK" && <Input id={`pv-${invoice.id}`} name="vndAmount" type="number" step="1" min="0" required placeholder={t("payment.vndPlaceholder")} />}
+              {mode === "MANUAL" && <Input id={`pv-${invoice.id}`} name="rate" type="number" step="any" min="0" required placeholder={t("payment.ratePlaceholder", { currency: invoice.currency })} />}
             </div>
           )}
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor={`pe-${invoice.id}`}>{t("payment.evidence")}</Label>
             <Input id={`pe-${invoice.id}`} name="files" type="file" multiple accept="image/*,.pdf,.zip,.xml" />
           </div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
-          <Button type="submit" className="w-full" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("payment.record")}</Button>
+          {err && (
+            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+              <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="submit" disabled={saving}>{saving && <Loader2 className="animate-spin" aria-hidden="true" />}{t("payment.record")}</Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
@@ -200,27 +207,28 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={t("link.trigger")} />}>
-        <Link2 className="h-4 w-4" />
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" aria-label={t("link.trigger")} title={t("link.trigger")} />}>
+        <Link2 />
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>{t("link.title", { label: label(invoice, t) })}</DialogTitle></DialogHeader>
-        <form className="space-y-4 pt-2" onSubmit={(e) => submit(e, (fd) => linkToInvoice(invoice.id, fd), { kind, transactionId: entryId })}>
-          <div className="flex bg-muted p-1 rounded-lg text-sm">
-            {([["PAYMENT", t("kind.PAYMENT")], ["FEE", t("kind.FEE")]] as const).map(([k, text]) => (
-              <button key={k} type="button" onClick={() => { setKind(k); setEntryId(""); }}
-                className={`flex-1 py-1.5 rounded-md font-medium ${kind === k ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</button>
-            ))}
+        <form className="grid gap-4" onSubmit={(e) => submit(e, (fd) => linkToInvoice(invoice.id, fd), { kind, transactionId: entryId })}>
+          <div className="grid gap-2">
+            <div className="wf-seg justify-self-start" role="group" aria-label={t("link.kind")}>
+              {([["PAYMENT", t("kind.PAYMENT")], ["FEE", t("kind.FEE")]] as const).map(([k, text]) => (
+                <button key={k} type="button" aria-pressed={kind === k} onClick={() => { setKind(k); setEntryId(""); }}>{text}</button>
+              ))}
+            </div>
+            <p className="text-[12px] text-muted-foreground">
+              {kind === "PAYMENT"
+                ? t("link.paymentHelp")
+                : t("link.feeHelp")}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {kind === "PAYMENT"
-              ? t("link.paymentHelp")
-              : t("link.feeHelp")}
-          </p>
-          <div className="space-y-2">
-            <Label>{t("link.entry")}</Label>
+          <div className="grid gap-2">
+            <Label htmlFor={`le-${invoice.id}`}>{t("link.entry")}</Label>
             <Select value={entryId} onValueChange={(v) => setEntryId(v || "")}>
-              <SelectTrigger>
+              <SelectTrigger id={`le-${invoice.id}`} className="w-full">
                 {entry
                   ? <span className="truncate">{entry.date} · {t("link.free", { amount: fmtMoney(entry.free, entry.currency) })} · {entry.description ?? entry.accountName}</span>
                   : <span className="text-muted-foreground">{t("link.chooseEntry")}</span>}
@@ -238,12 +246,18 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor={`la-${invoice.id}`}>{t("link.amount", { label: label(invoice, t), currency: invoice.currency })}</Label>
             <Input key={entryId} id={`la-${invoice.id}`} name="amount" type="number" step="any" min="0" defaultValue={suggested} required />
           </div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
-          <Button type="submit" className="w-full" disabled={saving || !entryId}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("link.submit")}</Button>
+          {err && (
+            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+              <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="submit" disabled={saving || !entryId}>{saving && <Loader2 className="animate-spin" aria-hidden="true" />}{t("link.submit")}</Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

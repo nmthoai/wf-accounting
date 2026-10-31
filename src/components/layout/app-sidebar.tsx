@@ -1,85 +1,79 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Settings,
-  FileText,
-  Briefcase,
-  Users,
-  Wallet,
-  Landmark,
-  ReceiptText,
-  PackageCheck,
-  BarChart3,
-  Scale
-} from "lucide-react";
 import { useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
+import { NAV_GROUPS, isCurrent, visibleNav } from "./nav";
+import { BrandLockup } from "@/components/wf/brand";
 
-export const navigation = [
-  // key: the label under common "nav"
-  { key: "dashboard", href: "/", icon: LayoutDashboard },
-  { key: "ledger", href: "/ledger", icon: BookOpen },
-  { key: "invoices", href: "/invoices", icon: FileText },
-  { key: "projects", href: "/projects", icon: Briefcase },
-  { key: "contacts", href: "/contacts", icon: Users },
-  { key: "accounts", href: "/accounts", icon: Wallet },
-  { key: "bank", href: "/bank", icon: Landmark },
-  { key: "costs", href: "/costs", icon: ReceiptText },
-  { key: "reports", href: "/reports", icon: BarChart3 },
-  { key: "tax", href: "/tax", icon: Scale, ownerOnly: true },
-  { key: "handover", href: "/handover", icon: PackageCheck },
-  { key: "settings", href: "/settings", icon: Settings },
-];
-
-// Owner-only pages (Tax) are left out for everyone else.
-export const visibleNavigation = (isAdmin: boolean) => navigation.filter((item) => isAdmin || !("ownerOnly" in item && item.ownerOnly));
-
-export function AppSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
+// The nav itself: shared by the sidebar and the mobile sheet.
+export function SidebarNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
   const t = useTranslations("common.nav");
-  const tApp = useTranslations("common.app");
+  const items = visibleNav(isAdmin);
 
   return (
-    <div className="hidden md:flex md:w-72 md:flex-col border-r bg-card shadow-sm z-20 relative">
-      <div className="flex min-h-[4rem] py-4 shrink-0 items-center px-6 border-b">
-        <Link href="/" className="flex items-center gap-3 font-serif text-3xl font-black text-primary tracking-tight">
-          <Image src="/logo.svg" alt={tApp("logoAlt")} width={40} height={40} className="w-10 h-10 object-contain" />
-          <span>WorkFactory</span>
-        </Link>
-      </div>
-      <div className="flex flex-1 flex-col overflow-y-auto">
-        <nav className="flex-1 space-y-1 px-4 py-6">
-          {visibleNavigation(isAdmin).map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                className={cn(
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-                )}
-              >
-                <item.icon
-                  className={cn(
-                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
-                    "h-5 w-5 shrink-0"
+    <nav className="wf-nav" aria-label={t("menu")}>
+      {NAV_GROUPS.map((group) => {
+        const groupItems = items.filter((item) => item.group === group);
+        if (!groupItems.length) return null;
+        return (
+          <div key={group} className="wf-nav__group">
+            {group !== "overview" && <p className="wf-label">{t(`groups.${group}`)}</p>}
+            {groupItems.map((item) => {
+              const current = isCurrent(item, pathname);
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className="wf-nav__item"
+                  aria-current={current ? "page" : undefined}
+                  onClick={onNavigate}
+                >
+                  {item.icon ? (
+                    <item.icon aria-hidden="true" />
+                  ) : (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- Gini's 20px face */}
+                      <img className="wf-nav__face wf-on-dark" src="/gini/gini-face-on-dark.svg" alt="" />
+                      {/* eslint-disable-next-line @next/next/no-img-element -- Gini's 20px face */}
+                      <img className="wf-nav__face wf-on-light" src="/gini/gini-face-on-light.svg" alt="" />
+                    </>
                   )}
-                  aria-hidden="true"
-                />
-                {t(item.key)}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+                  <span className="wf-nav__name">{t(item.key)}</span>
+                  <span className={item.key === "gini" ? "wf-nav__index wf-nav__index--ai" : "wf-nav__index"}>{item.index}</span>
+                </Link>
+              );
+            })}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function SidebarBrand() {
+  const t = useTranslations("common.app");
+  return (
+    <div className="wf-sidebar__brand">
+      <BrandLockup product={t("product")} logoAlt={t("logoAlt")} />
     </div>
+  );
+}
+
+export function SidebarFoot() {
+  const t = useTranslations("common.nav");
+  return <div className="wf-sidebar__foot">{t("tagline")}</div>;
+}
+
+export function AppSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
+  return (
+    <aside className="wf-glass relative z-20 hidden w-(--size-sidebar) shrink-0 flex-col border-r border-border md:flex">
+      <SidebarBrand />
+      <div className="flex-1 overflow-y-auto">
+        <SidebarNav isAdmin={isAdmin} />
+      </div>
+      <SidebarFoot />
+    </aside>
   );
 }

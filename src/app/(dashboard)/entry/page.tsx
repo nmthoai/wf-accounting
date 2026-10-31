@@ -6,6 +6,7 @@ import { requirePageSession } from "@/lib/session";
 import { fmtMoney } from "@/lib/money";
 import { explained } from "@/lib/bank-match";
 import { CostDuplicates, type Lookalike } from "@/components/costs/cost-duplicates";
+import { PageHeader } from "@/components/wf/page-header";
 
 const DAY = 86_400_000;
 
@@ -98,26 +99,25 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{t("new.title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("new.subtitle")}</p>
+    <div className="mx-auto max-w-3xl">
+      <PageHeader section="ledger" title={t("new.title")} description={t("new.subtitle")} />
+
+      <div className="grid gap-6">
+        {costItem && <CostDuplicates itemId={costItem.id} lookalikes={lookalikes} />}
+
+        <EntryForm
+          categories={categories}
+          projects={projects}
+          vendors={vendors}
+          accounts={accounts}
+          defaultUsdRate={usdRate}
+          isAdmin={session?.user?.role === "ADMIN"}
+          prefill={prefill}
+          bankLine={bankLine}
+          correction={correction}
+          costItem={costItem}
+        />
       </div>
-
-      {costItem && <CostDuplicates itemId={costItem.id} lookalikes={lookalikes} />}
-
-      <EntryForm
-        categories={categories}
-        projects={projects}
-        vendors={vendors}
-        accounts={accounts}
-        defaultUsdRate={usdRate}
-        isAdmin={session?.user?.role === "ADMIN"}
-        prefill={prefill}
-        bankLine={bankLine}
-        correction={correction}
-        costItem={costItem}
-      />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { MONTH, addMonths } from "@/lib/pnl";
 
 // From–to months for the report, with the usual ranges one click away. Typed
@@ -31,32 +31,24 @@ export function PeriodPicker({ from, to, thisMonth, earliest, latest, min, max }
     [t("ytd"), `${thisMonth.slice(0, 4)}-01`, thisMonth],
     [t("all"), earliest < thisMonth ? earliest : thisMonth, latest > thisMonth ? latest : thisMonth],
   ];
-  const input = "h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm";
   const onKey = (e: React.KeyboardEvent) => { if (e.key === "Enter") apply(); };
 
   return (
-    <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:items-end">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="inline-flex items-center gap-2">
-          <label className="text-muted-foreground" htmlFor="period-from">{t("from")}</label>
-          <input id="period-from" type="month" value={draft.from} min={min} max={max} className={input}
-            onChange={(e) => setDraft({ ...draft, from: e.target.value })} onBlur={apply} onKeyDown={onKey} />
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <label className="text-muted-foreground" htmlFor="period-to">{t("to")}</label>
-          <input id="period-to" type="month" value={draft.to} min={min} max={max} className={input}
-            onChange={(e) => setDraft({ ...draft, to: e.target.value })} onBlur={apply} onKeyDown={onKey} />
-        </span>
+    <div className="flex w-full flex-col items-start gap-2 lg:w-auto lg:items-end">
+      <div className="wf-seg" role="group" aria-label={t("presets")}>
+        {presets.map(([label, f, tt]) => (
+          <button key={label} type="button" aria-pressed={f === from && tt === to} onClick={() => go(f, tt)}>
+            {label}
+          </button>
+        ))}
       </div>
-      <div className="flex flex-wrap gap-1 sm:justify-end">
-        {presets.map(([label, f, tt]) => {
-          const on = f === from && tt === to;
-          return (
-            <Button key={label} size="sm" variant={on ? "default" : "outline"} className="h-7 px-2.5 text-xs" aria-pressed={on} onClick={() => go(f, tt)}>
-              {label}
-            </Button>
-          );
-        })}
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="wf-label" htmlFor="period-from">{t("from")}</label>
+        <Input id="period-from" type="month" value={draft.from} min={min} max={max} className="wf-num w-40"
+          onChange={(e) => setDraft({ ...draft, from: e.target.value })} onBlur={apply} onKeyDown={onKey} />
+        <label className="wf-label" htmlFor="period-to">{t("to")}</label>
+        <Input id="period-to" type="month" value={draft.to} min={min} max={max} className="wf-num w-40"
+          onChange={(e) => setDraft({ ...draft, to: e.target.value })} onBlur={apply} onKeyDown={onKey} />
       </div>
     </div>
   );
