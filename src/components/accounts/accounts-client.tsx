@@ -9,13 +9,14 @@ import {
   Wallet, PiggyBank, User, Landmark, ArrowLeftRight, ArrowDownLeft, ArrowUpRight, Plus, Pencil, Trash2, Lock, Undo2,
 } from "lucide-react";
 import { deleteTransaction, reverseEntry } from "@/app/actions/ledger";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { deleteLoan } from "@/app/actions/accounts";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { fmtMoney, fmtVnd, totalsList, type Totals } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { Chip, ENTRY_TYPE_TONE, Notice, Stat, StatStrip } from "@/components/wf/ledger-ui";
 import {
   AccountDialog, TransferDialog, MovementDialog, LoanDialog,
-  type AccountRow, type LoanRow, type TransferRow, type SingleRow,
+  type AccountRow, type LoanRow, type TransferRow, type SingleRow, type CategoryOpt,
 } from "./accounts-dialogs";
 
 export type MovementRow = TransferRow | SingleRow;
@@ -29,10 +30,10 @@ function lines(totals: Totals) {
   return list.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>));
 }
 
-export function AccountsClient({ isAdmin, position, accounts, loans, movements }: {
+export function AccountsClient({ isAdmin, position, accounts, loans, categories, movements }: {
   isAdmin: boolean;
   position: { liquid: Totals; deposits: Totals; owner: Totals; capital: Totals };
-  accounts: AccountRow[]; loans: LoanRow[]; movements: MovementRow[];
+  accounts: AccountRow[]; loans: LoanRow[]; categories: CategoryOpt[]; movements: MovementRow[];
 }) {
   const t = useTranslations("accounts");
   const tc = useTranslations("common");
@@ -49,7 +50,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
       notifyResult(res, t("toast.movementReversed"), t("toast.couldNotReverse"));
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusyId(null); }
   }
 
@@ -57,8 +58,20 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
     if (!confirm(t("movements.deleteConfirm"))) return;
     setBusyId(id);
     try { await deleteTransaction(id); notify.success(t("toast.movementDeleted")); router.refresh(); }
-    catch { notify.error(tc("errors.somethingWrong")); }
+    catch { notifyFailure(); }
     finally { setBusyId(null); }
+  }
+
+  // A loan in use can't be deleted: no confirmation, the server says why.
+  async function removeLoan(l: LoanRow) {
+    if (l.movementCount === 0 && !confirm(t("loans.deleteConfirm", { lender: l.lender }))) return;
+    setBusyId(l.id);
+    try {
+      const res = await deleteLoan(l.id);
+      if (notifyResult(res, t("toast.loanDeleted"))) router.refresh();
+    } catch {
+      notifyFailure();
+    } finally { setBusyId(null); }
   }
 
   const editButton = (
@@ -97,7 +110,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
 
       <div className="flex flex-wrap gap-2">
         <TransferDialog accounts={accounts} trigger={<Button><ArrowLeftRight />{t("actions.transfer")}</Button>} />
-        <MovementDialog accounts={accounts} loans={loans} trigger={<Button variant="outline"><Plus />{t("actions.capitalOrLoan")}</Button>} />
+        <MovementDialog accounts={accounts} loans={loans} categories={categories} trigger={<Button variant="outline"><Plus />{t("actions.capitalOrLoan")}</Button>} />
         <LoanDialog trigger={<Button variant="outline"><Plus />{t("actions.newLoan")}</Button>} />
         {isAdmin && <AccountDialog trigger={<Button variant="outline"><Plus />{t("actions.newAccount")}</Button>} />}
       </div>
@@ -117,7 +130,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
                   <span className={cn("wf-figure", m.kind !== "OTHER_OUT" && "text-pos")}>
                     {m.kind === "OTHER_OUT" ? "−" : "+"}{fmtMoney(Math.abs(m.amount), m.currency)}
                   </span>
-                  <MovementDialog accounts={accounts} loans={loans} movement={m} trigger={<Button size="sm" variant="outline">{t("actions.classify")}</Button>} />
+                  <MovementDialog accounts={accounts} loans={loans} categories={categories} movement={m} trigger={<Button size="sm" variant="outline">{t("actions.classify")}</Button>} />
                 </div>
               </li>
             ))}
@@ -215,7 +228,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
                     {/* Posted movements are locked: an admin reverses them, then records the correct one. */}
                     {m.status !== "POSTED" && (m.isTransfer
                       ? <TransferDialog accounts={accounts} transfer={m} trigger={editButton} />
-                      : <MovementDialog accounts={accounts} loans={loans} movement={m} trigger={editButton} />)}
+                      : <MovementDialog accounts={accounts} loans={loans} categories={categories} movement={m} trigger={editButton} />)}
                     {isAdmin && m.status !== "POSTED" && (
                       <Button variant="ghost" size="icon-sm" className="hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")}
                         disabled={busyId === m.id} onClick={() => remove(m.id)}>
@@ -247,9 +260,20 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
           <ul className="wf-rows">
             {loans.map((l) => (
               <li key={l.id} className="flex-col items-stretch gap-2">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-foreground" title={l.lender}>{l.lender}</p>
-                  {l.notes && <p className="text-[12px] text-muted-foreground">{l.notes}</p>}
+                <div className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-foreground" title={l.lender}>{l.lender}</p>
+                    {l.notes && <p className="text-[12px] text-muted-foreground">{l.notes}</p>}
+                  </div>
+                  {isAdmin && (
+                    <div className="flex shrink-0 items-center gap-1">
+                      <LoanDialog loan={l} trigger={editButton} />
+                      <Button variant="ghost" size="icon-sm" className="hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")}
+                        disabled={busyId === l.id} onClick={() => removeLoan(l)}>
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-1 font-mono text-[12px] tabular-nums">
                   <p className="text-muted-foreground">{t("loans.received", { amount: fmtMoney(l.received, l.currency) })}</p>

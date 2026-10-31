@@ -10,7 +10,7 @@ const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 export default async function AccountsPage() {
   const session = await requirePageSession();
   const t = await getTranslations("accounts");
-  const [accounts, txns, loans] = await Promise.all([
+  const [accounts, txns, loans, categories] = await Promise.all([
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, include: { _count: { select: { transactions: true } } } }),
     prisma.transaction.findMany({
       orderBy: { date: "desc" },
@@ -20,6 +20,8 @@ export default async function AccountsPage() {
       },
     }),
     prisma.loan.findMany({ orderBy: { createdAt: "asc" } }),
+    // For classifying a movement as income or an expense.
+    prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, type: true } }),
   ]);
 
   // Balances, capital and loans count reviewed and posted entries; drafts wait for review.
@@ -34,7 +36,9 @@ export default async function AccountsPage() {
     const ts = booked.filter((t) => t.loanId === l.id);
     const received = ts.filter((t) => t.type === "LOAN_IN").reduce((a, t) => a + t.amount, 0);
     const repaid = ts.filter((t) => t.type === "LOAN_REPAY").reduce((a, t) => a + t.amount, 0);
-    return { id: l.id, lender: l.lender, currency: l.currency, notes: l.notes, received, repaid, outstanding: received - repaid };
+    // Every movement recorded against it, drafts included, fixes its currency and keeps it from deletion.
+    const movementCount = txns.filter((t) => t.loanId === l.id).length;
+    return { id: l.id, lender: l.lender, currency: l.currency, notes: l.notes, received, repaid, outstanding: received - repaid, movementCount };
   });
 
   // Everything that isn't income/expense. The two legs of a transfer collapse into one row.
@@ -93,6 +97,7 @@ export default async function AccountsPage() {
           balance: bal.get(a.id) ?? 0, movementCount: a._count.transactions,
         }))}
         loans={loanRows}
+        categories={categories}
         movements={movements}
       />
     </div>

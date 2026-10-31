@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CircleAlert, Pencil, Loader2 } from "lucide-react";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 
 type Contact = { id: string; name: string; email: string | null; phone: string | null };
 
@@ -39,7 +39,7 @@ export function EditContactDialog({
       setOpen(false);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setSaving(false);
     }

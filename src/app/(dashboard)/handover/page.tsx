@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { MonthPicker } from "@/components/reports/month-picker";
 import { CircleCheck, CircleHelp, Download, ListChecks, Paperclip, TrendingUp, TriangleAlert } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
-import { collect, questions, summarize } from "@/lib/handover";
+import { collect, currentMonth, isFutureMonth, openQuestions, summarize } from "@/lib/handover";
 import { fmtMoney, fmtVnd, vnToday } from "@/lib/money";
 import { fmtMonth } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/wf/page-header";
-import { Chip, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
+import { Chip, Notice, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
 import type { Locale } from "@/i18n/config";
 
 // Last month by default — the one usually being handed over.
@@ -24,10 +24,13 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
   const t = await getTranslations("handover");
   const locale = (await getLocale()) as Locale;
   const sp = await searchParams;
-  const month = sp.month && /^\d{4}-\d{2}$/.test(sp.month) ? sp.month : lastMonth();
+  const asked = sp.month && /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.month) ? sp.month : null;
+  // A month that hasn't started can't be handed over: show the current one and say so.
+  const future = !!asked && isFutureMonth(asked);
+  const month = future ? currentMonth() : asked ?? lastMonth();
   const data = await collect(month);
   const s = summarize(data);
-  const open = questions(data, locale, fmtMoney);
+  const open = openQuestions(data, locale, fmtMoney);
   const label = fmtMonth(month, locale);
 
   // What should be true before the package goes to the accountant.
@@ -45,7 +48,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
     { ok: s.missingDocs === 0, text: s.missingDocs === 0 ? t("page.checks.allDocs") : t("page.checks.missingDocs", { count: s.missingDocs }), href: "/ledger?view=docs" },
   ];
   const byArea = new Map<string, number>();
-  for (const q of open) byArea.set(q.area, (byArea.get(q.area) ?? 0) + 1);
+  for (const q of open) for (const a of new Set(q.issues.map((i) => i.area))) byArea.set(a, (byArea.get(a) ?? 0) + 1);
   const net = s.income - s.expense;
 
   return (
@@ -54,8 +57,10 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
         section="handover"
         title={t("page.title")}
         description={t("page.subtitle", { month: label })}
-        actions={<MonthPicker month={month} basePath="/handover" />}
+        actions={<MonthPicker month={month} basePath="/handover" max={currentMonth()} />}
       />
+
+      {future && <Notice tone="warning" className="mb-6">{t("page.futureMonth", { month: fmtMonth(asked, locale), current: label })}</Notice>}
 
       <StatStrip className="lg:grid-cols-4">
         <Stat label={t("page.cards.entries")} icon={ListChecks} sub={t("page.cards.entriesDetail", { posted: s.posted, reviewed: s.reviewed, drafts: s.drafts })}>
@@ -109,10 +114,12 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
               <li key={i} className="items-start">
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <Chip tone="warn" mono>{q.area}</Chip>
+                    {[...new Set(q.issues.map((x) => x.area))].map((a) => <Chip key={a} tone="warn" mono>{a}</Chip>)}
                     <span className="font-medium text-foreground">{q.item}</span>
                   </p>
-                  <span className="mt-1 block text-[12px] text-muted-foreground">{q.detail}</span>
+                  {q.issues.map((x, j) => (
+                    <span key={j} className="mt-1 block text-[12px] text-muted-foreground">{q.issues.length > 1 ? `${x.area}: ${x.detail}` : x.detail}</span>
+                  ))}
                 </div>
                 <span className="wf-figure shrink-0">{q.amount}</span>
               </li>

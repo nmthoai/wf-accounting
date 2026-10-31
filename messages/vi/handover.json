@@ -35,7 +35,8 @@
       "description": "Cũng được liệt kê ở trang tính “{sheet}” của tệp Excel.",
       "more": "…và còn {count} vấn đề khác trong bộ hồ sơ.",
       "none": "Tháng này không có vấn đề nào cần làm rõ."
-    }
+    },
+    "futureMonth": "Chưa thể bàn giao {month} vì tháng này chưa bắt đầu. Đang hiển thị {current} — tháng hiện tại, chưa kết thúc nên bộ hồ sơ có thể chưa đầy đủ."
   },
   "questions": {
     "area": {
@@ -49,16 +50,17 @@
       "costRegister": "Bảng kê chi phí"
     },
     "draft": "Nháp — không được tính vào số liệu của bộ hồ sơ này cho đến khi chủ doanh nghiệp duyệt.",
-    "notPosted": "Đã duyệt nhưng chưa ghi sổ (chưa khóa).",
+    "notPosted": "Đã duyệt nhưng chưa ghi sổ nên chưa khóa — ghi sổ sẽ khóa bút toán.",
     "tax": "Thuế TNDN: {cit}; thuế GTGT đầu vào: {vat}.",
     "unmatchedBank": "Thuộc tài khoản ngân hàng nhưng chưa khớp với dòng sao kê nào.",
     "reverses": "Đảo bút toán đã ghi sổ: {note}",
     "bankLine": "{status}: {party}",
     "noStatement": "Chưa nhập sao kê ngân hàng cho tháng này.",
     "invoiceItem": "{kind} {number}",
-    "invoiceDifference": "Tổng tiền thanh toán {gross}, đã thanh toán {received}, phí có chứng từ {fees} — chênh lệch chưa giải trình {difference}.",
     "costPending": "Chứng từ chờ hạch toán — chưa có trên sổ thu chi.",
-    "rejected": "Bị từ chối và đã trả lại để sửa — không được tính vào số liệu của bộ hồ sơ này cho đến khi được sửa và duyệt."
+    "rejected": "Bị từ chối và đã trả lại để sửa — không được tính vào số liệu của bộ hồ sơ này cho đến khi được sửa và duyệt.",
+    "invoiceStillOpen": "Tổng tiền thanh toán {gross}, đã thanh toán {received}, phí có chứng từ {fees} — {direction, select, PAYABLE {còn phải trả} other {còn phải thu}} {difference}.",
+    "invoiceOverpaid": "Tổng tiền thanh toán {gross}, đã thanh toán {received}, phí có chứng từ {fees} — thanh toán thừa {difference}."
   },
   "lineStatus": {
     "matched": "Đã khớp",
@@ -166,5 +168,8 @@
     "from": "Giá trị cũ",
     "to": "Giá trị mới",
     "reason": "Lý do"
+  },
+  "errors": {
+    "futureMonth": "Chưa thể bàn giao {month} vì tháng này chưa bắt đầu. Hãy tải {current} (tháng hiện tại, chưa kết thúc) hoặc một tháng trước đó."
   }
 }

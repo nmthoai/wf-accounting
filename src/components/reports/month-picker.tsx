@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export function MonthPicker({ month, basePath = "/reports" }: { month: string; basePath?: string }) {
+// `max` (YYYY-MM) is the latest month that can be chosen; the page still checks it.
+export function MonthPicker({ month, basePath = "/reports", max }: { month: string; basePath?: string; max?: string }) {
   const t = useTranslations("reports.monthPicker");
   const router = useRouter();
   const go = (m: string) => router.push(`${basePath}?month=${m}`);
@@ -26,10 +27,11 @@ export function MonthPicker({ month, basePath = "/reports" }: { month: string; b
         type="month"
         value={month}
         onChange={(e) => e.target.value && go(e.target.value)}
+        max={max}
         aria-label={t("month")}
         className="wf-num w-44"
       />
-      <Button variant="outline" size="icon" onClick={() => shift(1)} aria-label={t("next")}>
+      <Button variant="outline" size="icon" onClick={() => shift(1)} disabled={!!max && month >= max} aria-label={t("next")}>
         <ChevronRight aria-hidden="true" />
       </Button>
     </div>

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
 import { deleteUnitRate } from "@/app/actions/settings";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notifyResult, notifyFailure } from "@/components/ui/toast";
 
 // Delete a unit rate — after a confirm, like the category delete.
 export function DeleteUnitRateButton({ id, name }: { id: string; name: string }) {
@@ -21,7 +21,7 @@ export function DeleteUnitRateButton({ id, name }: { id: string; name: string })
       notifyResult(await deleteUnitRate(id), t("unitRates.toast.deleted"));
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusy(false); }
   }
   return (

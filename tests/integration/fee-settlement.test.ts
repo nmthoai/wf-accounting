@@ -48,7 +48,7 @@ const bankAccount = (name: string, currency = "USD") =>
   S.prisma.account.create({ data: { name, type: "BANK", currency, openingDate: new Date("2026-05-01T00:00:00.000Z") } });
 
 async function receivable(number: string, amount = 1998.75, currency = "USD") {
-  const res = await I.createInvoice(fd({ direction: "RECEIVABLE", number, issueDate: "2026-08-01", dueDate: "2026-08-31", currency, amount, categoryId: S.income.id }));
+  const res = await I.createInvoice(fd({ direction: "RECEIVABLE", number, clientId: S.client.id, issueDate: "2026-08-01", dueDate: "2026-08-31", currency, amount, categoryId: S.income.id }));
   assert.equal(res.success, true);
   return S.prisma.invoice.findFirstOrThrow({ where: { number } });
 }

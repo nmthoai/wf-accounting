@@ -109,6 +109,8 @@
   "errors": {
     "couldNotCreate": "Could not create project.",
     "nameRequired": "Project name is required.",
-    "hasLinked": "This project has linked transactions/invoices. Archive it instead."
+    "hasLinked": "This project has linked transactions/invoices. Archive it instead.",
+    "endBeforeStart": "The end date ({end}) is before the start date ({start}) — pick an end date on or after {start}, or clear one of the dates.",
+    "nameTaken": "A project called “{name}” already exists — use that project, or give this one a different name."
   }
 }

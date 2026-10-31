@@ -25,7 +25,7 @@
   },
   "unclassified": {
     "title": "{count, plural, other {# bút toán cần phân loại}}",
-    "description": "Đã có tiền vào hoặc ra nhưng chưa rõ lý do — hãy phân loại thành vốn góp, tiền vay hoặc trả nợ gốc vay."
+    "description": "Đã có tiền vào hoặc ra nhưng chưa rõ lý do — hãy phân loại thành vốn góp, tiền vay hoặc trả nợ gốc vay; lãi tiền gửi ngân hàng là khoản thu; phí hoặc phí thẻ là khoản chi."
   },
   "account": {
     "meta": "{type} · {currency}",
@@ -43,7 +43,8 @@
     "received": "Gốc đã nhận {amount}",
     "repaid": "Gốc đã trả {amount}",
     "outstanding": "Dư nợ gốc {amount}",
-    "empty": "Chưa ghi nhận khoản vay nào."
+    "empty": "Chưa ghi nhận khoản vay nào.",
+    "deleteConfirm": "Xóa khoản vay của {lender}?"
   },
   "movements": {
     "title": "Chuyển tiền, vốn góp và vay",
@@ -68,7 +69,11 @@
     "transferRecorded": "Đã ghi nhận chuyển tiền",
     "movementSaved": "Đã lưu bút toán",
     "movementRecorded": "Đã ghi nhận bút toán",
-    "loanAdded": "Đã thêm khoản vay"
+    "loanAdded": "Đã thêm khoản vay",
+    "loanSaved": "Đã lưu khoản vay",
+    "loanDeleted": "Đã xóa khoản vay",
+    "classifiedIncome": "Đã phân loại thành khoản thu — bút toán đã chuyển sang sổ thu chi",
+    "classifiedExpense": "Đã phân loại thành khoản chi — bút toán đã chuyển sang sổ thu chi"
   },
   "form": {
     "name": "Tên",
@@ -119,7 +124,15 @@
     "amount": "Số tiền",
     "amountIn": "Số tiền ({currency})",
     "save": "Lưu bút toán",
-    "record": "Ghi nhận"
+    "record": "Ghi nhận",
+    "classifyTitle": "Phân loại bút toán",
+    "pnlHelpIncome": "Khoản thu — bút toán chuyển sang sổ thu chi và được tính vào lãi lỗ. Chứng từ và rà soát thuế bắt đầu ở trạng thái chờ.",
+    "pnlHelpExpense": "Khoản chi — bút toán chuyển sang sổ thu chi và được tính vào lãi lỗ. Chứng từ và rà soát thuế bắt đầu ở trạng thái chờ.",
+    "category": "Khoản mục",
+    "chooseCategory": "Chọn khoản mục",
+    "noIncomeCategories": "Chưa có khoản mục doanh thu — thêm tại Cài đặt → Khoản mục",
+    "noExpenseCategories": "Chưa có khoản mục chi phí — thêm tại Cài đặt → Khoản mục",
+    "interestNoCategory": "Khoản này có vẻ là lãi tiền gửi ngân hàng nhưng chưa có khoản mục doanh thu tương ứng. Hãy thêm khoản mục “Lãi tiền gửi ngân hàng” tại Cài đặt → Khoản mục, rồi phân loại lại."
   },
   "loanDialog": {
     "title": "Khoản vay mới",
@@ -127,7 +140,10 @@
     "lenderPlaceholder": "Ví dụ: Chủ DN — Thoai Nguyen",
     "notesPlaceholder": "Điều khoản, lãi suất, số hợp đồng…",
     "help": "Sau đó ghi nhận tiền vay nhận được và các lần trả nợ gốc cho khoản vay này — dư nợ gốc được tính tự động.",
-    "add": "Thêm khoản vay"
+    "add": "Thêm khoản vay",
+    "editTitle": "Sửa khoản vay",
+    "save": "Lưu khoản vay",
+    "currencyFixed": "{count, plural, other {Cố định — đã có # bút toán dùng khoản vay này.}}"
   },
   "select": {
     "placeholder": "Chọn tài khoản",
@@ -150,7 +166,19 @@
     "chooseTwoAccounts": "Chọn hai tài khoản khác nhau.",
     "unknownAccount": "Không tìm thấy tài khoản tiền.",
     "amountArrived": "Nhập số tiền {currency} đã nhận được.",
-    "transferNotFound": "Không tìm thấy bút toán chuyển tiền."
+    "transferNotFound": "Không tìm thấy bút toán chuyển tiền.",
+    "negativeOpening": "Tài khoản {type} không thể có số dư đầu kỳ âm — hãy nhập 0 hoặc số dương. Chỉ tài khoản chủ DN mới được âm (công ty nợ chủ DN).",
+    "loanNotFound": "Khoản vay này không còn tồn tại — hãy tải lại trang.",
+    "loanCurrencyLocked": "{count, plural, other {Đã có # bút toán ghi nhận cho khoản vay này nên loại tiền phải giữ là {currency}.}} Để dùng loại tiền khác, hãy thêm khoản vay mới.",
+    "loanInUse": "{count, plural, other {Không thể xóa khoản vay này: đã có # bút toán ghi nhận cho khoản vay.}} Hãy chuyển các bút toán đó sang khoản vay khác hoặc xóa chúng trước.",
+    "alreadyClassified": "Bút toán này đã được phân loại — hãy tải lại trang để xem.",
+    "incomeNeedsMoneyIn": "Đây là tiền ra khỏi tài khoản nên không thể là khoản thu. Hãy chọn Chi (ví dụ: phí, phí thẻ) hoặc trả nợ gốc vay.",
+    "expenseNeedsMoneyOut": "Đây là tiền vào tài khoản nên không thể là khoản chi. Hãy chọn Thu (ví dụ: lãi tiền gửi, tiền hoàn lại), vốn góp hoặc tiền vay.",
+    "chooseIncomeCategory": "Chọn khoản mục doanh thu (ví dụ: Lãi tiền gửi ngân hàng). Nếu chưa có khoản mục phù hợp, hãy thêm tại Cài đặt → Khoản mục.",
+    "chooseExpenseCategory": "Chọn khoản mục chi phí (ví dụ: Phí ngân hàng). Nếu chưa có khoản mục phù hợp, hãy thêm tại Cài đặt → Khoản mục.",
+    "categoryIsExpense": "“{name}” là khoản mục chi phí — hãy chọn khoản mục doanh thu.",
+    "categoryIsIncome": "“{name}” là khoản mục doanh thu — hãy chọn khoản mục chi phí.",
+    "changedMeanwhile": "Bút toán này vừa được người khác thay đổi trong lúc bạn đang sửa (đã duyệt, từ chối hoặc xóa). Chưa có gì được lưu — hãy tải lại trang để xem, rồi thử lại."
   },
   "fx": {
     "vndSettled": "Nhập số VND thực tế ngân hàng ghi nhận.",

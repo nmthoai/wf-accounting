@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { linkCostItem } from "@/app/actions/costs";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notifyResult, notifyFailure } from "@/components/ui/toast";
 import { Notice } from "@/components/wf/ledger-ui";
 
 export type Lookalike = { id: string; date: string; label: string; amount: string };
@@ -15,7 +15,6 @@ export type Lookalike = { id: string; date: string; label: string; amount: strin
 // one instead of creating a second expense.
 export function CostDuplicates({ itemId, lookalikes }: { itemId: string; lookalikes: Lookalike[] }) {
   const t = useTranslations("costs");
-  const tc = useTranslations("common");
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   if (lookalikes.length === 0) return null;
@@ -26,7 +25,7 @@ export function CostDuplicates({ itemId, lookalikes }: { itemId: string; lookali
       if (!notifyResult(res, t("toast.linked"), t("toast.couldNotLink"))) return;
       router.push("/costs");
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusy(null); }
   }
   return (

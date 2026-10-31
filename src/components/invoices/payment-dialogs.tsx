@@ -12,7 +12,7 @@ import { CircleAlert, CircleCheck, Link2, Loader2 } from "lucide-react";
 import { recordPayment, linkToInvoice } from "@/app/actions/invoices";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { fmtMoney , vnToday } from "@/lib/money";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { uploadProblem } from "@/lib/upload-limit";
 
 type Inv = { id: string; number: string | null; direction: string; currency: string; difference: number };
@@ -41,7 +41,7 @@ function useSubmit(close: () => void, done: string) {
       notify.success(done);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setSaving(false);
     }

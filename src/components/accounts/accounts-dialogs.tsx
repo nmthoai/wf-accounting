@@ -9,17 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CircleAlert, Loader2 } from "lucide-react";
-import { saveAccount, createLoan, recordMovement, updateMovement, createTransfer, updateTransfer } from "@/app/actions/accounts";
+import { saveAccount, createLoan, updateLoan, recordMovement, updateMovement, classifyMovement, createTransfer, updateTransfer } from "@/app/actions/accounts";
 import { ACCOUNT_TYPE_LABEL, vnToday } from "@/lib/money";
 import { AccountSelect, type AccountOpt } from "./account-select";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 
 type Result = { success: boolean; message?: string };
 
 export type AccountRow = AccountOpt & {
   notes: string | null; openingBalance: number; openingDate: string | null; balance: number; movementCount: number;
 };
-export type LoanRow = { id: string; lender: string; currency: string; notes: string | null; received: number; repaid: number; outstanding: number };
+export type LoanRow = { id: string; lender: string; currency: string; notes: string | null; received: number; repaid: number; outstanding: number; movementCount: number };
+export type CategoryOpt = { id: string; name: string; type: string };
 // status: DRAFT / REVIEWED / POSTED; reversal = cancels a posted movement; reversed = cancelled by one.
 type Workflow = { status: string; reversal: boolean; reversed: boolean; rejectedReason?: string | null };
 export type TransferRow = Workflow & {
@@ -53,7 +54,7 @@ function useSubmit(close: () => void, done: string) {
       close();
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setSaving(false);
     }
@@ -229,35 +230,52 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
 // ---- Capital, loan and unclassified movements -------------------------------
 
 const BASE_KINDS = ["CAPITAL_IN", "LOAN_IN", "LOAN_REPAY"];
+// Bank interest, as banks word it ("Lai nhap von", "TRA LAI TIEN GUI"). Plain
+// unaccented "lai" isn't enough: "tra lai" is also a refund, and Lai a surname.
+const INTEREST = /interest|lãi|lai nhap von|tra lai tien gui|tien lai/i;
 
-export function MovementDialog({ accounts, loans, movement, trigger }: {
-  accounts: AccountOpt[]; loans: LoanRow[]; movement?: SingleRow; trigger: React.ReactElement;
+export function MovementDialog({ accounts, loans, categories, movement, trigger }: {
+  accounts: AccountOpt[]; loans: LoanRow[]; categories: CategoryOpt[]; movement?: SingleRow; trigger: React.ReactElement;
 }) {
   const t = useTranslations("accounts");
   const tc = useTranslations("common");
+  const unclassified = !!movement?.kind.startsWith("OTHER_");
+  // Money in that reads like bank interest starts as income under the interest
+  // category, when there is one (categories are never created here).
+  const interest = movement?.kind === "OTHER_IN" && INTEREST.test(movement.description ?? "");
+  const interestCategory = interest ? categories.find((c) => c.type === "INCOME" && INTEREST.test(c.name)) : undefined;
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState(movement?.kind ?? "CAPITAL_IN");
+  const [kind, setKind] = useState(interest ? "INCOME" : movement?.kind ?? "CAPITAL_IN");
   const [accountId, setAccountId] = useState(movement?.accountId ?? "");
   const [loanId, setLoanId] = useState(movement?.loanId ?? "");
-  const { saving, err, submit } = useSubmit(() => setOpen(false), movement ? t("toast.movementSaved") : t("toast.movementRecorded"));
+  const [categoryId, setCategoryId] = useState(interestCategory?.id ?? "");
+  const pnl = kind === "INCOME" || kind === "EXPENSE";
+  const { saving, err, submit } = useSubmit(
+    () => setOpen(false),
+    pnl ? t(kind === "INCOME" ? "toast.classifiedIncome" : "toast.classifiedExpense") : movement ? t("toast.movementSaved") : t("toast.movementRecorded"),
+  );
 
-  // Unclassified rows (e.g. carried over from the old Balance tab) can be reclassified.
-  const kinds = movement?.kind.startsWith("OTHER_") ? [...BASE_KINDS, "OTHER_IN", "OTHER_OUT"] : BASE_KINDS;
+  // Unclassified rows (bank interest, fees, card charges, refunds, or rows
+  // carried over from the old Balance tab) can be reclassified — as financing,
+  // or as income (money in) or an expense (money out).
+  const kinds = unclassified ? [...BASE_KINDS, movement!.kind === "OTHER_IN" ? "INCOME" : "EXPENSE", "OTHER_IN", "OTHER_OUT"] : BASE_KINDS;
   const pick = accounts.filter((a) => a.isActive || a.id === accountId);
   const account = accounts.find((a) => a.id === accountId);
   const isLoan = kind === "LOAN_IN" || kind === "LOAN_REPAY";
   const loanChoices = loans.filter((l) => !account || l.currency === account.currency);
   const loan = loans.find((l) => l.id === loanId);
+  const categoryChoices = categories.filter((c) => c.type === kind);
+  const category = categoryChoices.find((c) => c.id === categoryId);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />
       <DialogContent>
-        <DialogHeader><DialogTitle>{movement ? t("movementDialog.editTitle") : t("movementDialog.newTitle")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{unclassified ? t("movementDialog.classifyTitle") : movement ? t("movementDialog.editTitle") : t("movementDialog.newTitle")}</DialogTitle></DialogHeader>
         <form className="grid gap-4 pt-1" onSubmit={(e) => submit(
           e,
-          (fd) => (movement ? updateMovement(movement.id, fd) : recordMovement(fd)),
-          { type: kind, accountId, loanId: isLoan ? loanId : "" },
+          (fd) => (movement && pnl ? classifyMovement(movement.id, fd) : movement ? updateMovement(movement.id, fd) : recordMovement(fd)),
+          { type: kind, accountId, loanId: isLoan ? loanId : "", categoryId: pnl ? categoryId : "" },
         )}>
           <div className="grid gap-2">
             <Label>{t("movementDialog.whatIsIt")}</Label>
@@ -267,8 +285,27 @@ export function MovementDialog({ accounts, loans, movement, trigger }: {
                 {kinds.map((k) => <SelectItem key={k} value={k}>{tc(`type.${k}`)}</SelectItem>)}
               </SelectContent>
             </Select>
-            <p className="text-[12px] text-muted-foreground">{t("movementDialog.financingHelp")}</p>
+            <p className="text-[12px] text-muted-foreground">
+              {pnl ? t(kind === "INCOME" ? "movementDialog.pnlHelpIncome" : "movementDialog.pnlHelpExpense") : t("movementDialog.financingHelp")}
+            </p>
           </div>
+          {pnl && (
+            <div className="grid gap-2">
+              <Label>{t("movementDialog.category")}</Label>
+              <Select value={categoryId} onValueChange={(v) => setCategoryId(v || "")}>
+                <SelectTrigger>{category ? <span>{category.name}</span> : <span className="text-muted-foreground">{t("movementDialog.chooseCategory")}</span>}</SelectTrigger>
+                <SelectContent>
+                  {categoryChoices.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {categoryChoices.length === 0 && (
+                    <SelectItem value="none" disabled>{t(kind === "INCOME" ? "movementDialog.noIncomeCategories" : "movementDialog.noExpenseCategories")}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {kind === "INCOME" && interest && !interestCategory && (
+                <p className="text-[12px] text-warn">{t("movementDialog.interestNoCategory")}</p>
+              )}
+            </div>
+          )}
           <div className="grid gap-2"><Label htmlFor="mv-account">{t("form.account")}</Label><AccountSelect id="mv-account" className="w-full" accounts={pick} value={accountId} onChange={setAccountId} /></div>
           {isLoan && (
             <div className="grid gap-2">
@@ -298,25 +335,31 @@ export function MovementDialog({ accounts, loans, movement, trigger }: {
   );
 }
 
-// ---- New loan ---------------------------------------------------------------
+// ---- New or edited loan (editing: admin) ------------------------------------
 
-export function LoanDialog({ trigger }: { trigger: React.ReactElement }) {
+export function LoanDialog({ loan, trigger }: { loan?: LoanRow; trigger: React.ReactElement }) {
   const t = useTranslations("accounts");
   const [open, setOpen] = useState(false);
-  const [currency, setCurrency] = useState("VND");
-  const { saving, err, submit } = useSubmit(() => setOpen(false), t("toast.loanAdded"));
+  const [currency, setCurrency] = useState(loan?.currency ?? "VND");
+  const { saving, err, submit } = useSubmit(() => setOpen(false), loan ? t("toast.loanSaved") : t("toast.loanAdded"));
+  // Movements recorded against a loan are in its currency, so it stays.
+  const locked = !!loan && loan.movementCount > 0;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />
       <DialogContent>
-        <DialogHeader><DialogTitle>{t("loanDialog.title")}</DialogTitle></DialogHeader>
-        <form className="grid gap-4 pt-1" onSubmit={(e) => submit(e, createLoan, { currency })}>
-          <div className="grid gap-2"><Label htmlFor="ln-lender">{t("loanDialog.lender")}</Label><Input id="ln-lender" name="lender" placeholder={t("loanDialog.lenderPlaceholder")} required /></div>
-          <div className="grid gap-2"><Label>{t("form.currency")}</Label><CurrencyToggle label={t("form.currency")} value={currency} onChange={setCurrency} /></div>
-          <div className="grid gap-2"><Label htmlFor="ln-notes">{t("form.notesOptional")}</Label><Input id="ln-notes" name="notes" placeholder={t("loanDialog.notesPlaceholder")} /></div>
-          <p className="text-[12px] text-muted-foreground">{t("loanDialog.help")}</p>
+        <DialogHeader><DialogTitle>{loan ? t("loanDialog.editTitle") : t("loanDialog.title")}</DialogTitle></DialogHeader>
+        <form className="grid gap-4 pt-1" onSubmit={(e) => submit(e, (fd) => (loan ? updateLoan(loan.id, fd) : createLoan(fd)), { currency })}>
+          <div className="grid gap-2"><Label htmlFor="ln-lender">{t("loanDialog.lender")}</Label><Input id="ln-lender" name="lender" defaultValue={loan?.lender} placeholder={t("loanDialog.lenderPlaceholder")} required /></div>
+          <div className="grid gap-2">
+            <Label>{t("form.currency")}</Label>
+            <CurrencyToggle label={t("form.currency")} value={currency} onChange={setCurrency} disabled={locked} />
+            {locked && <p className="text-[12px] text-muted-foreground">{t("loanDialog.currencyFixed", { count: loan!.movementCount })}</p>}
+          </div>
+          <div className="grid gap-2"><Label htmlFor="ln-notes">{t("form.notesOptional")}</Label><Input id="ln-notes" name="notes" defaultValue={loan?.notes ?? ""} placeholder={t("loanDialog.notesPlaceholder")} /></div>
+          {!loan && <p className="text-[12px] text-muted-foreground">{t("loanDialog.help")}</p>}
           {err && <FormError>{err}</FormError>}
-          <SaveButton saving={saving} label={t("loanDialog.add")} />
+          <SaveButton saving={saving} label={loan ? t("loanDialog.save") : t("loanDialog.add")} />
         </form>
       </DialogContent>
     </Dialog>

@@ -69,6 +69,13 @@
     "couldNotSave": "Could not save.",
     "notFound": "Not found."
   },
+  "session": {
+    "endedTitle": "You're signed out",
+    "endedBody": "Your session ended, so this wasn't saved. What you typed is still here — sign in again in a new tab, then come back and save.",
+    "signIn": "Sign in",
+    "unreachableTitle": "Couldn't reach the app",
+    "unreachableBody": "This wasn't saved — the connection or the server is down. What you typed is still here; check your connection and try again."
+  },
   "type": {
     "INCOME": "Income",
     "EXPENSE": "Expense",

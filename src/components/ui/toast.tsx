@@ -20,7 +20,67 @@ export const notify = {
 }
 
 // Set by the Toaster in the user's language.
-let couldNotSave = "Could not save."
+const text = {
+  couldNotSave: "Could not save.",
+  somethingWrong: "Something went wrong — please try again.",
+  signedOutTitle: "You're signed out",
+  signedOutBody:
+    "Your session ended, so this wasn't saved. What you typed is still here — sign in again in a new tab, then come back and save.",
+  signIn: "Sign in",
+  unreachableTitle: "Couldn't reach the app",
+  unreachableBody:
+    "This wasn't saved — the connection or the server is down. What you typed is still here; check your connection and try again.",
+}
+
+// What a failed save says. When the session has ended (expired, idle sign-out
+// in another tab, an admin reset) the action fails without a usable message —
+// Next hides thrown messages in production — so say that, not "try again";
+// likewise when the app can't be reached at all.
+export type FailureToast = { title: string; description?: string; signIn?: string }
+export type SessionState = "in" | "out" | "unreachable"
+
+export function failureToast(state: SessionState, message?: string, fallback?: string): FailureToast {
+  if (state === "out") return { title: text.signedOutTitle, description: text.signedOutBody, signIn: text.signIn }
+  // An answer from the server is the best explanation; without one, say what we know.
+  if (state === "unreachable" && !message) return { title: text.unreachableTitle, description: text.unreachableBody }
+  return { title: message || fallback || text.somethingWrong }
+}
+
+// Whether the browser still has a session. Offline or a failing server is
+// "unreachable" — never mistaken for signed out.
+export async function sessionState(): Promise<SessionState> {
+  try {
+    const res = await fetch("/api/auth/session", { cache: "no-store" })
+    if (!res.ok) return "unreachable"
+    const body = (await res.json()) as { user?: unknown } | null
+    return body?.user ? "in" : "out"
+  } catch {
+    return "unreachable"
+  }
+}
+
+export async function failureFor(message?: string, fallback?: string) {
+  return failureToast(await sessionState(), message, fallback)
+}
+
+// Every failed save goes through here: the action threw, or answered
+// { success: false }. Signing in opens a new tab, so what was typed stays.
+export async function notifyFailure(message?: string, fallback?: string) {
+  const f = await failureFor(message, fallback)
+  if (!f.signIn) {
+    notify.error(f.title, f.description)
+    return
+  }
+  // Stays until dismissed: the user has to act on it.
+  toastManager.add({
+    title: f.title,
+    description: f.description,
+    type: "error",
+    priority: "high",
+    timeout: 0,
+    actionProps: { children: f.signIn, onClick: () => window.open("/login", "_blank", "noopener") },
+  })
+}
 
 // For actions that answer { success, message }: confirm or report, and say
 // whether it worked.
@@ -30,13 +90,21 @@ export function notifyResult(
   failed?: string
 ) {
   if (res?.success) notify.success(done)
-  else notify.error(res?.message || failed || couldNotSave)
+  else void notifyFailure(res?.message, failed || text.couldNotSave)
   return !!res?.success
 }
 
 export function Toaster() {
-  const t = useTranslations("common.errors")
-  useEffect(() => { couldNotSave = t("couldNotSave") }, [t])
+  const t = useTranslations("common")
+  useEffect(() => {
+    text.couldNotSave = t("errors.couldNotSave")
+    text.somethingWrong = t("errors.somethingWrong")
+    text.signedOutTitle = t("session.endedTitle")
+    text.signedOutBody = t("session.endedBody")
+    text.signIn = t("session.signIn")
+    text.unreachableTitle = t("session.unreachableTitle")
+    text.unreachableBody = t("session.unreachableBody")
+  }, [t])
   return (
     <Toast.Provider toastManager={toastManager}>
       <Toast.Portal>
@@ -80,6 +148,8 @@ function ToastList() {
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <Toast.Title className="font-semibold leading-5 text-foreground" />
           <Toast.Description className="text-text-secondary" />
+          {/* Renders only for toasts added with actionProps (the sign-in link). */}
+          <Toast.Action className="mt-1.5 self-start rounded-md border border-border-strong px-2.5 py-1 text-[12.5px] font-semibold text-foreground transition-colors hover:bg-muted" />
         </div>
         <Toast.Close
           aria-label={t("dismiss")}

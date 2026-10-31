@@ -43,7 +43,7 @@ export function fd(values: Record<string, string | number | File | File[] | unde
 }
 
 // The users behind the mocked sessions (the session check reads them from the
-// database), plus accounts, categories and a vendor most tests need.
+// database), plus accounts, categories, a vendor and a client most tests need.
 export async function seed() {
   const { prisma } = await import("@/lib/prisma");
   await prisma.user.createMany({
@@ -65,5 +65,6 @@ export async function seed() {
     prisma.category.create({ data: { name: "Cloud & software", type: "EXPENSE" } }),
   ]);
   const vendor = await prisma.vendor.create({ data: { name: "ODP Solution" } });
-  return { prisma, vnd, usd, owner, cash, income, expense, vendor };
+  const client = await prisma.client.create({ data: { name: "ACV Vision" } });
+  return { prisma, vnd, usd, owner, cash, income, expense, vendor, client };
 }

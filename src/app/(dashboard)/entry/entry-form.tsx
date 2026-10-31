@@ -14,7 +14,7 @@ import { AccountSelect, type AccountOpt } from "@/components/accounts/account-se
 import { CURRENCIES, vnToday } from "@/lib/money";
 import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 import { uploadProblem } from "@/lib/upload-limit";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { BookedRate } from "@/components/ledger/booked-rate";
 import { Chip, Notice } from "@/components/wf/ledger-ui";
 
@@ -163,7 +163,7 @@ export function EntryForm({
       if (!notifyResult(res, t("toast.receiptRemoved"), t("toast.receiptRemoveFailed"))) return;
       setAttachments((prev) => prev.filter((a) => a.id !== id));
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setRemovingId(null);
     }
@@ -204,7 +204,7 @@ export function EntryForm({
         router.push(bankLine ? "/bank" : costItem ? "/costs" : "/ledger");
       }
     } catch {
-      notify.error(t("toast.somethingWrong"));
+      notifyFailure(undefined, t("toast.somethingWrong"));
     } finally {
       setIsSubmitting(false);
     }

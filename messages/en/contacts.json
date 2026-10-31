@@ -42,6 +42,8 @@
     "clientNameRequired": "Client name is required.",
     "clientHasLinks": "Detach projects/invoices before deleting this client.",
     "vendorNameRequired": "Vendor name is required.",
-    "vendorHasLinks": "Detach transactions/bills before deleting this vendor."
+    "vendorHasLinks": "Detach transactions/bills before deleting this vendor.",
+    "clientNameTaken": "A client called “{name}” already exists — use that client, or give this one a different name.",
+    "vendorNameTaken": "A vendor called “{name}” already exists — use that vendor, or give this one a different name."
   }
 }

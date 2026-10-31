@@ -16,7 +16,7 @@ import { CURRENCIES, fmtMoney, totalsList, type Totals } from "@/lib/money";
 import { DOC_STATUS } from "@/lib/review";
 import { PAYER, REIMBURSEMENT } from "@/lib/costs";
 import { uploadProblem } from "@/lib/upload-limit";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { Chip, DOC_TONE, Stat, StatStrip } from "@/components/wf/ledger-ui";
 
 export type CostRow = {
@@ -79,7 +79,7 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
       setOpen(false);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusy(false); }
   }
 
@@ -185,10 +185,10 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
     try {
       const res = await fn();
       if (res.success) notify.success(done, detail);
-      else if (res.message) notify.error(res.message);
+      else notifyFailure(res.message);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusyId(null); }
   }
 

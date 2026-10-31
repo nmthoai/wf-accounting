@@ -4,7 +4,7 @@ import * as xlsx from "xlsx";
 import { zipSync } from "fflate";
 import { prisma } from "@/lib/prisma";
 import { UPLOAD_DIR } from "@/lib/uploads";
-import { EPS, BOOKED, accountDelta, isPnl, isBooked, settlement, toVnd } from "@/lib/money";
+import { EPS, BOOKED, accountDelta, isPnl, isBooked, settlement, toVnd, vnToday } from "@/lib/money";
 import { DOC_OPEN } from "@/lib/review";
 import { translator } from "@/i18n/server";
 import { explained } from "@/lib/bank-match";
@@ -24,6 +24,12 @@ export function monthRange(month: string) {
   const [y, m] = month.split("-").map(Number);
   return { start: new Date(Date.UTC(y, m - 1, 1)), end: new Date(Date.UTC(y, m, 1)) };
 }
+
+// The month under way in Vietnam is the latest that can be handed over (while
+// unfinished, it is still allowed). A later one hasn't started: its package
+// would come out empty and still look complete.
+export const currentMonth = () => vnToday().slice(0, 7);
+export const isFutureMonth = (month: string) => month > currentMonth();
 
 export async function collect(month: string) {
   const { start, end } = monthRange(month);
@@ -129,41 +135,67 @@ type Data = Awaited<ReturnType<typeof collect>>;
 export function questions(d: Data, locale: Locale = DEFAULT_LOCALE, amt: (n: number, currency: string) => string = (n, c) => `${Math.round(n * 100) / 100} ${c}`) {
   const th = translator(locale, "handover");
   const tc = translator(locale, "common");
-  const q: { area: string; item: string; detail: string; amount: string; ref: string }[] = [];
+  // `key` identifies the entry, bank line, invoice or receipt a question is about (the displayed `ref` needn't be unique).
+  const q: { area: string; item: string; detail: string; amount: string; ref: string; key: string }[] = [];
   for (const t of d.entries) {
     const what = `${iso(t.date)} · ${t.description ?? tc(`type.${t.type}`)}`;
-    if (t.status === "DRAFT") q.push({ area: th("questions.area.notReviewed"), item: what, detail: th("questions.draft"), amount: amt(t.amount, t.currency), ref: t.id });
-    if (t.status === "REJECTED") q.push({ area: th("questions.area.notReviewed"), item: what, detail: th("questions.rejected"), amount: amt(t.amount, t.currency), ref: t.id });
+    if (t.status === "DRAFT") q.push({ area: th("questions.area.notReviewed"), item: what, detail: th("questions.draft"), amount: amt(t.amount, t.currency), ref: t.id, key: t.id });
+    if (t.status === "REJECTED") q.push({ area: th("questions.area.notReviewed"), item: what, detail: th("questions.rejected"), amount: amt(t.amount, t.currency), ref: t.id, key: t.id });
     if (!isBooked(t) || d.cancelled(t)) continue;
-    if (t.status === "REVIEWED") q.push({ area: th("questions.area.notPosted"), item: what, detail: th("questions.notPosted"), amount: amt(t.amount, t.currency), ref: t.id });
+    if (t.status === "REVIEWED") q.push({ area: th("questions.area.notPosted"), item: what, detail: th("questions.notPosted"), amount: amt(t.amount, t.currency), ref: t.id, key: t.id });
     if (t.type === "EXPENSE" && (t.citStatus === "PENDING" || t.vatStatus === "PENDING")) {
-      q.push({ area: th("questions.area.taxReview"), item: what, detail: th("questions.tax", { cit: tc(`review.cit.${t.citStatus}`), vat: tc(`review.vat.${t.vatStatus}`) }), amount: amt(t.amount, t.currency), ref: t.id });
+      q.push({ area: th("questions.area.taxReview"), item: what, detail: th("questions.tax", { cit: tc(`review.cit.${t.citStatus}`), vat: tc(`review.vat.${t.vatStatus}`) }), amount: amt(t.amount, t.currency), ref: t.id, key: t.id });
     }
-    if (t.reviewNote) q.push({ area: th("questions.area.note"), item: what, detail: t.reviewNote, amount: amt(t.amount, t.currency), ref: t.id });
+    if (t.reviewNote) q.push({ area: th("questions.area.note"), item: what, detail: t.reviewNote, amount: amt(t.amount, t.currency), ref: t.id, key: t.id });
     if (t.account?.type === "BANK" && !t.bankLineId && d.bank.some((b) => b.account.id === t.accountId && b.covered)) {
-      q.push({ area: th("questions.area.bank"), item: what, detail: th("questions.unmatchedBank"), amount: amt(t.amount, t.currency), ref: t.id });
+      q.push({ area: th("questions.area.bank"), item: what, detail: th("questions.unmatchedBank"), amount: amt(t.amount, t.currency), ref: t.id, key: t.id });
     }
   }
   for (const t of d.entries.filter((x) => x.reversalOfId)) {
-    q.push({ area: th("questions.area.correction"), item: `${iso(t.date)} · ${t.description ?? ""}`, detail: th("questions.reverses", { note: t.reviewNote ?? "" }), amount: amt(t.amount, t.currency), ref: t.id });
+    q.push({ area: th("questions.area.correction"), item: `${iso(t.date)} · ${t.description ?? ""}`, detail: th("questions.reverses", { note: t.reviewNote ?? "" }), amount: amt(t.amount, t.currency), ref: t.id, key: t.id });
   }
   for (const b of d.bank) {
     for (const l of b.lines.filter((x) => x.status !== "Matched")) {
-      q.push({ area: th("questions.area.bank"), item: `${iso(l.txnDate)} · ${b.account.name} · ${l.reference ?? ""}`, detail: th("questions.bankLine", { status: th(`lineStatus.${LINE_STATUS[l.status]}`), party: l.counterparty ?? l.description ?? "" }), amount: amt(l.amount, b.account.currency), ref: l.locator });
+      q.push({ area: th("questions.area.bank"), item: `${iso(l.txnDate)} · ${b.account.name} · ${l.reference ?? ""}`, detail: th("questions.bankLine", { status: th(`lineStatus.${LINE_STATUS[l.status]}`), party: l.counterparty ?? l.description ?? "" }), amount: amt(l.amount, b.account.currency), ref: l.locator, key: `line:${l.id}` });
     }
-    if (!b.covered) q.push({ area: th("questions.area.bank"), item: b.account.name, detail: th("questions.noStatement"), amount: "", ref: "" });
+    if (!b.covered) q.push({ area: th("questions.area.bank"), item: b.account.name, detail: th("questions.noStatement"), amount: "", ref: "", key: `noStatement:${b.account.id}` });
   }
   for (const i of d.invoices) {
     const s = settlement(i.amount, i.allocations);
     if (i.status !== "VOID" && Math.abs(s.difference) > EPS && (i.status === "PARTIAL" || s.received + s.fees > 0)) {
       q.push({ area: th("questions.area.invoice"), item: th("questions.invoiceItem", { kind: tc(i.direction === "PAYABLE" ? "direction.PAYABLE" : "direction.RECEIVABLE"), number: i.number ?? "" }),
-        detail: th("questions.invoiceDifference", { gross: String(i.amount), received: String(s.received), fees: String(s.fees), difference: String(Math.round(s.difference * 100) / 100) }), amount: amt(s.difference, i.currency), ref: i.id });
+        // Money still to come is a part payment, not a puzzle; only an overpayment is flagged.
+        detail: th(s.difference > 0 ? "questions.invoiceStillOpen" : "questions.invoiceOverpaid", {
+          direction: i.direction, gross: String(i.amount), received: String(s.received), fees: String(s.fees), difference: String(Math.round(Math.abs(s.difference) * 100) / 100),
+        }), amount: amt(s.difference, i.currency), ref: i.id, key: `invoice:${i.id}` });
     }
   }
   for (const c of d.costItems) {
-    q.push({ area: th("questions.area.costRegister"), item: `${iso(c.receiptDate)} · ${c.provider}${c.ref ? ` (${c.ref})` : ""}`, detail: th("questions.costPending"), amount: amt(c.amount, c.currency), ref: c.id });
+    q.push({ area: th("questions.area.costRegister"), item: `${iso(c.receiptDate)} · ${c.provider}${c.ref ? ` (${c.ref})` : ""}`, detail: th("questions.costPending"), amount: amt(c.amount, c.currency), ref: c.id, key: `cost:${c.id}` });
   }
   return q;
+}
+
+// The open questions as the page and the workbook show them: one row per entry
+// (or bank line, invoice, receipt) with all its issues together — an entry can
+// be unposted, waiting on tax review and carry a note at the same time.
+export function openQuestions(d: Data, locale: Locale = DEFAULT_LOCALE, amt?: (n: number, currency: string) => string) {
+  const rows = new Map<string, { item: string; amount: string; ref: string; issues: { area: string; detail: string }[] }>();
+  for (const q of questions(d, locale, amt)) {
+    if (!rows.has(q.key)) rows.set(q.key, { item: q.item, amount: q.amount, ref: q.ref, issues: [] });
+    rows.get(q.key)!.issues.push({ area: q.area, detail: q.detail });
+  }
+  return [...rows.values()];
+}
+
+// One question's areas and details as single cells; with several issues each
+// detail is prefixed by its area so they stay paired.
+export function questionCells(q: ReturnType<typeof openQuestions>[number]) {
+  const many = q.issues.length > 1;
+  return {
+    area: [...new Set(q.issues.map((i) => i.area))].join(", "),
+    detail: q.issues.map((i) => (many ? `${i.area}: ${i.detail}` : i.detail)).join(" · "),
+  };
 }
 
 export function summarize(d: Data) {
@@ -178,7 +210,7 @@ export function summarize(d: Data) {
     income: sum("INCOME"),
     expense: sum("EXPENSE"),
     missingDocs: d.booked.filter((t) => isPnl(t.type) && !d.cancelled(t) && DOC_OPEN.includes(t.docStatus)).length,
-    questions: questions(d).length,
+    questions: openQuestions(d).length,
     evidence: d.files.size,
     bank: d.bank.map((b) => ({
       name: b.account.name, currency: b.account.currency, covered: b.covered, closing: b.closing, app: b.app,
@@ -293,7 +325,9 @@ export async function pack(d: Data, user: string | null, locale: Locale = DEFAUL
       iso(t.date), t.description ?? "", t.account?.name ?? "", t.currency, t.amount, tc(`review.doc.${t.docStatus}`), t.reviewNote ?? "", t.id]),
   ], [11, 40, 18, 8, 14, 20, 40, 26]);
 
-  add(th("sheets.openQuestions"), [[th("columns.area"), th("columns.item"), th("columns.questionDetail"), th("columns.amount"), th("columns.reference")], ...questions(d, locale).map((q) => [q.area, q.item, q.detail, q.amount, q.ref])], [14, 44, 70, 18, 28]);
+  // Same grouping as the page: one row per entry, its issues listed together.
+  add(th("sheets.openQuestions"), [[th("columns.area"), th("columns.item"), th("columns.questionDetail"), th("columns.amount"), th("columns.reference")],
+    ...openQuestions(d, locale).map((q) => { const c = questionCells(q); return [c.area, q.item, c.detail, q.amount, q.ref]; })], [24, 44, 70, 18, 28]);
 
   add(th("sheets.history"), [
     [th("columns.when"), th("columns.who"), th("columns.action"), th("columns.field"), th("columns.from"), th("columns.to"), th("columns.reason"), th("columns.entryId")],

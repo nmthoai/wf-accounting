@@ -7,11 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, Loader2, UserPlus, Truck } from "lucide-react";
+import { Trash2, Loader2, UserPlus, Truck, CircleAlert } from "lucide-react";
 import { createClient, deleteClient, updateClient } from "@/app/actions/clients";
 import { createVendor, deleteVendor, updateVendor } from "@/app/actions/vendors";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { PanelHead } from "@/components/wf/ledger-ui";
 import { fmtVnd } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,8 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
   const [addingClient, setAddingClient] = useState(false);
   const [addingVendor, setAddingVendor] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // The server's reason an add was refused (e.g. the name is taken), shown under that form.
+  const [addErr, setAddErr] = useState<{ client?: string; vendor?: string }>({});
   // Email · phone · counts — a missing email or phone is left out, not shown as a dash.
   const clientMeta = (c: ClientRow) => [c.email, c.phone, t("clients.meta", { projects: c.projectCount, invoices: c.invoiceCount })].filter(Boolean).join(" · ");
   const vendorMeta = (v: VendorRow) => [v.email, v.phone, t("vendors.meta", { payments: v.txnCount })].filter(Boolean).join(" · ");
@@ -38,10 +40,10 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
     try {
       const res = await fn();
       if (res.success) notify.success(done, detail);
-      else if (res.message) notify.error(res.message);
+      else notifyFailure(res.message);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setBusyId(null);
     }
@@ -52,19 +54,26 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
     const setBusy = kind === "client" ? setAddingClient : setAddingVendor;
     const create = kind === "client" ? createClient : createVendor;
     setBusy(true);
+    setAddErr((prev) => ({ ...prev, [kind]: undefined }));
     const form = e.currentTarget;
     try {
       const res = await create(new FormData(form));
-      if (!res.success) { notify.error(res.message || tc("errors.couldNotSave")); return; }
+      if (!res.success) { setAddErr((prev) => ({ ...prev, [kind]: res.message || tc("errors.couldNotSave") })); return; }
       notify.success(kind === "client" ? t("toast.clientAdded") : t("toast.vendorAdded"));
       form.reset();
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setBusy(false);
     }
   }
+
+  const addError = (msg?: string) => msg && (
+    <p className="mt-3 flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+      <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{msg}
+    </p>
+  );
 
   return (
     <div className="grid gap-6 lg:grid-cols-12">
@@ -90,6 +99,7 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
               {addingClient ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserPlus aria-hidden="true" />}{tc("actions.add")}
             </Button>
           </form>
+          {addError(addErr.client)}
         </CardContent>
         <ul className="wf-rows border-t border-border">
           {clients.map((c) => (
@@ -135,6 +145,7 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
               {addingVendor ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Truck aria-hidden="true" />}{tc("actions.add")}
             </Button>
           </form>
+          {addError(addErr.vendor)}
         </CardContent>
         <ul className="wf-rows border-t border-border">
           {vendors.map((v) => (

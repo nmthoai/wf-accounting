@@ -14,7 +14,7 @@ import { createInvoice, voidInvoice, deleteInvoice, unlinkAllocation } from "@/a
 import { uploadProblem } from "@/lib/upload-limit";
 import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
 import { RecordPaymentDialog, LinkEntryDialog, type Candidate } from "@/components/invoices/payment-dialogs";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import type { AccountOpt } from "@/components/accounts/account-select";
 import { EPS, fmtMoney, fmtVnd, totalsList, type Totals , vnToday } from "@/lib/money";
 import { Chip, ENTRY_STATUS_TONE, INVOICE_STATUS_TONE, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
@@ -62,6 +62,8 @@ export function InvoicesClient({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [openOnly, setOpenOnly] = useState(false);
   const today = vnToday();
+  // The due date can't be before the issue date (the server refuses it too).
+  const [issueDate, setIssueDate] = useState(today);
   const parties = direction === "PAYABLE" ? vendors : clients;
   const [expanded, setExpanded] = useState<string | null>(null);
   const shown = openOnly ? invoices.filter((i) => i.status === "OPEN" || i.status === "PARTIAL") : invoices;
@@ -76,7 +78,7 @@ export function InvoicesClient({
       notifyResult(res, done);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setBusyId(null);
     }
@@ -100,11 +102,11 @@ export function InvoicesClient({
       const res = await createInvoice(fd);
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       form.reset();
-      setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setShowForm(false);
+      setIssueDate(today); setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setShowForm(false);
       notify.success(direction === "PAYABLE" ? t("toast.billCreated") : t("toast.invoiceCreated"));
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setCreating(false);
     }
@@ -164,10 +166,9 @@ export function InvoicesClient({
 
               <div className="grid gap-2">
                 <Label htmlFor="inv-party">{direction === "PAYABLE" ? t("form.vendor") : t("form.client")}</Label>
-                <Select value={partyId} onValueChange={(v) => setPartyId(v === "none" ? "" : v || "")}>
+                <Select value={partyId} onValueChange={(v) => setPartyId(v || "")} required>
                   <SelectTrigger id="inv-party" className="w-full">{partyId ? <span>{parties.find(p => p.id === partyId)?.name}</span> : <span className="text-muted-foreground">{direction === "PAYABLE" ? t("form.selectVendor") : t("form.selectClient")}</span>}</SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t("form.none")}</SelectItem>
                     {parties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     {parties.length === 0 && <SelectItem value="empty" disabled>{t("form.addPartyFirst")}</SelectItem>}
                   </SelectContent>
@@ -195,8 +196,8 @@ export function InvoicesClient({
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="number">{t("form.number")}</Label>
-                <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} />
+                <Label htmlFor="number">{direction === "PAYABLE" ? t("edit.billNumber") : t("edit.invoiceNumber")}</Label>
+                <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} required={direction !== "PAYABLE"} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="amount">{t("form.amount")}</Label>
@@ -213,11 +214,11 @@ export function InvoicesClient({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="issueDate">{t("form.issueDate")}</Label>
-                <Input id="issueDate" name="issueDate" type="date" defaultValue={today} required />
+                <Input id="issueDate" name="issueDate" type="date" defaultValue={today} onChange={(e) => setIssueDate(e.target.value)} required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="dueDate">{t("form.dueDate")}</Label>
-                <Input id="dueDate" name="dueDate" type="date" defaultValue={today} required />
+                <Input id="dueDate" name="dueDate" type="date" defaultValue={today} min={issueDate || undefined} required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="notes">{t("form.notes")}</Label>
@@ -301,9 +302,10 @@ export function InvoicesClient({
                           {i.fees > EPS && ` · ${t("list.fees", { amount: fmtMoney(i.fees, i.currency) })}`}
                         </span>
                       )}
+                      {/* What is still outstanding is ordinary, not a warning; only an overpayment is flagged. */}
                       {linked && i.difference > EPS && i.status !== "VOID" && (
-                        <span className="block text-[12px] font-medium text-warn" title={t("list.differenceTitle")}>
-                          {t("list.unmatchedDifference", { amount: fmtMoney(i.difference, i.currency) })}
+                        <span className="block text-[12px] text-muted-foreground">
+                          {payable ? t("list.stillToPay", { amount: fmtMoney(i.difference, i.currency) }) : t("list.stillToReceive", { amount: fmtMoney(i.difference, i.currency) })}
                         </span>
                       )}
                       {i.difference < -EPS && <span className="block text-[12px] font-medium text-neg">{t("list.overpaidBy", { amount: fmtMoney(-i.difference, i.currency) })}</span>}

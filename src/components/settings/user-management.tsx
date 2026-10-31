@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, KeyRound, ShieldOff, UserPlus, Loader2, LockOpen, CircleAlert } from "lucide-react";
 import { createUser, deleteUser, setUserActive, resetUserPassword, resetUser2FA, unlockUser } from "@/app/actions/users";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { Chip, PanelHead } from "@/components/wf/ledger-ui";
 
 type ManagedUser = {
@@ -48,7 +48,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
       form.reset();
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setAdding(false);
     }
@@ -61,7 +61,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
       notifyResult(res, done, t("users.toast.couldNotUpdate"));
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setBusyId(null);
     }

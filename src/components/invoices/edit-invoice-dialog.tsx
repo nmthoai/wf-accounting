@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { CircleAlert, Pencil, Loader2 } from "lucide-react";
 import { Notice } from "@/components/wf/ledger-ui";
 import { updateInvoice } from "@/app/actions/invoices";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 type Opt = { id: string; name: string };
@@ -41,6 +41,8 @@ export function EditInvoiceDialog({
   const [projectId, setProjectId] = useState(invoice.projectId ?? "");
   const [categoryId, setCategoryId] = useState(invoice.categoryId ?? "");
   const [currency, setCurrency] = useState(invoice.currency);
+  // The due date can't be before the issue date (the server refuses it too).
+  const [issueDate, setIssueDate] = useState(invoice.issueDate);
   // Linked payments are in the invoice's currency; the server refuses a change until they are unlinked.
   const currencyLocked = invoice.allocations.length > 0;
 
@@ -64,14 +66,14 @@ export function EditInvoiceDialog({
       notify.success(isReceivable ? t("toast.invoiceUpdated") : t("toast.billUpdated"));
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setIssueDate(invoice.issueDate); }}>
       <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" aria-label={tc("actions.edit")} title={tc("actions.edit")} />}>
         <Pencil />
       </DialogTrigger>
@@ -80,11 +82,11 @@ export function EditInvoiceDialog({
         <form onSubmit={onSubmit} className="grid items-start gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
             <Label htmlFor={`party-${invoice.id}`}>{isReceivable ? t("form.client") : t("form.vendor")}</Label>
-            <Select value={partyId} onValueChange={(v) => setPartyId(v === "none" ? "" : v || "")}>
+            <Select value={partyId} onValueChange={(v) => setPartyId(v || "")} required>
               <SelectTrigger id={`party-${invoice.id}`} className="w-full">{partyId ? <span>{parties.find(p => p.id === partyId)?.name}</span> : <span className="text-muted-foreground">{isReceivable ? t("form.selectClient") : t("form.selectVendor")}</span>}</SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">{t("form.none")}</SelectItem>
                 {parties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                {parties.length === 0 && <SelectItem value="empty" disabled>{t("form.addPartyFirst")}</SelectItem>}
               </SelectContent>
             </Select>
           </div>
@@ -110,7 +112,7 @@ export function EditInvoiceDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`num-${invoice.id}`}>{isReceivable ? t("edit.invoiceNumber") : t("edit.billNumber")}</Label>
-            <Input id={`num-${invoice.id}`} name="number" defaultValue={invoice.number ?? ""} placeholder={t("form.numberPlaceholder")} />
+            <Input id={`num-${invoice.id}`} name="number" defaultValue={invoice.number ?? ""} placeholder={t("form.numberPlaceholder")} required={isReceivable} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`amt-${invoice.id}`}>{t("form.amount")}</Label>
@@ -128,11 +130,11 @@ export function EditInvoiceDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`iss-${invoice.id}`}>{t("form.issueDate")}</Label>
-            <Input id={`iss-${invoice.id}`} name="issueDate" type="date" defaultValue={invoice.issueDate} required />
+            <Input id={`iss-${invoice.id}`} name="issueDate" type="date" defaultValue={invoice.issueDate} onChange={(e) => setIssueDate(e.target.value)} required />
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`due-${invoice.id}`}>{t("form.dueDate")}</Label>
-            <Input id={`due-${invoice.id}`} name="dueDate" type="date" defaultValue={invoice.dueDate} required />
+            <Input id={`due-${invoice.id}`} name="dueDate" type="date" defaultValue={invoice.dueDate} min={issueDate || undefined} required />
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`notes-${invoice.id}`}>{t("form.notes")}</Label>

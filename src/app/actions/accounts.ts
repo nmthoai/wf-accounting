@@ -47,6 +47,7 @@ async function stillFits(leg: { id: string; bankLineId: string | null }, data: P
 const ACCOUNT_TYPES = ["BANK", "CASH", "OWNER", "TERM_DEPOSIT"];
 const MOVEMENT_TYPES = ["CAPITAL_IN", "LOAN_IN", "LOAN_REPAY", "OTHER_IN", "OTHER_OUT"];
 const LOAN_TYPES = ["LOAN_IN", "LOAN_REPAY"];
+const PNL_TYPES = ["INCOME", "EXPENSE"];
 
 // ---- Accounts (admin) -------------------------------------------------------
 
@@ -63,6 +64,13 @@ export async function saveAccount(id: string | null, formData: FormData) {
   if (!name) return { success: false, message: t("errors.nameRequired") };
   if (!ACCOUNT_TYPES.includes(type)) return { success: false, message: t("errors.chooseType") };
   if (isNaN(openingBalance)) return { success: false, message: t("errors.invalidOpeningBalance") };
+  // Only an owner account may open negative (the company owes the owner); a
+  // bank, cash or term-deposit account can't hold less than nothing. An old
+  // account is held to this when its opening balance or type changes, so it
+  // can still be renamed or deactivated as it is.
+  const negativeOpening = async () =>
+    ({ success: false, message: t("errors.negativeOpening", { type: (await getT("common"))(`accountType.${type}`) }) });
+  const breaksOpening = type !== "OWNER" && openingBalance < 0;
 
   const data = {
     name, type, currency, openingBalance, notes,
@@ -76,8 +84,10 @@ export async function saveAccount(id: string | null, formData: FormData) {
     if (existing.currency !== currency && existing._count.transactions + existing._count.bankLines > 0) {
       return { success: false, message: t("errors.currencyLocked") };
     }
+    if (breaksOpening && (existing.openingBalance !== openingBalance || existing.type !== type)) return negativeOpening();
     await prisma.account.update({ where: { id }, data });
   } else {
+    if (breaksOpening) return negativeOpening();
     await prisma.account.create({ data });
   }
   revalidateAll();
@@ -99,9 +109,51 @@ export async function createLoan(formData: FormData) {
   return { success: true };
 }
 
+// Admin: the lender and notes can change any time; the currency only while no
+// movement is recorded against the loan (those are in its currency).
+export async function updateLoan(id: string, formData: FormData) {
+  await requireAdmin();
+  const t = await getT("accounts");
+  const lender = (formData.get("lender") as string)?.trim();
+  const currency = formData.get("currency") === "USD" ? "USD" : "VND";
+  const notes = (formData.get("notes") as string)?.trim() || null;
+  if (!lender) return { success: false, message: t("errors.lenderRequired") };
+
+  const loan = await prisma.loan.findUnique({ where: { id }, include: { _count: { select: { transactions: true } } } });
+  if (!loan) return { success: false, message: t("errors.loanNotFound") };
+  const locked = (count: number) => t("errors.loanCurrencyLocked", { count, currency: loan.currency });
+  const recurrency = currency !== loan.currency;
+  if (recurrency && loan._count.transactions > 0) return { success: false, message: locked(loan._count.transactions) };
+  // A new currency is saved only if still no movement uses the loan.
+  const { count } = await prisma.loan.updateMany({ where: { id, ...(recurrency ? { transactions: { none: {} } } : {}) }, data: { lender, currency, notes } });
+  if (count === 0) {
+    const used = await prisma.transaction.count({ where: { loanId: id } });
+    return { success: false, message: used > 0 ? locked(used) : t("errors.loanNotFound") };
+  }
+  revalidateAll();
+  return { success: true };
+}
+
+// Admin: only a loan no movement uses can go — otherwise those movements would
+// lose their loan and its outstanding amount would vanish.
+export async function deleteLoan(id: string) {
+  await requireAdmin();
+  const t = await getT("accounts");
+  const used = await prisma.transaction.count({ where: { loanId: id } });
+  if (used > 0) return { success: false, message: t("errors.loanInUse", { count: used }) };
+  // Unless a movement was recorded against it meanwhile.
+  const { count } = await prisma.loan.deleteMany({ where: { id, transactions: { none: {} } } });
+  if (count === 0) {
+    const now = await prisma.transaction.count({ where: { loanId: id } });
+    return { success: false, message: now > 0 ? t("errors.loanInUse", { count: now }) : t("errors.loanNotFound") };
+  }
+  revalidateAll();
+  return { success: true };
+}
+
 // ---- Capital, loan and unclassified movements -------------------------------
 
-async function parseMovement(formData: FormData, t: Translate) {
+async function parseMovement(formData: FormData, t: Translate, kinds = MOVEMENT_TYPES) {
   const type = formData.get("type") as string;
   const accountId = formData.get("accountId") as string;
   const amount = parseFloat(formData.get("amount") as string);
@@ -109,7 +161,7 @@ async function parseMovement(formData: FormData, t: Translate) {
   const loanId = (formData.get("loanId") as string) || null;
   const description = (formData.get("description") as string)?.trim() || null;
 
-  if (!MOVEMENT_TYPES.includes(type)) return { error: t("errors.chooseMovementKind") };
+  if (!kinds.includes(type)) return { error: t("errors.chooseMovementKind") };
   if (!(amount > 0) || !dateStr) return { error: t("errors.invalidAmountDate") };
   const account = accountId ? await prisma.account.findUnique({ where: { id: accountId } }) : null;
   if (!account) return { error: t("errors.chooseAccount") };
@@ -153,7 +205,18 @@ export async function recordMovement(formData: FormData) {
 // locked; rejected, reviewed or deleted meanwhile means reload and try again.
 async function changedText(ids: string[], locked: string) {
   const posted = await prisma.transaction.count({ where: { id: { in: ids }, status: "POSTED" } });
-  return posted > 0 ? locked : (await getT("common"))("errors.somethingWrong");
+  return posted > 0 ? locked : (await getT("accounts"))("errors.changedMeanwhile");
+}
+
+// Editing never re-prices a movement at today's default: in the same
+// currency it keeps the rate it was booked at (revalueEntry changes it).
+type Priced = { currency: string; amount: number; exchangeRate: number; vndAmount: number | null; rateSource: string | null };
+function keepBookedRate(data: Priced, existing: Priced) {
+  if (data.currency !== existing.currency || existing.currency === "VND") return;
+  Object.assign(data, {
+    exchangeRate: existing.exchangeRate, rateSource: existing.rateSource,
+    vndAmount: existing.vndAmount === null ? null : Math.abs(data.amount - existing.amount) <= EPS ? existing.vndAmount : Math.round(data.amount * existing.exchangeRate),
+  });
 }
 
 export async function updateMovement(id: string, formData: FormData) {
@@ -164,14 +227,7 @@ export async function updateMovement(id: string, formData: FormData) {
   if (existing.status === "POSTED") return { success: false, message: t("errors.locked") };
   const parsed = await parseMovement(formData, t);
   if ("error" in parsed) return { success: false, message: parsed.error };
-  // Editing never re-prices a movement at today's default: in the same
-  // currency it keeps the rate it was booked at (revalueEntry changes it).
-  if (parsed.data.currency === existing.currency && existing.currency !== "VND") {
-    Object.assign(parsed.data, {
-      exchangeRate: existing.exchangeRate, rateSource: existing.rateSource,
-      vndAmount: existing.vndAmount === null ? null : Math.abs(parsed.data.amount - existing.amount) <= EPS ? existing.vndAmount : Math.round(parsed.data.amount * existing.exchangeRate),
-    });
-  }
+  keepBookedRate(parsed.data, existing);
   const problem = await stillFits(existing, parsed.data);
   if (problem) return { success: false, message: problem };
   const data = { ...parsed.data, status: nextStatus(me, existing.status) };
@@ -185,6 +241,56 @@ export async function updateMovement(id: string, formData: FormData) {
   });
   if (!saved) return { success: false, message: await changedText([id], t("errors.locked")) };
   revalidateAll();
+  return { success: true };
+}
+
+// ---- Classifying a movement as income or an expense --------------------------
+
+// Bank interest, card charges, fees and refunds arrive as unclassified money in
+// or out. Classified as income or an expense under a category of that type, the
+// movement becomes profit & loss — an entry like one saved on the ledger — and
+// leaves the unclassified list.
+export async function classifyMovement(id: string, formData: FormData) {
+  const me = await requireUser();
+  const t = await getT("accounts");
+  const existing = await prisma.transaction.findUnique({ where: { id } });
+  if (!existing) return { success: false, message: (await getT("common"))("errors.notFound") };
+  if (existing.type !== "OTHER_IN" && existing.type !== "OTHER_OUT") return { success: false, message: t("errors.alreadyClassified") };
+  if (existing.status === "POSTED") return { success: false, message: t("errors.locked") };
+  const parsed = await parseMovement(formData, t, PNL_TYPES);
+  if ("error" in parsed) return { success: false, message: parsed.error };
+  const { type } = parsed.data;
+  // The bank says which way the money went: in is income, out is an expense.
+  if (type === "INCOME" && existing.type === "OTHER_OUT") return { success: false, message: t("errors.incomeNeedsMoneyIn") };
+  if (type === "EXPENSE" && existing.type === "OTHER_IN") return { success: false, message: t("errors.expenseNeedsMoneyOut") };
+
+  const income = type === "INCOME";
+  const categoryId = (formData.get("categoryId") as string) || null;
+  const category = categoryId ? await prisma.category.findUnique({ where: { id: categoryId } }) : null;
+  if (!category) return { success: false, message: t(income ? "errors.chooseIncomeCategory" : "errors.chooseExpenseCategory") };
+  if (category.type !== type) return { success: false, message: t(income ? "errors.categoryIsExpense" : "errors.categoryIsIncome", { name: category.name }) };
+
+  keepBookedRate(parsed.data, existing);
+  const problem = await stillFits(existing, parsed.data);
+  if (problem) return { success: false, message: problem };
+  // As on the ledger: the tax review starts pending, and anyone but the owner
+  // sends a reviewed or rejected entry (back) for review.
+  const data = {
+    ...parsed.data, categoryId: category.id,
+    docStatus: "PENDING", purposeStatus: "PENDING", citStatus: "PENDING", vatStatus: "PENDING", vatAmount: null,
+    status: nextStatus(me, existing.status),
+  };
+  // Saved only if it is still the unclassified movement, in the status it was
+  // read in; the change and its history are saved together.
+  const saved = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.transaction.updateMany({ where: { id, type: existing.type, status: existing.status }, data });
+    if (count === 0) return false;
+    await record(diff(id, existing, data, reasonOf(formData)), me.name, tx);
+    return true;
+  });
+  if (!saved) return { success: false, message: await changedText([id], t("errors.locked")) };
+  revalidateAll();
+  revalidatePath("/reports");
   return { success: true };
 }
 

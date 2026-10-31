@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { revalueEntry } from "@/app/actions/ledger";
 import { fmtMoney } from "@/lib/money";
 
@@ -61,7 +61,7 @@ export function BookedRate({ entry, isAdmin, locked, defaultUsdRate }: { entry: 
     try {
       if (notifyResult(await revalueEntry(entry.id, fd), t("revalue.done"))) { setOpen(false); setReason(""); router.refresh(); }
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setSaving(false);
     }

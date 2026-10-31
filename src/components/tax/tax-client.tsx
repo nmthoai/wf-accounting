@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { uploadProblem } from "@/lib/upload-limit";
 import { fmtDate, fmtMonth } from "@/lib/format";
 import { FORMS, LINES, VAT_ROWS, TEMPLATES, formKey, lineKey, periodLabel, type Flag, type Form, type Comparison } from "@/lib/tax";
@@ -78,7 +78,7 @@ function NoteDialog({ flag, locale, trigger }: { flag: FlagView; locale: string;
       if (!res.success) { setErr(res.message ?? tc("errors.couldNotSave")); return; }
       notify.success(t("toastNoted"));
       setOpen(false); router.refresh();
-    } catch { notify.error(tc("errors.somethingWrong")); } finally { setBusy(false); }
+    } catch { notifyFailure(); } finally { setBusy(false); }
   }
   return (
     <Dialog open={open} onOpenChange={openChange}>
@@ -142,18 +142,18 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
       }
       notify.success(ret ? t("toast.saved") : t("toast.added"), `${form} ${periodLabel(period, locale)}`);
       setOpen(false); router.refresh();
-    } catch { notify.error(tc("errors.somethingWrong")); } finally { setBusy(false); }
+    } catch { notifyFailure(); } finally { setBusy(false); }
   }
   async function remove() {
     if (!ret || !confirm(t("form.deleteConfirm", { form: ret.form, period: periodLabel(ret.period, locale) }))) return;
     setBusy(true);
     try { await deleteTaxReturn(ret.id); notify.success(t("toast.deleted"), `${ret.form} ${periodLabel(ret.period, locale)}`); setOpen(false); router.refresh(); }
-    catch { notify.error(tc("errors.somethingWrong")); } finally { setBusy(false); }
+    catch { notifyFailure(); } finally { setBusy(false); }
   }
   async function removeFile(id: string, name: string) {
     if (!confirm(t("form.removeFileConfirm", { name }))) return;
     try { await deleteTaxReturnFile(id); notify.success(t("toast.fileRemoved"), name); router.refresh(); }
-    catch { notify.error(tc("errors.somethingWrong")); }
+    catch { notifyFailure(); }
   }
   const shown = (code: string) => (ret?.form === form && ret.lines[code] ? nf.format(ret.lines[code]) : "");
   const signed = new Set(LINES[form].filter((l) => l.signed).map((l) => l.code));
@@ -283,7 +283,6 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
   flags: FlagView[]; returns: ReturnView[]; periods: string[]; comparison: Comparison[]; defaultPeriod: string; locale: string;
 }) {
   const t = useTranslations("tax");
-  const tc = useTranslations("common");
   const router = useRouter();
   // A note made when the figure was different doesn't settle the flag: it comes back, note shown.
   const open = flags.filter((f) => !f.note || f.changedFrom != null);
@@ -295,7 +294,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
   async function reopen(key: string) {
     if (!confirm(t("flags.reopenConfirm"))) return;
     try { await clearTaxFlagNote(key); notify.success(t("flags.toastReopened")); router.refresh(); }
-    catch { notify.error(tc("errors.somethingWrong")); }
+    catch { notifyFailure(); }
   }
   const cell = (r: ReturnView | undefined, code: string) => (r ? nf.format(r.lines[code] ?? 0) : "—");
   const record = (form: Form, period: string, label: string) => (

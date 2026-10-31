@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Loader2, FolderPlus, Paperclip, CircleAlert } from "lucide-react";
 import { createProject, deleteProject, setProjectStatus } from "@/app/actions/projects";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { fmtMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { Chip, PanelHead, PROJECT_STATUS_TONE } from "@/components/wf/ledger-ui";
@@ -43,10 +43,10 @@ export function ProjectsClient({ projects, clients, isAdmin }: {
     try {
       const res = await fn();
       if (res.success) notify.success(done, detail);
-      else if (res.message) notify.error(res.message);
+      else notifyFailure(res.message);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setBusyId(null);
     }
@@ -67,7 +67,7 @@ export function ProjectsClient({ projects, clients, isAdmin }: {
       setProjectClientId("");
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setAddingProject(false);
     }

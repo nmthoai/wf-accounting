@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notifyResult, notifyFailure } from "@/components/ui/toast";
 import { updateProfile } from "@/app/actions/profile";
 
 export function ProfileForm({ displayName }: { displayName: string }) {
@@ -20,7 +20,7 @@ export function ProfileForm({ displayName }: { displayName: string }) {
     try {
       notifyResult(await updateProfile(new FormData(e.currentTarget)), t("toast.saved"));
     } catch {
-      notify.error(t("toast.connectionError"));
+      notifyFailure(undefined, t("toast.connectionError"));
     } finally {
       setSaving(false);
     }

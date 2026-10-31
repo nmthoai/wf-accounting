@@ -24,7 +24,7 @@ const entry = (description: string, extra: Record<string, string | number | File
 const find = (description: string) => S.prisma.transaction.findFirstOrThrow({ where: { description } });
 const invoiceStatus = async (id: string) => (await S.prisma.invoice.findUniqueOrThrow({ where: { id } })).status;
 async function receivable(number: string, amount: number, currency = "VND") {
-  await I.createInvoice(fd({ direction: "RECEIVABLE", number, issueDate: "2026-07-01", dueDate: "2026-07-31", currency, amount }));
+  await I.createInvoice(fd({ direction: "RECEIVABLE", number, clientId: S.client.id, issueDate: "2026-07-01", dueDate: "2026-07-31", currency, amount }));
   return S.prisma.invoice.findFirstOrThrow({ where: { number } });
 }
 

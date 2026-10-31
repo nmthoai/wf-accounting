@@ -21,7 +21,7 @@ const sheet = async (month: string, name: string) => {
 
 test("M7: invoices appear as they stood at month end — open in July even though paid in August", async () => {
   as.admin();
-  await I.createInvoice(fd({ direction: "RECEIVABLE", number: "JUN-1", issueDate: "2026-06-10", dueDate: "2026-07-10", currency: "VND", amount: 3000000 }));
+  await I.createInvoice(fd({ direction: "RECEIVABLE", number: "JUN-1", clientId: S.client.id, issueDate: "2026-06-10", dueDate: "2026-07-10", currency: "VND", amount: 3000000 }));
   const inv = await S.prisma.invoice.findFirstOrThrow({ where: { number: "JUN-1" } });
   await I.recordPayment(inv.id, fd({ amount: 3000000, paidDate: "2026-08-05", accountId: S.vnd.id }));
   const { rows } = await sheet("2026-07", "Invoices");

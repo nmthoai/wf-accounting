@@ -10,7 +10,7 @@ import { FileText, Loader2, Trash2, UploadCloud } from "lucide-react";
 import { addProjectDocument } from "@/app/actions/projects";
 import { deleteAttachment } from "@/app/actions/ledger";
 import { uploadProblem } from "@/lib/upload-limit";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 
 type Doc = { id: string; fileName: string; filePath: string; createdAt: string };
 
@@ -36,12 +36,12 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
       if (res.success) {
         const n = (fd.getAll("files") as File[]).filter((f) => f && f.size > 0).length;
         notify.success(t("toast.documentsUploaded", { count: n }));
-      } else notify.error(res.message || t("documents.couldNotUpload"));
+      } else notifyFailure(res.message, t("documents.couldNotUpload"));
       form.reset();
       setHasFile(false);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setUploading(false);
     }
@@ -55,7 +55,7 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
       notifyResult(res, t("toast.documentRemoved"), t("documents.couldNotRemove"));
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setRemovingId(null); }
   }
 
