@@ -1,17 +1,20 @@
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
+import { getView } from "@/lib/view";
 import { defaultUsdRate } from "@/lib/fx";
-import { EPS, settlement, type Totals , vnTodayStart, isBooked } from "@/lib/money";
+import { EPS, settlement, type Totals , vnTodayStart, isBooked, valueIn } from "@/lib/money";
 import { InvoicesClient } from "@/components/invoices/invoices-client";
 import { PageHeader } from "@/components/wf/page-header";
+import { ViewNote } from "@/components/wf/view-note";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
 export default async function InvoicesPage() {
   const session = await requirePageSession(); // second line behind the proxy
   const t = await getTranslations("invoices");
-  const [usdRate, accounts, invoices, clients, vendors, projects, categories, entries] = await Promise.all([
+  const [view, usdRate, accounts, invoices, clients, vendors, projects, categories, entries] = await Promise.all([
+    getView(session.user.id),
     defaultUsdRate(),
     prisma.account.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, currency: true, type: true, isActive: true } }),
     prisma.invoice.findMany({
@@ -85,17 +88,22 @@ export default async function InvoicesPage() {
 
   // Outstanding per currency (gross − payments − evidenced fees), never converted.
   const add = (t: Totals, c: string, v: number) => { t[c] = (t[c] ?? 0) + v; };
-  const summary = { ar: {} as Totals, ap: {} as Totals, arOverdue: {} as Totals, apOverdue: {} as Totals };
+  // In the USD view each side also gets one converted total, an estimate: USD
+  // invoices at their real USD, the rest at the Settings rate.
+  const rateOf = new Map(invoices.map((i) => [i.id, i.exchangeRate]));
+  const inView = view.currency === "USD" ? { ar: 0, ap: 0 } : null;
+  const summary = { ar: {} as Totals, ap: {} as Totals, arOverdue: {} as Totals, apOverdue: {} as Totals, inView };
   for (const r of rows) {
     if ((r.status !== "OPEN" && r.status !== "PARTIAL") || r.difference <= EPS) continue;
     const ar = r.direction === "RECEIVABLE";
     add(ar ? summary.ar : summary.ap, r.currency, r.difference);
+    if (inView) inView[ar ? "ar" : "ap"] += valueIn(view, { currency: r.currency, amount: r.difference, exchangeRate: rateOf.get(r.id) ?? 1 });
     if (r.overdue) add(ar ? summary.arOverdue : summary.apOverdue, r.currency, r.difference);
   }
 
   return (
     <div>
-      <PageHeader section="invoices" title={t("page.title")} description={t("page.subtitle")} />
+      <PageHeader section="invoices" title={t("page.title")} description={t("page.subtitle")} meta={view.currency !== "VND" && <ViewNote view={view} />} />
       <InvoicesClient
         isAdmin={session.user.role === "ADMIN"}
         invoices={rows}
@@ -107,6 +115,7 @@ export default async function InvoicesPage() {
         candidates={candidates}
         defaultUsdRate={usdRate}
         summary={summary}
+        viewCurrency={view.currency}
       />
     </div>
   );

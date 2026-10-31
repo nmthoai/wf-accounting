@@ -7,7 +7,8 @@
     "owedToYou": "Owed to you (AR)",
     "youOwe": "You owe (AP)",
     "overdue": "{amount} overdue",
-    "nothingOverdue": "Nothing overdue"
+    "nothingOverdue": "Nothing overdue",
+    "viewTotal": "≈ {amount} in total"
   },
   "filter": {
     "all": "All",

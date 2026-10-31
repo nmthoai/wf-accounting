@@ -35,7 +35,8 @@
     "overdue": "overdue",
     "due": "due {date}",
     "nothingToPay": "Nothing to pay.",
-    "nothingIn": "Nothing expected in."
+    "nothingIn": "Nothing expected in.",
+    "viewTotal": "≈ {amount} in total"
   },
   "topProjects": {
     "title": "Top Projects by Profit",

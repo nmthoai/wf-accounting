@@ -16,7 +16,7 @@ import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
 import { RecordPaymentDialog, LinkEntryDialog, type Candidate } from "@/components/invoices/payment-dialogs";
 import { notify, notifyResult } from "@/components/ui/toast";
 import type { AccountOpt } from "@/components/accounts/account-select";
-import { EPS, fmtMoney, fmtVnd, totalsList, type Totals , vnToday } from "@/lib/money";
+import { EPS, fmtMoney, totalsList, type Totals , vnToday } from "@/lib/money";
 import { Chip, ENTRY_STATUS_TONE, INVOICE_STATUS_TONE, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
 import { cn } from "@/lib/utils";
 
@@ -31,21 +31,26 @@ type Invoice = {
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
 
-// One line per currency — currencies are never added together. The first is the
-// figure; any other currency sits under it, smaller.
-const statLines = (t: Totals) => {
+// One line per currency — the real amounts. The first is the figure; any other
+// currency sits under it, smaller. In the USD view a converted total follows
+// (`total`, already in the view currency) unless the one line is that currency.
+// Nothing outstanding reads as a zero in the user's summary currency.
+const statLines = (t: Totals, viewCurrency: string, total: number | null, label: (amount: string) => string) => {
   const lines = totalsList(t);
-  if (lines.length === 0) return fmtVnd(0);
-  return lines.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>));
+  if (lines.length === 0) return fmtMoney(0, viewCurrency);
+  const out = lines.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>));
+  if (total !== null && !(lines.length === 1 && lines[0][0] === viewCurrency)) out.push(<small key="view">{label(fmtMoney(total, viewCurrency))}</small>);
+  return out;
 };
 const totalsText = (t: Totals) => totalsList(t).map(([c, v]) => fmtMoney(v, c)).join(" · ");
 
 export function InvoicesClient({
-  invoices, clients, vendors, projects, categories, accounts, candidates, defaultUsdRate, summary, isAdmin,
+  invoices, clients, vendors, projects, categories, accounts, candidates, defaultUsdRate, summary, viewCurrency, isAdmin,
 }: {
   invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; categories: Cat[]; accounts: AccountOpt[];
   candidates: Candidate[]; defaultUsdRate: number;
-  summary: { ar: Totals; ap: Totals; arOverdue: Totals; apOverdue: Totals };
+  summary: { ar: Totals; ap: Totals; arOverdue: Totals; apOverdue: Totals; inView: { ar: number; ap: number } | null };
+  viewCurrency: string; // the user's summary currency (VND or USD)
   isAdmin: boolean; // voiding and deleting are the owner's decisions
 }) {
   const t = useTranslations("invoices");
@@ -130,10 +135,10 @@ export function InvoicesClient({
     <>
       <StatStrip className="lg:grid-cols-2">
         <Stat label={t("summary.owedToYou")} icon={ArrowDownLeft} tone="pos" sub={overdueSub(summary.arOverdue)}>
-          {statLines(summary.ar)}
+          {statLines(summary.ar, viewCurrency, summary.inView?.ar ?? null, (amount) => t("summary.viewTotal", { amount }))}
         </Stat>
         <Stat label={t("summary.youOwe")} icon={ArrowUpRight} tone="neg" sub={overdueSub(summary.apOverdue)}>
-          {statLines(summary.ap)}
+          {statLines(summary.ap, viewCurrency, summary.inView?.ap ?? null, (amount) => t("summary.viewTotal", { amount }))}
         </Stat>
       </StatStrip>
 

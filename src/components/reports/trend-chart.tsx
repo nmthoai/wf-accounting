@@ -6,10 +6,11 @@ import { chartTicks } from "@/lib/pnl";
 import { fmtMoney } from "@/lib/money";
 
 // Revenue and costs per month as paired columns, profit as a line, all on one
-// VND axis. Hover or focus a month for its figures; the table below the chart
-// carries every number, so nothing here depends on colour alone.
+// axis in the view's currency. Hover or focus a month for its figures; the
+// table below the chart carries every number, so nothing here depends on
+// colour alone.
 
-type Props = { labels: string[]; revenue: number[]; cost: number[]; net: number[]; locale: string };
+type Props = { labels: string[]; revenue: number[]; cost: number[]; net: number[]; currency: string; locale: string };
 
 const H = 300;
 const M = { top: 16, right: 16, bottom: 32, left: 64 };
@@ -17,12 +18,13 @@ const BAR = 24; // max column width
 const GAP = 2;  // surface gap between the paired columns
 const TIP = 264; // tooltip width: a label and a long figure on one line, in either language
 
-export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
+export function TrendChart({ labels, revenue, cost, net, currency, locale }: Props) {
   const t = useTranslations("reports.trend");
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState<number | null>(null); // measured before the first draw
   const [hover, setHover] = useState<number | null>(null);
-  const empty = [...revenue, ...cost].every((v) => Math.abs(v) < 0.5);
+  // Nothing under half a dong — or half a cent in the USD view.
+  const empty = [...revenue, ...cost].every((v) => Math.abs(v) < (currency === "VND" ? 0.5 : 0.005));
   // Re-measure when the chart reappears: the page keeps this component across period changes.
   useEffect(() => {
     const el = box.current;
@@ -35,8 +37,9 @@ export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
   const n = labels.length;
   if (empty) return <p className="text-muted-foreground">{t("empty")}</p>;
 
-  const vnd = (v: number) => fmtMoney(v, "VND"); // as everywhere in the app
-  const short = new Intl.NumberFormat(locale === "vi" ? "vi-VN" : "en-US", { notation: "compact", maximumFractionDigits: 1 });
+  const money = (v: number) => fmtMoney(v, currency); // as everywhere in the app
+  // Compact ticks; USD ticks can be small steps (0.5, 0.05), so keep two decimals there.
+  const short = new Intl.NumberFormat(locale === "vi" ? "vi-VN" : "en-US", { notation: "compact", maximumFractionDigits: currency === "VND" ? 1 : 2 });
   const all = [...revenue, ...cost, ...net];
   const tk = chartTicks(Math.min(...all), Math.max(...all));
   const lo = tk[0], hi = tk[tk.length - 1];
@@ -102,7 +105,7 @@ export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
             ))}
             {labels.map((l, i) => (
               <rect key={`h${l}`} x={M.left + band * i} y={M.top} width={band} height={ih} fill="transparent" tabIndex={0} role="img"
-                aria-label={`${l}: ${t("revenue")} ${vnd(revenue[i])}, ${t("cost")} ${vnd(cost[i])}, ${t("net")} ${vnd(net[i])}`}
+                aria-label={`${l}: ${t("revenue")} ${money(revenue[i])}, ${t("cost")} ${money(cost[i])}, ${t("net")} ${money(net[i])}`}
                 onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} onFocus={() => setHover(i)} onBlur={() => setHover(null)}
                 className="outline-none focus-visible:stroke-ring focus-visible:[stroke-width:2]" />
             ))}
@@ -116,7 +119,7 @@ export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
               return (
                 <div key={k} className="flex items-center justify-between gap-3 py-0.5">
                   <span className="inline-flex items-center gap-2 whitespace-nowrap text-text-secondary"><span className="size-2.5 rounded-xs" style={{ background: c }} />{t(k)}</span>
-                  <span className={k === "net" && v < 0 ? "wf-figure text-neg" : "wf-figure"}>{vnd(v)}</span>
+                  <span className={k === "net" && v < 0 ? "wf-figure text-neg" : "wf-figure"}>{money(v)}</span>
                 </div>
               );
             })}
