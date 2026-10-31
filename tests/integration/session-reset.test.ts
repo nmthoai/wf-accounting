@@ -58,6 +58,28 @@ test("a deleted user, a missing id, and pre-upgrade tokens", async () => {
   assert.equal(await current("u-admin", undefined), (await versionOf("u-admin")) === 0);
 });
 
+// The mocked session carries no sessionVersion (= 0, the version it signed in
+// with): after the reset bumps it, the session stands for one that passed the
+// check just before the reset landed.
+test("onboarding writes from a session checked just before a reset don't land", async () => {
+  const bcrypt = (await import("bcryptjs")).default;
+  await S.prisma.user.update({ where: { id: "u-new" }, data: { passwordHash: await bcrypt.hash("default-pass", 10), sessionVersion: 0 } });
+  const A = await import("@/app/actions/auth");
+  as.admin();
+  assert.equal((await U.resetUserPassword("u-new", fd({ password: "admin-reset-pass" }))).success, true);
+
+  as.pending();
+  const res = await A.changePassword(fd({ newPassword: "attacker-pass", confirmPassword: "attacker-pass" }));
+  assert.equal(res.success, false);
+  const u = await S.prisma.user.findUniqueOrThrow({ where: { id: "u-new" } });
+  assert.equal(u.mustChangePassword, true);
+  assert.equal(await bcrypt.compare("admin-reset-pass", u.passwordHash), true);
+
+  const secret = await A.generate2FASecret();
+  assert.equal(secret.success, false);
+  assert.equal((await S.prisma.user.findUniqueOrThrow({ where: { id: "u-new" } })).twoFactorSecret, null);
+});
+
 test("the check is wired into every auth() call and the proxy", () => {
   const read = (f: string) => readFileSync(join(process.cwd(), f), "utf8");
   assert.match(read("src/auth.ts"), /async jwt\([\s\S]*?isSessionCurrent\(/);

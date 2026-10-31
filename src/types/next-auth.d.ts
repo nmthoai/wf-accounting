@@ -7,6 +7,7 @@ declare module "next-auth" {
       role: string;
       twoFactorEnabled: boolean;
       mustChangePassword: boolean;
+      sessionVersion: number;
     } & DefaultSession["user"];
   }
 

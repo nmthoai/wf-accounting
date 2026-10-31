@@ -48,10 +48,12 @@ export async function generate2FASecret() {
       name: `WorkFactory Accounting (${user.username})`,
     });
 
-    await prisma.user.update({
-      where: { id: user.id },
+    // Only for the session that was checked: a reset landing meanwhile wins.
+    const { count } = await prisma.user.updateMany({
+      where: { id: user.id, twoFactorEnabled: false, sessionVersion: session.user.sessionVersion ?? 0 },
       data: { twoFactorSecret: secret.base32 },
     });
+    if (count === 0) return { success: false, message: t("errors.somethingWrong") };
 
     return { success: true, secret: secret.base32, otpauthUrl: secret.otpauth_url };
   } catch (error) {
@@ -80,10 +82,12 @@ export async function verifyAndEnable2FA(token: string) {
     return { success: false, message: t("errors.invalidToken") };
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
+  // Only the secret that was checked, for the session that was checked.
+  const { count } = await prisma.user.updateMany({
+    where: { id: user.id, twoFactorSecret: user.twoFactorSecret, sessionVersion: session.user.sessionVersion ?? 0 },
     data: { twoFactorEnabled: true },
   });
+  if (count === 0) return { success: false, message: t("errors.somethingWrong") };
 
   // Onboarding wizard performs a single signOut once all steps are done,
   // which re-mints the JWT with the fresh flags.
@@ -118,10 +122,13 @@ export async function changePassword(formData: FormData) {
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({
-    where: { id: user.id },
+  // Saved only if no reset landed since this session was checked (the reset
+  // bumps sessionVersion), so a request in flight can't replace the reset password.
+  const { count } = await prisma.user.updateMany({
+    where: { id: user.id, mustChangePassword: true, sessionVersion: session.user.sessionVersion ?? 0 },
     data: { passwordHash, mustChangePassword: false },
   });
+  if (count === 0) return { success: false, message: t("errors.somethingWrong") };
 
   return { success: true };
 }
