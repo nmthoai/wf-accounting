@@ -108,3 +108,26 @@ test("when the history can't be written, the movement or transfer isn't saved ei
     assert.equal(await updates(l.id), 1);
   }
 });
+
+test("an edit refused because the entry was rejected meanwhile doesn't claim it is posted", async () => {
+  as.staff();
+  assert.equal((await A.recordMovement(fd({ type: "CAPITAL_IN", amount: 1000000, date: "2026-07-05", accountId: S.vnd.id, description: "rejected meanwhile" }))).success, true);
+  const before = await S.prisma.transaction.findFirstOrThrow({ where: { description: "rejected meanwhile" } });
+  assert.equal(before.status, "DRAFT");
+
+  const delegate = S.prisma.account;
+  const original = delegate.findUnique;
+  let calls = 0;
+  delegate.findUnique = (async (args: { where: { id: string } }) => {
+    if (calls++ === 0) await S.prisma.transaction.update({ where: { id: before.id }, data: { status: "REJECTED" } });
+    return original.call(delegate, args);
+  }) as unknown as typeof original;
+  const res = await A.updateMovement(before.id, fd({ type: "CAPITAL_IN", amount: 2000000, date: "2026-07-05", accountId: S.vnd.id, description: "rejected meanwhile" }))
+    .finally(() => { delegate.findUnique = original; });
+
+  assert.ok(calls > 0);
+  assert.equal(res.success, false);
+  assert.doesNotMatch(res.message ?? "", /posted/i);
+  assert.match(res.message ?? "", /try again/i);
+  assert.equal((await row(before.id)).amount, 1000000);
+});

@@ -149,6 +149,13 @@ export async function recordMovement(formData: FormData) {
   return { success: true };
 }
 
+// What to say when a guarded write found an entry changed: posted means
+// locked; rejected, reviewed or deleted meanwhile means reload and try again.
+async function changedText(ids: string[], locked: string) {
+  const posted = await prisma.transaction.count({ where: { id: { in: ids }, status: "POSTED" } });
+  return posted > 0 ? locked : (await getT("common"))("errors.somethingWrong");
+}
+
 export async function updateMovement(id: string, formData: FormData) {
   const me = await requireUser();
   const t = await getT("accounts");
@@ -176,7 +183,7 @@ export async function updateMovement(id: string, formData: FormData) {
     await record(diff(id, existing, data, reasonOf(formData)), me.name, tx);
     return true;
   });
-  if (!saved) return { success: false, message: t("errors.locked") };
+  if (!saved) return { success: false, message: await changedText([id], t("errors.locked")) };
   revalidateAll();
   return { success: true };
 }
@@ -282,7 +289,7 @@ export async function updateTransfer(transferId: string, formData: FormData) {
       await record([...diff(outLeg.id, outLeg, out, reasonOf(formData)), ...diff(inLeg.id, inLeg, inn, reasonOf(formData))], me.name, tx);
     });
   } catch (e) {
-    if (e instanceof ChangedMeanwhile) return { success: false, message: t("errors.locked") };
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText([outLeg.id, inLeg.id], t("errors.locked")) };
     throw e;
   }
   revalidateAll();
