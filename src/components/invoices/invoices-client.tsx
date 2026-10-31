@@ -241,8 +241,8 @@ export function InvoicesClient({
         </Card>
       )}
 
-      <Card className="mt-4">
-        <Table>
+      <Card className="@container mt-4">
+        <Table className="wf-stack wf-stack--invoices">
           <TableHeader>
             <TableRow>
               <TableHead>{t("list.columns.invoice")}</TableHead>
@@ -262,13 +262,13 @@ export function InvoicesClient({
               return (
                 <Fragment key={i.id}>
                   <TableRow className={cn(linked && "border-b-0")}>
-                    <TableCell className="py-3">
+                    <TableCell data-col="invoice" className="py-3">
                       <div className="flex items-center gap-3">
                         <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg border", payable ? "border-neg/40 text-neg" : "border-pos/40 text-pos")}>
                           {payable ? <ArrowUpRight className="size-4" aria-hidden="true" /> : <ArrowDownLeft className="size-4" aria-hidden="true" />}
                         </span>
                         <div className="min-w-0">
-                          <p className="flex items-center gap-2">
+                          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span className="font-mono font-semibold text-foreground">{i.number || kind}</span>
                             {statusChip(i)}
                             {i.attachment && (
@@ -282,15 +282,15 @@ export function InvoicesClient({
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-col="party">
                       <span className="block text-foreground">{i.party ?? "—"}</span>
                       {sub && <span className="block max-w-[16rem] truncate text-[12px] text-muted-foreground">{sub}</span>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-col="due">
                       <span className={cn("wf-num block", i.overdue ? "font-semibold text-neg" : "text-text-secondary")}>{t("list.due", { date: i.dueDate })}</span>
                       {i.paidDate && <span className="wf-num block text-[12px] text-muted-foreground">{t("list.paidOn", { date: i.paidDate })}</span>}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="amount" className="text-right">
                       <span className={cn("wf-figure block text-[14.5px]", i.status === "VOID" ? "text-muted-foreground line-through" : payable ? "text-neg" : "text-pos")}>
                         {fmtMoney(i.amount, i.currency)}
                       </span>
@@ -307,7 +307,7 @@ export function InvoicesClient({
                       )}
                       {i.difference < -EPS && <span className="block text-[12px] font-medium text-neg">{t("list.overpaidBy", { amount: fmtMoney(-i.difference, i.currency) })}</span>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-col="actions">
                       <div className="flex items-center justify-end gap-1">
                         {i.status !== "VOID" && (
                           <EditInvoiceDialog invoice={i} clients={clients} vendors={vendors} projects={projects} categories={categories} defaultUsdRate={defaultUsdRate} />
@@ -330,8 +330,8 @@ export function InvoicesClient({
                     </TableCell>
                   </TableRow>
                   {linked && (
-                    <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
-                      <TableCell colSpan={5} className="pt-0 pb-3 whitespace-normal first:pl-[68px]">
+                    <TableRow data-row="more" className="hover:bg-transparent has-aria-expanded:bg-transparent">
+                      <TableCell data-col="more" colSpan={5} className="pt-0 pb-3 whitespace-normal first:pl-[68px]">
                         <button type="button" aria-expanded={isExpanded} onClick={() => setExpanded(isExpanded ? null : i.id)}
                           className="inline-flex items-center gap-1.5 text-[12.5px] text-text-secondary transition-colors duration-150 hover:text-primary">
                           <ChevronDown className={cn("size-3.5 transition-transform duration-150", isExpanded && "rotate-180")} aria-hidden="true" />
@@ -375,7 +375,7 @@ export function InvoicesClient({
             })}
             {shown.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={5} className="py-10 text-center whitespace-normal text-muted-foreground">{openOnly ? t("list.emptyOpen") : t("list.empty")}</TableCell>
+                <TableCell data-col="full" colSpan={5} className="py-10 text-center whitespace-normal text-muted-foreground">{openOnly ? t("list.emptyOpen") : t("list.empty")}</TableCell>
               </TableRow>
             )}
           </TableBody>

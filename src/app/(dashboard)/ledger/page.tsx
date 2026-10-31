@@ -102,7 +102,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
       {/* Below 2xl the account and invoice number fold under the date and the
           description, so the amount and the actions stay in view. */}
       <Card className="@container mt-5">
-        <Table>
+        <Table className="wf-stack wf-stack--ledger">
           <TableHeader>
             <TableRow>
               <TableHead>{tl("table.date")}</TableHead>
@@ -130,11 +130,11 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                   key={t.id}
                   className={cn("[&>td]:py-3 [&>td]:align-top", t.status === "DRAFT" && "bg-warn/4", t.status === "REJECTED" && "bg-neg/4")}
                 >
-                  <TableCell>
+                  <TableCell data-col="date">
                     <span className="wf-num text-foreground">{fmtDate(t.date, locale)}</span>
                     <span className="block max-w-[9rem] text-[12px] whitespace-normal text-muted-foreground @min-[80rem]:hidden">{account}</span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-col="type">
                     <div className="flex flex-col items-start gap-1.5">
                       <Chip tone={ENTRY_TYPE_TONE[t.type] ?? "neutral"}>{label(`type.${t.type}`, t.type)}</Chip>
                       <Chip tone={ENTRY_STATUS_TONE[t.status] ?? "neutral"} mono dot>{statusText}</Chip>
@@ -146,16 +146,16 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                     </div>
                   </TableCell>
                   <TableCell className="hidden @min-[80rem]:table-cell">{account}</TableCell>
-                  <TableCell className="hidden min-w-[8rem] whitespace-normal @min-[64rem]:table-cell">
+                  <TableCell data-col="cat" className="hidden min-w-[8rem] whitespace-normal @min-[64rem]:table-cell">
                     {isPnl(t.type)
                       ? <span className="text-foreground">{t.category?.name || tl("row.uncategorized")}</span>
                       : <span className="text-muted-foreground">—</span>}
                     {t.project && <span className="block text-[12px] text-muted-foreground">{t.project.name}</span>}
                   </TableCell>
-                  <TableCell className="min-w-[12rem] whitespace-normal">
+                  <TableCell data-col="desc" className="min-w-[12rem] whitespace-normal">
                     <span className="text-foreground [overflow-wrap:anywhere]">{t.description}</span>
                     {isPnl(t.type) && (
-                      <span className="mt-1 block text-[12px] text-muted-foreground @min-[64rem]:hidden">
+                      <span className="wf-stack-hide mt-1 block text-[12px] text-muted-foreground @min-[64rem]:hidden">
                         {[t.category?.name || tl("row.uncategorized"), t.project?.name].filter(Boolean).join(" · ")}
                       </span>
                     )}
@@ -178,7 +178,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                   <TableCell className="hidden @min-[80rem]:table-cell">
                     {t.invoiceNumber ? <span className="wf-num">{t.invoiceNumber}</span> : <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-col="evidence">
                     {hasEvidence ? (
                       <div className="flex flex-col items-start gap-1.5">
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -212,7 +212,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell data-col="amount" className="text-right">
                     <span className={cn("wf-figure", moneyIn && "text-pos", t.reversedBy && "text-muted-foreground line-through")}>
                       {moneyIn ? "+" : "−"}{fmtMoney(Math.abs(t.amount), t.currency)}
                     </span>
@@ -226,7 +226,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                       </>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-col="actions">
                     {/* Income/expense open in the entry form; transfers, capital and loans on the Accounts page. */}
                     <RowActions id={t.id} href={isPnl(t.type) ? `/entry/${t.id}` : "/accounts"} status={t.status} isAdmin={isAdmin} />
                   </TableCell>
@@ -235,7 +235,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
             })}
             {transactions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+                <TableCell data-col="full" colSpan={9} className="py-10 text-center text-muted-foreground">
                   {view ? tl("page.emptyView") : tl("page.empty")}
                 </TableCell>
               </TableRow>

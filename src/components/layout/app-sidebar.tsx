@@ -33,12 +33,8 @@ export function SidebarNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNaviga
                   {item.icon ? (
                     <item.icon aria-hidden="true" />
                   ) : (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element -- Gini's 20px face */}
-                      <img className="wf-nav__face wf-on-dark" src="/gini/gini-face-on-dark.svg" alt="" />
-                      {/* eslint-disable-next-line @next/next/no-img-element -- Gini's 20px face */}
-                      <img className="wf-nav__face wf-on-light" src="/gini/gini-face-on-light.svg" alt="" />
-                    </>
+                    // eslint-disable-next-line @next/next/no-img-element -- Gini's 20px face
+                    <img className="wf-nav__face" src="/gini/gini-face.webp" alt="" />
                   )}
                   <span className="wf-nav__name">{t(item.key)}</span>
                   <span className={item.key === "gini" ? "wf-nav__index wf-nav__index--ai" : "wf-nav__index"}>{item.index}</span>
@@ -68,7 +64,7 @@ export function SidebarFoot() {
 
 export function AppSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
-    <aside className="wf-glass relative z-20 hidden w-(--size-sidebar) shrink-0 flex-col border-r border-border md:flex">
+    <aside className="wf-glass relative z-20 hidden w-(--size-sidebar) shrink-0 flex-col border-r border-border lg:flex">
       <SidebarBrand />
       <div className="flex-1 overflow-y-auto">
         <SidebarNav isAdmin={isAdmin} />

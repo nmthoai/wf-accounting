@@ -49,7 +49,7 @@ export function Chip({
 
 /** Key figures side by side, ruled by 1px lines. Set the columns with a grid-cols class. */
 export function StatStrip({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn("wf-stats grid-cols-1 sm:grid-cols-2", className)}>{children}</div>;
+  return <div className={cn("wf-stats grid-cols-1 sm:grid-cols-2 sm:[&>:last-child:nth-child(odd)]:col-span-2 lg:[&>:last-child:nth-child(odd)]:col-span-1", className)}>{children}</div>;
 }
 
 export function Stat({

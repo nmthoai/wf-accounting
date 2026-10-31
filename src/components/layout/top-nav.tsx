@@ -41,7 +41,7 @@ export function TopNav({
     <header className="wf-glass sticky top-0 z-10 flex h-(--size-topbar) shrink-0 items-center justify-between gap-3 border-b border-border px-4 sm:px-6 lg:px-8">
       <div className="flex min-w-0 items-center gap-3">
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-          <SheetTrigger className="wf-icon-btn md:hidden" aria-label={t("nav.openSidebar")}>
+          <SheetTrigger className="wf-icon-btn lg:hidden" aria-label={t("nav.openSidebar")}>
             <Menu aria-hidden="true" />
           </SheetTrigger>
           <SheetContent side="left" className="wf-glass flex w-(--size-sidebar) flex-col gap-0 p-0">
@@ -53,6 +53,10 @@ export function TopNav({
             <SidebarFoot />
           </SheetContent>
         </Sheet>
+        <Link href="/" className="flex shrink-0 sm:hidden" aria-label={t("nav.dashboard")}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- the fixed-size SVG mark */}
+          <img src="/logo.svg" alt="" className="h-6 w-auto" />
+        </Link>
         <p className="hidden min-w-0 items-center gap-2.5 sm:flex">
           <span className="wf-kicker text-muted-foreground">{group}</span>
           <span className="text-border-strong" aria-hidden="true">/</span>
