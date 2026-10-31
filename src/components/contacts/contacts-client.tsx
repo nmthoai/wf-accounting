@@ -70,7 +70,7 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
   }
 
   const addError = (msg?: string) => msg && (
-    <p className="mt-3 flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+    <p className="mt-3 flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
       <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{msg}
     </p>
   );
@@ -106,7 +106,7 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
             <li key={c.id}>
               <div className="min-w-0">
                 <p className="truncate text-foreground" title={c.name}>{c.name}</p>
-                <p className="truncate text-[12px] text-muted-foreground" title={clientMeta(c)}>{clientMeta(c)}</p>
+                <p className="truncate text-[13.5px] text-muted-foreground" title={clientMeta(c)}>{clientMeta(c)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <span className={cn("wf-figure mr-2", c.revenue > 0 ? "text-pos" : "text-muted-foreground")} title={t("clients.revenueTitle")}>{fmtVnd(c.revenue)}</span>
@@ -152,7 +152,7 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
             <li key={v.id}>
               <div className="min-w-0">
                 <p className="truncate text-foreground" title={v.name}>{v.name}</p>
-                <p className="truncate text-[12px] text-muted-foreground" title={vendorMeta(v)}>{vendorMeta(v)}</p>
+                <p className="truncate text-[13.5px] text-muted-foreground" title={vendorMeta(v)}>{vendorMeta(v)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <span className={cn("wf-figure mr-2", v.spend > 0 ? "text-foreground" : "text-muted-foreground")}>{v.spend > 0 ? "\u2212" : ""}{fmtVnd(v.spend)}</span>

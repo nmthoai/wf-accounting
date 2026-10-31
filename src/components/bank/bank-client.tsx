@@ -51,7 +51,7 @@ async function act(fn: () => Promise<{ success: boolean; message?: string }>, re
 
 function FormError({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+    <p className="flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
       <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{children}
     </p>
   );
@@ -143,7 +143,7 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
                     muted: (c) => <span className="text-muted-foreground">{c}</span>,
                   })}
                 </p>
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-[13.5px] text-muted-foreground">
                   {t("import.columnsRead", { columns: Object.entries(preview.columns).map(([f, h]) => `${t(`fields.${f}`)} ← ${h}`).join(" · ") })}
                 </p>
               </div>
@@ -159,7 +159,7 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
               </div>
               {/* The statement must add up before anything is imported. */}
               <Notice tone={addsUp ? "success" : complete ? "error" : "warning"}>
-                <p className="font-mono text-[12.5px] tabular-nums">
+                <p className="font-mono text-[14px] tabular-nums">
                   {t(addsUp ? "import.check.matches" : complete ? "import.check.off" : "import.check.incomplete", {
                     opening: Number.isFinite(o) ? fmtMoney(o, cur) : "?", inflows: fmtMoney(preview.inflows, cur), outflows: fmtMoney(preview.outflows, cur),
                     expected: Number.isFinite(expected) ? fmtMoney(expected, cur) : "?",
@@ -174,7 +174,7 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
               )}
               <div>
                 <p className="wf-label">{t("import.firstLines")}</p>
-                <ul className="mt-2 divide-y divide-border border-y border-border text-[12.5px]">
+                <ul className="mt-2 divide-y divide-border border-y border-border text-[14px]">
                   {preview.sample.map((l, i) => (
                     <li key={i} className="flex justify-between gap-3 py-1.5">
                       <span className="min-w-0 truncate text-text-secondary"><span className="wf-num">{l.date}</span> · {l.reference ?? "—"} · {l.details ?? ""}</span>
@@ -188,7 +188,7 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
 
           {err && <FormError>{err}</FormError>}
           {done && (
-            <p className="flex items-center gap-1.5 text-[13px] text-pos">
+            <p className="flex items-center gap-1.5 text-[14.5px] text-pos">
               <CircleCheck className="size-4 shrink-0" aria-hidden="true" />{done}
             </p>
           )}
@@ -238,7 +238,7 @@ function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) 
       <DialogContent className="sm:max-w-xl">
         <DialogHeader><DialogTitle>{t("match.title", { amount: signed(line.amount, line.currency), date: line.txnDate })}</DialogTitle></DialogHeader>
         <div className="grid gap-4 pt-1">
-          <p className="text-[12px] text-muted-foreground">
+          <p className="text-[13.5px] text-muted-foreground">
             {t("match.help", { account: line.accountName })}
           </p>
           <ul className="max-h-72 divide-y divide-border overflow-y-auto border-y border-border">
@@ -256,7 +256,7 @@ function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) 
             ))}
             {choices.length === 0 && <li className="py-3 text-muted-foreground">{t(line.amount > 0 ? "match.noneIn" : "match.noneOut", { account: line.accountName })}</li>}
           </ul>
-          <p className="text-[13px] text-text-secondary">
+          <p className="text-[14.5px] text-text-secondary">
             {t.rich(total > line.remaining + tol(line.currency) ? "match.selectedOver" : "match.selected", {
               total: fmtMoney(total, line.currency), remaining: fmtMoney(line.remaining, line.currency),
               over: (c) => <span className="text-destructive">{c}</span>,
@@ -298,9 +298,9 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
             <Card key={s.id}>
               <div className="border-b border-border px-5 py-4">
                 <p className="wf-label">{s.asOf ? t("summary.statementTo", { currency: s.currency, date: s.asOf }) : s.currency}</p>
-                <h2 className="mt-2 truncate text-[15px] leading-snug font-bold text-foreground">{s.name}</h2>
+                <h2 className="mt-2 truncate text-[17px] leading-snug font-bold text-foreground">{s.name}</h2>
               </div>
-              <div className="grid flex-1 content-start gap-2 p-5 text-[13.5px]">
+              <div className="grid flex-1 content-start gap-2 p-5 text-[15px]">
                 {s.bankClosing === null ? (
                   <p className="text-muted-foreground">{t("summary.noStatement")}</p>
                 ) : (
@@ -317,13 +317,13 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                       <span>{t("summary.difference")}</span>
                       <span className={cn("wf-figure", agrees ? "text-pos" : "text-neg")}>{agrees ? t("summary.agrees") : signed(diff!, s.currency)}</span>
                     </div>
-                    <p className="pt-1 text-[12.5px] text-muted-foreground">
+                    <p className="pt-1 text-[14px] text-muted-foreground">
                       {s.notOnStatement.length > 0
                         ? t("summary.toReconcileNotOnStatement", { open: s.open, lines: s.lines, count: s.notOnStatement.length })
                         : t("summary.toReconcile", { open: s.open, lines: s.lines })}
                     </p>
-                    {s.drafts > 0 && <p className="text-[12.5px] text-warn">{t("summary.drafts", { count: s.drafts })}</p>}
-                    {s.rejected > 0 && <p className="text-[12.5px] text-neg">{t("summary.rejected", { count: s.rejected })}</p>}
+                    {s.drafts > 0 && <p className="text-[14px] text-warn">{t("summary.drafts", { count: s.drafts })}</p>}
+                    {s.rejected > 0 && <p className="text-[14px] text-neg">{t("summary.rejected", { count: s.rejected })}</p>}
                   </>
                 )}
               </div>
@@ -355,12 +355,12 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
               <li key={s.id} className="flex-wrap">
                 <div className="min-w-0">
                   <p className="text-foreground">{s.accountName} · <span className="wf-num">{s.periodFrom} → {s.periodTo}</span></p>
-                  <p className="mt-0.5 text-[12px] text-muted-foreground">{s.importedBy
+                  <p className="mt-0.5 text-[13.5px] text-muted-foreground">{s.importedBy
                     ? t("imports.metaBy", { file: s.fileName, lines: s.lineCount, added: s.added, date: s.importedAt, name: s.importedBy })
                     : t("imports.meta", { file: s.fileName, lines: s.lineCount, added: s.added, date: s.importedAt })}</p>
                 </div>
                 <div className="ml-auto flex items-center gap-3">
-                  <p className="wf-num flex items-center gap-1.5 text-[12px] text-text-secondary">
+                  <p className="wf-num flex items-center gap-1.5 text-[13.5px] text-text-secondary">
                     {fmtMoney(s.opening, s.currency)} + {fmtMoney(s.inflows, s.currency)} − {fmtMoney(s.outflows, s.currency)} = <span className="font-semibold text-foreground">{fmtMoney(s.closing, s.currency)}</span>
                     <CircleCheck className="size-3.5 text-pos" aria-hidden="true" />
                   </p>
@@ -394,12 +394,12 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                 <TableRow key={l.id} className="[&>td]:align-top [&>td]:py-3">
                   <TableCell>
                     <span className="wf-num block text-foreground">{l.txnDate}</span>
-                    {l.postingDate && l.postingDate !== l.txnDate && <span className="block text-[12px] text-muted-foreground">{t("lines.posted", { date: l.postingDate })}</span>}
+                    {l.postingDate && l.postingDate !== l.txnDate && <span className="block text-[13.5px] text-muted-foreground">{t("lines.posted", { date: l.postingDate })}</span>}
                   </TableCell>
                   <TableCell className="text-text-secondary">{l.accountName}</TableCell>
                   <TableCell className="max-w-[280px]">
                     <span className="block truncate text-foreground" title={[l.counterparty, l.description].filter(Boolean).join("\n")}>{l.counterparty ?? l.description ?? "—"}</span>
-                    <span className="block truncate font-mono text-[12px] text-muted-foreground" title={l.locator}>
+                    <span className="block truncate font-mono text-[13.5px] text-muted-foreground" title={l.locator}>
                       {l.reference ?? t("lines.noReference")}{l.counterparty && l.description ? ` · ${l.description}` : ""}
                     </span>
                   </TableCell>
@@ -410,14 +410,14 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                         {l.status === "PARTIAL" ? t("status.partialLeft", { amount: fmtMoney(l.remaining, l.currency) }) : t(`status.${l.status}`)}
                       </Chip>
                       {l.entries.map((e) => (
-                        <span key={e.id} className="flex items-center gap-1 text-[12px]">
+                        <span key={e.id} className="flex items-center gap-1 text-[13.5px]">
                           <Link href={e.href} className="max-w-[220px] truncate text-primary hover:underline" title={`${e.date} · ${e.label}`}>{e.label}</Link>
                           <Button variant="ghost" size="icon-xs" className="hover:text-destructive" aria-label={t("lines.unmatch")} title={t("lines.unmatch")} disabled={busyId === e.id}
                             onClick={() => run(e.id, () => unmatchEntry(e.id), t("lines.unmatched"))}><X /></Button>
                         </span>
                       ))}
                       {l.suggestion && (
-                        <span className="flex items-center gap-2 text-[12px]">
+                        <span className="flex items-center gap-2 text-[13.5px]">
                           <span className="max-w-[260px] truncate text-muted-foreground" title={`${l.suggestion.date} · ${l.suggestion.label}`}>{t("lines.suggested", { label: l.suggestion.label, date: l.suggestion.date })}</span>
                           <Button size="xs" variant="outline" className="text-pos" disabled={busyId === l.id}
                             onClick={() => run(l.id, () => matchLine(l.id, [l.suggestion!.id]), t("match.toast.matched"))}>{t("lines.match")}</Button>

@@ -78,7 +78,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
     <Card>
       <PanelHead title={t("users.title")} count={users.length} />
       <CardContent className="grid gap-4 border-b border-border">
-        <p className="text-[13px] text-muted-foreground">{t("users.description")}</p>
+        <p className="text-[14.5px] text-muted-foreground">{t("users.description")}</p>
         <form onSubmit={handleAdd} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem_auto] lg:items-end">
           <div className="grid gap-2">
             <Label htmlFor="username">{t("users.username")}</Label>
@@ -106,7 +106,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
           </Button>
         </form>
         {addError && (
-          <p role="alert" className="flex items-center gap-1.5 text-[12px] text-destructive">
+          <p role="alert" className="flex items-center gap-1.5 text-[13.5px] text-destructive">
             <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{addError}
           </p>
         )}
@@ -116,7 +116,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
         {users.map((u) => (
           <li key={u.id} className="flex-wrap">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border-strong font-mono text-[11.5px] font-medium text-primary uppercase" aria-hidden="true">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border-strong font-mono text-[13px] font-medium text-primary uppercase" aria-hidden="true">
                 {u.username.slice(0, 2)}
               </span>
               <div className="min-w-0">
@@ -156,7 +156,7 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
                       }}
                       className="grid gap-4"
                     >
-                      <p className="text-[13.5px] text-text-secondary">
+                      <p className="text-[15px] text-text-secondary">
                         {t("users.resetPassword.intro", { username: u.username })}
                       </p>
                       <div className="grid gap-2">

@@ -99,8 +99,9 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
         {isAdmin && <PostThrough defaultDate={lastMonthEnd()} reviewedCount={reviewedCount} />}
       </div>
 
-      {/* Below a 92rem panel the account and invoice number fold under the date
-          and the description, so the amount and the actions stay in view. */}
+      {/* Below a 92rem panel (an 1800px screen with the sidebar) the account and
+          invoice number fold under the date and the description, so the amount and
+          the actions stay in view; below 75rem (1536px) each row becomes a card. */}
       <Card className="@container mt-5">
         <Table className="wf-stack wf-stack--ledger">
           <TableHeader>
@@ -108,7 +109,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
               <TableHead>{tl("table.date")}</TableHead>
               <TableHead>{tl("table.type")}</TableHead>
               <TableHead className="hidden @min-[92rem]:table-cell">{tl("table.account")}</TableHead>
-              <TableHead className="hidden @min-[64rem]:table-cell">{tl("table.category")}</TableHead>
+              <TableHead>{tl("table.category")}</TableHead>
               <TableHead>{tl("table.description")}</TableHead>
               <TableHead className="hidden @min-[92rem]:table-cell">{tl("table.invoiceNumber")}</TableHead>
               <TableHead>{tl("table.evidence")}</TableHead>
@@ -132,33 +133,28 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                 >
                   <TableCell data-col="date">
                     <span className="wf-num text-foreground">{fmtDate(t.date, locale)}</span>
-                    <span className="block max-w-[9rem] text-[12px] whitespace-normal text-muted-foreground @min-[92rem]:hidden">{account}</span>
+                    <span className="block max-w-[9rem] text-[13.5px] whitespace-normal text-muted-foreground @min-[92rem]:hidden">{account}</span>
                   </TableCell>
                   <TableCell data-col="type">
                     <div className="flex flex-col items-start gap-1.5">
                       <Chip tone={ENTRY_TYPE_TONE[t.type] ?? "neutral"}>{label(`type.${t.type}`, t.type)}</Chip>
                       <Chip tone={ENTRY_STATUS_TONE[t.status] ?? "neutral"} mono dot>{statusText}</Chip>
                       {rejections.has(t.id) && (
-                        <span className="max-w-[14rem] text-[12px] leading-snug whitespace-normal text-neg">
+                        <span className="max-w-[14rem] text-[13.5px] leading-snug whitespace-normal text-neg">
                           {tl("row.rejectedReason", { reason: rejections.get(t.id)! })}
                         </span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="hidden @min-[92rem]:table-cell">{account}</TableCell>
-                  <TableCell data-col="cat" className="hidden min-w-[8rem] whitespace-normal @min-[64rem]:table-cell">
+                  <TableCell data-col="cat" className="min-w-[8rem] whitespace-normal">
                     {isPnl(t.type)
                       ? <span className="text-foreground">{t.category?.name || tl("row.uncategorized")}</span>
                       : <span className="text-muted-foreground">—</span>}
-                    {t.project && <span className="block text-[12px] text-muted-foreground">{t.project.name}</span>}
+                    {t.project && <span className="block text-[13.5px] text-muted-foreground">{t.project.name}</span>}
                   </TableCell>
                   <TableCell data-col="desc" className="min-w-[12rem] whitespace-normal">
                     <span className="text-foreground [overflow-wrap:anywhere]">{t.description}</span>
-                    {isPnl(t.type) && (
-                      <span className="wf-stack-hide mt-1 block text-[12px] text-muted-foreground @min-[64rem]:hidden">
-                        {[t.category?.name || tl("row.uncategorized"), t.project?.name].filter(Boolean).join(" · ")}
-                      </span>
-                    )}
                     {(t.allocations.length > 0 || unmatched) && (
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {t.allocations.map((a) => (
@@ -170,7 +166,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                       </div>
                     )}
                     {t.invoiceNumber && (
-                      <span className="mt-1 block text-[12px] text-muted-foreground @min-[92rem]:hidden">
+                      <span className="mt-1 block text-[13.5px] text-muted-foreground @min-[92rem]:hidden">
                         {tl("table.invoiceNumber")} <span className="wf-num whitespace-normal [overflow-wrap:anywhere]">{t.invoiceNumber}</span>
                       </span>
                     )}
@@ -197,7 +193,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                           ))}
                         </div>
                         {t.type === "EXPENSE" && (
-                          <div className="text-[12px] leading-snug">
+                          <div className="text-[13.5px] leading-snug">
                             <span className={cn("block", taxTone(t.citStatus, "DEDUCTIBLE"))} title={tl("row.citTitle")}>
                               {tl("row.cit", { status: label(`review.cit.${t.citStatus}`, t.citStatus) })}
                             </span>
@@ -219,8 +215,8 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                     </span>
                     {t.currency !== "VND" && (
                       <>
-                        <span className="block text-[12px] text-muted-foreground">{fmtVnd(Math.abs(toVnd(t)))}</span>
-                        <span className="block text-[12px] text-muted-foreground">
+                        <span className="block text-[13.5px] text-muted-foreground">{fmtVnd(Math.abs(toVnd(t)))}</span>
+                        <span className="block text-[13.5px] text-muted-foreground">
                           @{new Intl.NumberFormat("vi-VN").format(Math.round(t.exchangeRate * 100) / 100)}
                           {t.rateSource && ` ${label(`rateSource.${t.rateSource}`, t.rateSource)}`}
                         </span>

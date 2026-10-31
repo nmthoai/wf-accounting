@@ -69,7 +69,7 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
                 className="flex min-w-0 items-center gap-3 text-foreground transition-colors duration-150 hover:text-primary" title={d.fileName}>
                 <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span className="truncate">{d.fileName}</span>
-                <span className="wf-num shrink-0 text-[12px] text-muted-foreground">{d.createdAt}</span>
+                <span className="wf-num shrink-0 text-[13.5px] text-muted-foreground">{d.createdAt}</span>
               </a>
               <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 disabled={removingId === d.id} onClick={() => remove(d.id)} title={tc("actions.remove")} aria-label={`${tc("actions.remove")} ${d.fileName}`}>
@@ -90,7 +90,7 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
             {t("documents.upload")}
           </Button>
         </div>
-        <p className="text-[12px] text-muted-foreground">{t("documents.hint")}</p>
+        <p className="text-[13.5px] text-muted-foreground">{t("documents.hint")}</p>
       </form>
     </>
   );

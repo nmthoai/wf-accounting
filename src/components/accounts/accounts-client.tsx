@@ -147,17 +147,17 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
               <div className="flex flex-1 items-start justify-between gap-3 p-5">
                 <div className="min-w-0">
                   <p className="wf-label">{a.isActive ? t("account.meta", meta) : t("account.metaInactive", meta)}</p>
-                  <h2 className={cn("mt-2 truncate text-[15px] leading-snug font-bold", a.isActive ? "text-foreground" : "text-text-secondary")} title={a.name}>{a.name}</h2>
-                  <p className={cn("wf-num mt-3 text-[22px] leading-tight font-semibold tracking-[-0.02em] text-foreground", a.balance < 0 && "text-neg")}>
+                  <h2 className={cn("mt-2 truncate text-[17px] leading-snug font-bold", a.isActive ? "text-foreground" : "text-text-secondary")} title={a.name}>{a.name}</h2>
+                  <p className={cn("wf-num mt-3 text-[24px] leading-tight font-semibold tracking-[-0.02em] text-foreground", a.balance < 0 && "text-neg")}>
                     {fmtMoney(a.balance, a.currency)}
                   </p>
-                  {a.type === "OWNER" && a.balance < 0 && <p className="mt-1 text-[12px] text-warn">{t("account.companyOwes", { amount: fmtMoney(-a.balance, a.currency) })}</p>}
-                  {a.type === "OWNER" && a.balance > 0 && <p className="mt-1 text-[12px] text-warn">{t("account.ownerHolds", { amount: fmtMoney(a.balance, a.currency) })}</p>}
-                  {a.notes && <p className="mt-1 text-[12px] text-muted-foreground">{a.notes}</p>}
+                  {a.type === "OWNER" && a.balance < 0 && <p className="mt-1 text-[13.5px] text-warn">{t("account.companyOwes", { amount: fmtMoney(-a.balance, a.currency) })}</p>}
+                  {a.type === "OWNER" && a.balance > 0 && <p className="mt-1 text-[13.5px] text-warn">{t("account.ownerHolds", { amount: fmtMoney(a.balance, a.currency) })}</p>}
+                  {a.notes && <p className="mt-1 text-[13.5px] text-muted-foreground">{a.notes}</p>}
                 </div>
                 {isAdmin && <AccountDialog account={a} trigger={editButton} />}
               </div>
-              <p className="border-t border-border bg-muted/40 px-5 py-3 font-mono text-[12px] text-muted-foreground tabular-nums">
+              <p className="border-t border-border bg-muted/40 px-5 py-3 font-mono text-[13.5px] text-muted-foreground tabular-nums">
                 {a.openingDate
                   ? t("account.opening", { amount: fmtMoney(a.openingBalance, a.currency), date: a.openingDate })
                   : t("account.openingNoDate", { amount: fmtMoney(a.openingBalance, a.currency) })}
@@ -204,13 +204,13 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
                           </span>
                         )}
                       </p>
-                      <p className="mt-1 text-[12px] text-muted-foreground">
+                      <p className="mt-1 text-[13.5px] text-muted-foreground">
                         <span className="wf-num">{m.date}</span>
                         {!m.isTransfer && m.lender ? ` · ${m.lender}` : ""}
                         {m.description ? ` · ${m.description}` : ""}
                       </p>
                       {m.status === "REJECTED" && m.rejectedReason && (
-                        <p className="mt-1 text-[12px] text-neg">{t("movements.rejectedReason", { reason: m.rejectedReason })}</p>
+                        <p className="mt-1 text-[13.5px] text-neg">{t("movements.rejectedReason", { reason: m.rejectedReason })}</p>
                       )}
                     </div>
                   </div>
@@ -218,7 +218,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
                     {m.isTransfer ? (
                       <div className="mr-2 text-right">
                         <p className="wf-figure">{fmtMoney(m.amountOut, m.currencyOut)}{m.currencyOut !== m.currencyIn && <> → {fmtMoney(m.amountIn, m.currencyIn)}</>}</p>
-                        {m.rate && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(Math.round(m.rate * 100) / 100)} VND/USD</p>}
+                        {m.rate && <p className="wf-num text-[13.5px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(Math.round(m.rate * 100) / 100)} VND/USD</p>}
                       </div>
                     ) : (
                       <span className={cn("wf-figure mr-2", !out && "text-pos")}>
@@ -263,7 +263,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-foreground" title={l.lender}>{l.lender}</p>
-                    {l.notes && <p className="text-[12px] text-muted-foreground">{l.notes}</p>}
+                    {l.notes && <p className="text-[13.5px] text-muted-foreground">{l.notes}</p>}
                   </div>
                   {isAdmin && (
                     <div className="flex shrink-0 items-center gap-1">
@@ -275,10 +275,10 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
                     </div>
                   )}
                 </div>
-                <div className="grid gap-1 font-mono text-[12px] tabular-nums">
+                <div className="grid gap-1 font-mono text-[13.5px] tabular-nums">
                   <p className="text-muted-foreground">{t("loans.received", { amount: fmtMoney(l.received, l.currency) })}</p>
                   <p className="text-muted-foreground">{t("loans.repaid", { amount: fmtMoney(l.repaid, l.currency) })}</p>
-                  <p className={cn("text-[13.5px] font-semibold", l.outstanding > 0 ? "text-neg" : "text-pos")}>
+                  <p className={cn("text-[15px] font-semibold", l.outstanding > 0 ? "text-neg" : "text-pos")}>
                     {t("loans.outstanding", { amount: fmtMoney(l.outstanding, l.currency) })}
                   </p>
                 </div>

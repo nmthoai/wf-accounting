@@ -39,7 +39,7 @@ export default async function ProfilePage() {
         <Card className="lg:col-span-6">
           <PanelHead title={t("name.title")} />
           <CardContent className="grid gap-4">
-            <p className="text-[13px] text-muted-foreground">{t("name.description")}</p>
+            <p className="text-[14.5px] text-muted-foreground">{t("name.description")}</p>
             <ProfileForm displayName={user.displayName ?? ""} />
           </CardContent>
         </Card>
@@ -47,14 +47,14 @@ export default async function ProfilePage() {
         <Card className="lg:col-span-6">
           <PanelHead title={t("currency.title")} />
           <CardContent className="grid gap-4">
-            <p className="text-[13px] text-muted-foreground">{t("currency.description", { rate })}</p>
+            <p className="text-[14.5px] text-muted-foreground">{t("currency.description", { rate })}</p>
             <CurrencyForm current={user.displayCurrency} />
           </CardContent>
         </Card>
 
         <Card className="lg:col-span-6">
           <PanelHead title={t("account.title")} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("account.description")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("account.description")}</p>
           <dl>
             {rows.map(([label, value]) => (
               <div key={label} className="flex min-h-12 items-center justify-between gap-4 border-t border-border px-5 py-3 first:border-t-0">

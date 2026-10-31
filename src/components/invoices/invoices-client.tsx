@@ -215,7 +215,7 @@ export function InvoicesClient({
                     ))}
                   </div>
                 </div>
-                {currency === "USD" && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
+                {currency === "USD" && <p className="wf-num text-[13.5px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="issueDate">{t("form.issueDate")}</Label>
@@ -234,7 +234,7 @@ export function InvoicesClient({
                 <Input id="files" name="files" type="file" multiple accept="image/*,application/pdf" />
               </div>
               {err && (
-                <p className="flex items-center gap-1.5 text-[12px] text-destructive md:col-span-2" role="alert">
+                <p className="flex items-center gap-1.5 text-[13.5px] text-destructive md:col-span-2" role="alert">
                   <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
                 </p>
               )}
@@ -291,29 +291,29 @@ export function InvoicesClient({
                     </TableCell>
                     <TableCell data-col="party">
                       <span className="block max-w-[13rem] truncate text-foreground" title={i.party ?? undefined}>{i.party ?? "—"}</span>
-                      {sub && <span className="block max-w-[13rem] truncate text-[12px] text-muted-foreground" title={sub}>{sub}</span>}
+                      {sub && <span className="block max-w-[13rem] truncate text-[13.5px] text-muted-foreground" title={sub}>{sub}</span>}
                     </TableCell>
                     <TableCell data-col="due">
                       <span className={cn("wf-num block", i.overdue ? "font-semibold text-neg" : "text-text-secondary")}>{t("list.due", { date: i.dueDate })}</span>
-                      {i.paidDate && <span className="wf-num block text-[12px] text-muted-foreground">{t("list.paidOn", { date: i.paidDate })}</span>}
+                      {i.paidDate && <span className="wf-num block text-[13.5px] text-muted-foreground">{t("list.paidOn", { date: i.paidDate })}</span>}
                     </TableCell>
                     <TableCell data-col="amount" className="text-right">
-                      <span className={cn("wf-figure block text-[14.5px]", i.status === "VOID" ? "text-muted-foreground line-through" : payable ? "text-neg" : "text-pos")}>
+                      <span className={cn("wf-figure block text-[15px]", i.status === "VOID" ? "text-muted-foreground line-through" : payable ? "text-neg" : "text-pos")}>
                         {fmtMoney(i.amount, i.currency)}
                       </span>
                       {linked && (
-                        <span className="block text-[12px] text-muted-foreground">
+                        <span className="block text-[13.5px] text-muted-foreground">
                           {payable ? t("list.paidAmount", { amount: fmtMoney(i.received, i.currency) }) : t("list.receivedAmount", { amount: fmtMoney(i.received, i.currency) })}
                           {i.fees > EPS && ` · ${t("list.fees", { amount: fmtMoney(i.fees, i.currency) })}`}
                         </span>
                       )}
                       {/* What is still outstanding is ordinary, not a warning; only an overpayment is flagged. */}
                       {linked && i.difference > EPS && i.status !== "VOID" && (
-                        <span className="block text-[12px] text-muted-foreground">
+                        <span className="block text-[13.5px] text-muted-foreground">
                           {payable ? t("list.stillToPay", { amount: fmtMoney(i.difference, i.currency) }) : t("list.stillToReceive", { amount: fmtMoney(i.difference, i.currency) })}
                         </span>
                       )}
-                      {i.difference < -EPS && <span className="block text-[12px] font-medium text-neg">{t("list.overpaidBy", { amount: fmtMoney(-i.difference, i.currency) })}</span>}
+                      {i.difference < -EPS && <span className="block text-[13.5px] font-medium text-neg">{t("list.overpaidBy", { amount: fmtMoney(-i.difference, i.currency) })}</span>}
                     </TableCell>
                     <TableCell data-col="actions">
                       <div className="flex items-center justify-end gap-1">
@@ -341,7 +341,7 @@ export function InvoicesClient({
                     <TableRow data-row="more" className="hover:bg-transparent has-aria-expanded:bg-transparent">
                       <TableCell data-col="more" colSpan={5} className="pt-0 pb-3 whitespace-normal first:pl-[68px]">
                         <button type="button" aria-expanded={isExpanded} onClick={() => setExpanded(isExpanded ? null : i.id)}
-                          className="inline-flex items-center gap-1.5 text-[12.5px] text-text-secondary transition-colors duration-150 hover:text-primary">
+                          className="inline-flex items-center gap-1.5 text-[14px] text-text-secondary transition-colors duration-150 hover:text-primary">
                           <ChevronDown className={cn("size-3.5 transition-transform duration-150", isExpanded && "rotate-180")} aria-hidden="true" />
                           {isExpanded ? t("list.hideLinked", { count: i.allocations.length }) : t("list.showLinked", { count: i.allocations.length })}
                         </button>
@@ -349,7 +349,7 @@ export function InvoicesClient({
                           <ul className="mt-2 divide-y divide-border border-y border-border">
                             {i.allocations.map((a) => (
                               <li key={a.id} className="flex items-start justify-between gap-3 py-2.5">
-                                <div className="min-w-0 text-[13px]">
+                                <div className="min-w-0 text-[14.5px]">
                                   <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <Chip tone={a.kind === "FEE" ? "neutral" : "pos"}>{a.kind === "FEE" ? t("kind.FEE") : t("kind.PAYMENT")}</Chip>
                                     <span className="wf-num text-muted-foreground">{a.date}</span>
@@ -358,7 +358,7 @@ export function InvoicesClient({
                                     {a.rejected && <Chip tone={ENTRY_STATUS_TONE.REJECTED} mono>{tc("status.REJECTED")}</Chip>}
                                   </p>
                                   {a.feeDeducted ? (
-                                    <span className="mt-1 block text-[12px] text-muted-foreground">
+                                    <span className="mt-1 block text-[13.5px] text-muted-foreground">
                                       {t("list.feeDeducted", { fee: fmtMoney(a.feeDeducted, i.currency), net: fmtMoney(a.amount - a.feeDeducted, i.currency), account: a.accountName })}
                                     </span>
                                   ) : null}

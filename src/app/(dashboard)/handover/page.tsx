@@ -85,12 +85,12 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-5 lg:self-start">
           <PanelHead title={t("page.send.title")} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("page.send.description")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("page.send.description")}</p>
           <ol className="wf-rows">
             {checks.map((c, i) => (
               <li key={c.text} className="p-0!">
                 <Link href={c.href} className="flex w-full items-start gap-3 px-5 py-3 transition-colors duration-150 hover:bg-secondary/45">
-                  <span className="wf-num w-5 shrink-0 pt-px text-[12px] text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="wf-num w-5 shrink-0 pt-px text-[13.5px] text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
                   {c.ok
                     ? <CircleCheck className="mt-0.5 size-4 shrink-0 text-pos" aria-hidden="true" />
                     : <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden="true" />}
@@ -108,7 +108,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
 
         <Card className="lg:col-span-7">
           <PanelHead title={t("page.open.title")} count={open.length} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("page.open.description", { sheet: t("sheets.openQuestions") })}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("page.open.description", { sheet: t("sheets.openQuestions") })}</p>
           <ul className="wf-rows">
             {open.slice(0, 30).map((q, i) => (
               <li key={i} className="items-start">
@@ -118,13 +118,13 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
                     <span className="font-medium text-foreground">{q.item}</span>
                   </p>
                   {q.issues.map((x, j) => (
-                    <span key={j} className="mt-1 block text-[12px] text-muted-foreground">{q.issues.length > 1 ? `${x.area}: ${x.detail}` : x.detail}</span>
+                    <span key={j} className="mt-1 block text-[13.5px] text-muted-foreground">{q.issues.length > 1 ? `${x.area}: ${x.detail}` : x.detail}</span>
                   ))}
                 </div>
                 <span className="wf-figure shrink-0">{q.amount}</span>
               </li>
             ))}
-            {open.length > 30 && <li className="text-[12px] text-muted-foreground">{t("page.open.more", { count: open.length - 30 })}</li>}
+            {open.length > 30 && <li className="text-[13.5px] text-muted-foreground">{t("page.open.more", { count: open.length - 30 })}</li>}
             {open.length === 0 && <li className="text-muted-foreground">{t("page.open.none")}</li>}
           </ul>
         </Card>

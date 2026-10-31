@@ -130,14 +130,14 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
                       : action(h.action)}
                   </p>
                   {(h.action === "UPDATE" || h.action === "REVALUE") && (
-                    <p className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">{show(h.field, h.oldValue)} → <span className="text-foreground">{show(h.field, h.newValue)}</span></p>
+                    <p className="text-[13.5px] text-muted-foreground [overflow-wrap:anywhere]">{show(h.field, h.oldValue)} → <span className="text-foreground">{show(h.field, h.newValue)}</span></p>
                   )}
                   {(h.action === "CREATE" || h.action === "DELETE" || h.action === "LINK" || h.action === "UNLINK") && (
-                    <p className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">{showSnapshot(h.newValue ?? h.oldValue)}</p>
+                    <p className="text-[13.5px] text-muted-foreground [overflow-wrap:anywhere]">{showSnapshot(h.newValue ?? h.oldValue)}</p>
                   )}
-                  {h.reason && <p className="text-[12px] text-text-secondary">{t("history.reason", { reason: reason(h.reason) })}</p>}
+                  {h.reason && <p className="text-[13.5px] text-text-secondary">{t("history.reason", { reason: reason(h.reason) })}</p>}
                 </div>
-                <span className="wf-num shrink-0 text-[12px] text-muted-foreground">
+                <span className="wf-num shrink-0 text-[13.5px] text-muted-foreground">
                   {h.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC{h.user ? ` · ${h.user}` : ""}
                 </span>
               </li>

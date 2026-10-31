@@ -43,7 +43,7 @@ export function CostDuplicates({ itemId, lookalikes }: { itemId: string; lookali
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-[12px] text-muted-foreground">{t("duplicates.otherwise")}</p>
+      <p className="mt-2 text-[13.5px] text-muted-foreground">{t("duplicates.otherwise")}</p>
     </Notice>
   );
 }

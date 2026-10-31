@@ -194,7 +194,7 @@ export function OnboardWizard({
                   />
                   <div className="grid w-full gap-2">
                     <p className="wf-label">{t("twoFactor.manualKey")}</p>
-                    <code className="rounded-md bg-muted/40 px-2.5 py-1.5 font-mono text-[13px] tracking-[0.12em] break-all text-foreground">
+                    <code className="rounded-md bg-muted/40 px-2.5 py-1.5 font-mono text-[14.5px] tracking-[0.12em] break-all text-foreground">
                       {secret}
                     </code>
                   </div>
@@ -214,7 +214,7 @@ export function OnboardWizard({
                   onChange={(e) => setToken(e.target.value.replace(/\D/g, ""))}
                   required
                   maxLength={6}
-                  className="h-11 font-mono text-[15px] tracking-[0.3em] placeholder:font-sans placeholder:tracking-normal"
+                  className="h-11 font-mono text-[17px] tracking-[0.3em] placeholder:font-sans placeholder:tracking-normal"
                 />
               </div>
               {error && <Notice tone="error">{error}</Notice>}

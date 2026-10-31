@@ -69,14 +69,14 @@ export function BookedRate({ entry, isAdmin, locked, defaultUsdRate }: { entry: 
 
   return (
     <div className="grid gap-2">
-      <p className="text-[13.5px] text-foreground tabular-nums">
+      <p className="text-[15px] text-foreground tabular-nums">
         {t("revalue.booked", {
           rate: rateFmt.format(entry.exchangeRate), currency: entry.currency, vnd: vndFmt.format(booked),
           source: entry.rateSource ? tc(`rateSource.${entry.rateSource}`) : "—",
         })}
       </p>
-      {fee > 0 && <p className="text-[12px] text-muted-foreground">{t("revalue.withFee", { fee: fmtMoney(fee, entry.currency) })}</p>}
-      <p className="text-[12px] text-muted-foreground">
+      {fee > 0 && <p className="text-[13.5px] text-muted-foreground">{t("revalue.withFee", { fee: fmtMoney(fee, entry.currency) })}</p>}
+      <p className="text-[13.5px] text-muted-foreground">
         {/* A reversal, or an entry already reversed, can't be reversed (again). */}
         {locked ? (entry.reversalOfId || entry.reversedBy ? t("revalue.reversedHint") : t("revalue.postedHint")) : entry.deductedFromId ? t("revalue.feeHint") : entry.transferId ? t("revalue.transferHint") : isAdmin ? t("revalue.keptHint") : t("revalue.adminOnly")}
       </p>
@@ -93,7 +93,7 @@ export function BookedRate({ entry, isAdmin, locked, defaultUsdRate }: { entry: 
           </div>
           {mode === "MANUAL" && <Input type="number" step="any" min="0" value={rate} onChange={(e) => setRate(e.target.value)} placeholder={t("form.ratePlaceholder", { currency: entry.currency })} className="font-mono" />}
           {mode === "BANK" && <Input type="number" step="1" min="0" value={vnd} onChange={(e) => setVnd(e.target.value)} placeholder={fee ? t("revalue.netPlaceholder") : t("form.vndPlaceholder")} className="font-mono" />}
-          <p className="text-[13.5px] font-semibold text-foreground tabular-nums">
+          <p className="text-[15px] font-semibold text-foreground tabular-nums">
             {t("revalue.preview", { before: vndFmt.format(booked), after: after === null ? "…" : vndFmt.format(after) })}
           </p>
           <div className="grid gap-2">

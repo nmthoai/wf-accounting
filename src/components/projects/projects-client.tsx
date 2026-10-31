@@ -108,7 +108,7 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
             </Button>
           </form>
           {err && (
-            <p className="mt-3 flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+            <p className="mt-3 flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}
@@ -117,7 +117,7 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
 
       <Card>
         <PanelHead title={t("list.title")} count={projects.length} />
-        <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("list.description")}</p>
+        <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("list.description")}</p>
         <Table>
           <TableHeader>
             <TableRow>
@@ -152,7 +152,7 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
                 </TableCell>
                 <TableCell className="py-3">
                   <span className={cn("block max-w-[10rem] truncate", p.clientName ? "text-foreground" : "text-muted-foreground")} title={p.clientName ?? undefined}>{p.clientName || t("noClient")}</span>
-                  <span className="block text-[12px] text-muted-foreground">{t("list.txnCount", { count: p.txnCount })}</span>
+                  <span className="block text-[13.5px] text-muted-foreground">{t("list.txnCount", { count: p.txnCount })}</span>
                 </TableCell>
                 <TableCell className="text-right text-pos">{money(p.income)}</TableCell>
                 <TableCell className="text-right">{p.expense ? "−" : ""}{money(p.expense)}</TableCell>

@@ -83,7 +83,7 @@ function SaveButton({ saving, label }: { saving: boolean; label: string }) {
 
 function FormError({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+    <p className="flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
       <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{children}
     </p>
   );
@@ -124,7 +124,7 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
             <div className="grid gap-2">
               <Label>{t("form.currency")}</Label>
               <CurrencyToggle label={t("form.currency")} value={currency} onChange={setCurrency} disabled={locked} />
-              {locked && <p className="text-[12px] text-muted-foreground">{t("accountDialog.currencyFixed")}</p>}
+              {locked && <p className="text-[13.5px] text-muted-foreground">{t("accountDialog.currencyFixed")}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -137,7 +137,7 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
               <Input id="acc-odate" name="openingDate" type="date" defaultValue={account?.openingDate ?? ""} />
             </div>
           </div>
-          <p className="text-[12px] text-muted-foreground">
+          <p className="text-[13.5px] text-muted-foreground">
             {t("accountDialog.openingHelp")}
             {type === "OWNER" && ` ${t("accountDialog.openingHelpOwner")}`}
           </p>
@@ -146,7 +146,7 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
             <Input id="acc-notes" name="notes" defaultValue={account?.notes ?? ""} placeholder={t("accountDialog.notesPlaceholder")} />
           </div>
           {account && (
-            <label className="flex items-start gap-2 text-[13px] text-text-secondary">
+            <label className="flex items-start gap-2 text-[14.5px] text-text-secondary">
               <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} />
               {t("accountDialog.active")}
             </label>
@@ -188,7 +188,7 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
           (fd) => (transfer ? updateTransfer(transfer.transferId, fd) : createTransfer(fd)),
           { fromAccountId: fromId, toAccountId: toId, amountOut: out, amountIn: cross ? inn : out },
         )}>
-          <p className="text-[12px] text-muted-foreground">{t("transferDialog.intro")}</p>
+          <p className="text-[13.5px] text-muted-foreground">{t("transferDialog.intro")}</p>
           <div className="grid grid-cols-2 gap-4">
             {/* A changed choice clears the last submit's error (e.g. "choose two different accounts"). */}
             <div className="grid gap-2"><Label htmlFor="tr-from">{t("transferDialog.from")}</Label><AccountSelect id="tr-from" className="w-full" accounts={pick} value={fromId} onChange={(id) => { setFromId(id); clearErr(); }} /></div>
@@ -207,7 +207,7 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
             )}
           </div>
           {cross && (
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[13.5px] text-muted-foreground">
               {t("transferDialog.exactFigures")}{" "}
               {rate && t.rich("transferDialog.rate", {
                 rate: new Intl.NumberFormat("vi-VN").format(Math.round(rate * 100) / 100),
@@ -285,7 +285,7 @@ export function MovementDialog({ accounts, loans, categories, movement, trigger 
                 {kinds.map((k) => <SelectItem key={k} value={k}>{tc(`type.${k}`)}</SelectItem>)}
               </SelectContent>
             </Select>
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[13.5px] text-muted-foreground">
               {pnl ? t(kind === "INCOME" ? "movementDialog.pnlHelpIncome" : "movementDialog.pnlHelpExpense") : t("movementDialog.financingHelp")}
             </p>
           </div>
@@ -302,7 +302,7 @@ export function MovementDialog({ accounts, loans, categories, movement, trigger 
                 </SelectContent>
               </Select>
               {kind === "INCOME" && interest && !interestCategory && (
-                <p className="text-[12px] text-warn">{t("movementDialog.interestNoCategory")}</p>
+                <p className="text-[13.5px] text-warn">{t("movementDialog.interestNoCategory")}</p>
               )}
             </div>
           )}
@@ -354,10 +354,10 @@ export function LoanDialog({ loan, trigger }: { loan?: LoanRow; trigger: React.R
           <div className="grid gap-2">
             <Label>{t("form.currency")}</Label>
             <CurrencyToggle label={t("form.currency")} value={currency} onChange={setCurrency} disabled={locked} />
-            {locked && <p className="text-[12px] text-muted-foreground">{t("loanDialog.currencyFixed", { count: loan!.movementCount })}</p>}
+            {locked && <p className="text-[13.5px] text-muted-foreground">{t("loanDialog.currencyFixed", { count: loan!.movementCount })}</p>}
           </div>
           <div className="grid gap-2"><Label htmlFor="ln-notes">{t("form.notesOptional")}</Label><Input id="ln-notes" name="notes" defaultValue={loan?.notes ?? ""} placeholder={t("loanDialog.notesPlaceholder")} /></div>
-          {!loan && <p className="text-[12px] text-muted-foreground">{t("loanDialog.help")}</p>}
+          {!loan && <p className="text-[13.5px] text-muted-foreground">{t("loanDialog.help")}</p>}
           {err && <FormError>{err}</FormError>}
           <SaveButton saving={saving} label={loan ? t("loanDialog.save") : t("loanDialog.add")} />
         </form>

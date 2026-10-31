@@ -154,7 +154,7 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
             </div>
           )}
           {fee > 0 && (
-            <dl className="grid gap-1.5 border-y border-border py-3 text-[13px]">
+            <dl className="grid gap-1.5 border-y border-border py-3 text-[14.5px]">
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("payment.breakdown.settled")}</dt><dd className="wf-num">{fmtMoney(settled, invoice.currency)}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("payment.breakdown.fee")}</dt><dd className="wf-num">{"−"}{fmtMoney(fee, invoice.currency)}</dd></div>
               <div className="flex justify-between gap-4 border-t border-border pt-1.5 font-semibold text-foreground">
@@ -162,7 +162,7 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
               </div>
             </dl>
           )}
-          <p className="text-[12px] text-muted-foreground">{receipt ? t("payment.feeNote") : t("payment.shortfallNote")}</p>
+          <p className="text-[13.5px] text-muted-foreground">{receipt ? t("payment.feeNote") : t("payment.shortfallNote")}</p>
           {foreign && (
             <div className="grid gap-2 border-t border-border pt-4">
               <Label htmlFor={mode === "DEFAULT" ? undefined : `pv-${invoice.id}`}>{t("payment.vndValue")}</Label>
@@ -180,7 +180,7 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
             <Input id={`pe-${invoice.id}`} name="files" type="file" multiple accept="image/*,.pdf,.zip,.xml" />
           </div>
           {err && (
-            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+            <p className="flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}
@@ -221,7 +221,7 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
                 <button key={k} type="button" aria-pressed={kind === k} onClick={() => { setKind(k); setEntryId(""); clearErr(); }}>{text}</button>
               ))}
             </div>
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[13.5px] text-muted-foreground">
               {kind === "PAYMENT"
                 ? t("link.paymentHelp")
                 : t("link.feeHelp")}
@@ -253,7 +253,7 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
             <Input key={entryId} id={`la-${invoice.id}`} name="amount" type="number" step="any" min="0" defaultValue={suggested} required />
           </div>
           {err && (
-            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+            <p className="flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}

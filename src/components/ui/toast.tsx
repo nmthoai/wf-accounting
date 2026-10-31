@@ -135,7 +135,7 @@ function ToastList() {
         "data-ending-style:data-[swipe-direction=down]:[transform:translateY(calc(var(--toast-swipe-movement-y)+150%))] data-ending-style:data-[swipe-direction=right]:[transform:translateX(calc(var(--toast-swipe-movement-x)+150%))_translateY(var(--offset-y))]",
         "[transition:transform_0.5s_cubic-bezier(0.22,1,0.36,1),opacity_0.5s,height_0.15s]",
         // Looks like the app's dialogs.
-        "rounded-xl border border-border-strong bg-popover text-popover-foreground text-[13.5px] shadow-float",
+        "rounded-xl border border-border-strong bg-popover text-popover-foreground text-[15px] shadow-float",
         "data-[type=error]:border-destructive/70"
       )}
     >
@@ -149,7 +149,7 @@ function ToastList() {
           <Toast.Title className="font-semibold leading-5 text-foreground" />
           <Toast.Description className="text-text-secondary" />
           {/* Renders only for toasts added with actionProps (the sign-in link). */}
-          <Toast.Action className="mt-1.5 self-start rounded-md border border-border-strong px-2.5 py-1 text-[12.5px] font-semibold text-foreground transition-colors hover:bg-muted" />
+          <Toast.Action className="mt-1.5 self-start rounded-md border border-border-strong px-2.5 py-1 text-[14px] font-semibold text-foreground transition-colors hover:bg-muted" />
         </div>
         <Toast.Close
           aria-label={t("dismiss")}

@@ -218,7 +218,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.5;
   }
   h1, h2, h3 {
@@ -238,7 +238,7 @@
     gap: 0.6em;
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 11.5px;
+    font-size: 13px;
     line-height: 1.2;
     font-weight: 500;
     letter-spacing: 0.14em;
@@ -251,7 +251,7 @@
   .wf-label {
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 12px;
     line-height: 1.2;
     font-weight: 500;
     letter-spacing: 0.12em;
@@ -268,7 +268,7 @@
   .wf-figure {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    font-size: 13.5px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: -0.01em;
     white-space: nowrap;
@@ -284,7 +284,7 @@
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
     background: var(--card);
-    font-size: 13px;
+    font-size: 14.5px;
     font-weight: 600;
   }
   .wf-seg > :where(button, a, span, label) {
@@ -315,7 +315,7 @@
   }
   .wf-seg--mono {
     font-family: var(--font-mono);
-    font-size: 11.5px;
+    font-size: 13px;
     font-weight: 500;
   }
   .wf-seg--mono > :where(button, a, span, label) {
@@ -330,20 +330,20 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
-    height: 20px;
+    height: 22px;
     padding: 0 0.6em;
     border-radius: 9999px;
     border: 1px solid color-mix(in oklab, var(--tone) 38%, transparent);
     background: color-mix(in oklab, var(--tone) 11%, transparent);
     color: var(--tone-ink);
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 600;
     line-height: 1;
     white-space: nowrap;
   }
   .wf-chip--mono {
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -399,7 +399,7 @@
     padding: 12px 14px;
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
-    font-size: 13.5px;
+    font-size: 15px;
     line-height: 1.625;
     color: var(--text-secondary);
   }
@@ -438,7 +438,7 @@
     align-items: center;
     gap: 10px;
     margin: 0;
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.375;
     font-weight: 700;
     letter-spacing: -0.01em;
@@ -449,7 +449,7 @@
     border: 1px solid var(--border-strong);
     border-radius: 9999px;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     line-height: 1.4;
@@ -524,7 +524,7 @@
   .wf-stat__value {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    font-size: 22px;
+    font-size: 24px;
     line-height: 1.25;
     font-weight: 600;
     letter-spacing: -0.02em;
@@ -532,12 +532,12 @@
   }
   .wf-stat__value small {
     display: block;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--text-secondary);
   }
   .wf-stat__sub {
-    font-size: 12.5px;
+    font-size: 14px;
     line-height: 1.375;
     color: var(--muted-foreground);
   }
@@ -580,7 +580,7 @@
   .wf-page-header__lead {
     max-width: 672px;
     margin: 0;
-    font-size: 15px;
+    font-size: 17px;
     line-height: 1.625;
     color: var(--text-secondary);
   }
@@ -616,7 +616,7 @@
     flex-direction: column;
   }
   .wf-brand__word {
-    font-size: 17px;
+    font-size: 18px;
     line-height: 1;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -628,7 +628,7 @@
   .wf-brand__product {
     margin-top: 6px;
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11.5px;
     line-height: 1;
     font-weight: 500;
     letter-spacing: 0.16em;
@@ -637,7 +637,7 @@
   }
   .wf-brand--lg .wf-brand__mark { width: 64px; height: 40px; }
   .wf-brand--lg .wf-brand__word { font-size: 26px; }
-  .wf-brand--lg .wf-brand__product { font-size: 11.5px; }
+  .wf-brand--lg .wf-brand__product { font-size: 13px; }
 
   /* Sidebar */
   .wf-sidebar__brand {
@@ -652,7 +652,7 @@
     padding: 16px 20px;
     border-top: 1px solid var(--border);
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 12px;
     line-height: 1.625;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -680,7 +680,7 @@
     padding: 0 12px;
     border-radius: var(--radius-lg);
     color: var(--text-secondary);
-    font-size: 13.5px;
+    font-size: 15px;
     font-weight: 600;
     text-decoration: none;
     transition: background-color 0.15s var(--ease-wf), color 0.15s var(--ease-wf);
@@ -732,7 +732,7 @@
   }
   .wf-nav__index {
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.06em;
     color: color-mix(in oklab, var(--muted-foreground) 80%, transparent);
@@ -794,7 +794,7 @@
     border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14.5px;
     font-weight: 500;
     text-align: left;
     cursor: default;
@@ -890,7 +890,7 @@
   .wf-msg__who {
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 12px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--agent-text);
@@ -900,7 +900,7 @@
     border: 1px solid var(--border-strong);
     border-radius: 6px var(--radius-2xl) var(--radius-2xl) var(--radius-2xl);
     background: color-mix(in oklab, var(--background) 60%, transparent);
-    font-size: 13.5px;
+    font-size: 15px;
     line-height: 1.625;
     color: var(--text-secondary);
   }
@@ -954,13 +954,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 14.5px;
     font-weight: 600;
     color: var(--foreground);
   }
   .wf-report-link__sub {
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 12px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--primary);
@@ -977,7 +977,7 @@
     border-radius: 9999px;
     background: var(--card);
     color: var(--text-secondary);
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: border-color 0.15s var(--ease-wf), background-color 0.15s var(--ease-wf), color 0.15s var(--ease-wf);
@@ -1009,7 +1009,7 @@
     border: 0;
     background: transparent;
     color: var(--foreground);
-    font-size: 13.5px;
+    font-size: 15px;
     outline: none;
   }
   .wf-composer textarea::placeholder {
@@ -1043,7 +1043,7 @@
     gap: 8px;
     margin: 0;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 500;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -1056,7 +1056,7 @@
   }
   .wf-report__title {
     margin: 8px 0 0;
-    font-size: 24px;
+    font-size: 26px;
     line-height: 1.25;
     font-weight: 800;
     letter-spacing: -0.025em;
@@ -1066,7 +1066,7 @@
     padding-bottom: 8px;
   }
   .wf-report .wf-stat__value {
-    font-size: 19px;
+    font-size: 21px;
   }
   .wf-report__rows {
     margin: 0;
@@ -1092,7 +1092,7 @@
   }
   .wf-report__label {
     margin: 0;
-    font-size: 13.5px;
+    font-size: 15px;
     color: var(--foreground);
   }
   .wf-report__label--todo {
@@ -1100,7 +1100,7 @@
   }
   .wf-report__sub {
     margin: 0;
-    font-size: 12px;
+    font-size: 13.5px;
     color: var(--muted-foreground);
   }
   .wf-report__value {
@@ -1130,7 +1130,7 @@
     justify-content: space-between;
     padding: 10px 0;
     border-bottom: 2px solid var(--border-strong);
-    font-size: 13.5px;
+    font-size: 15px;
     font-weight: 600;
   }
   .wf-noticed {
@@ -1144,7 +1144,7 @@
   .wf-noticed__label {
     margin: 0 0 6px;
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -1156,7 +1156,7 @@
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 13.5px;
+    font-size: 15px;
     line-height: 1.625;
     color: var(--text-secondary);
   }
@@ -1177,7 +1177,7 @@
     margin: 0;
     padding-top: 12px;
     border-top: 1px solid var(--border);
-    font-size: 11px;
+    font-size: 12.5px;
     color: var(--muted-foreground);
   }
 
@@ -1291,16 +1291,15 @@
 /* ── Registers as cards ────────────────────────────────────────────────────
    When the Ledger's or Invoices & Bills' columns no longer fit their panel (the
    panel is an @container), each row becomes a card: three columns, two on phones.
-   Cells name their place with data-col; a cell without one hides in a card, and
-   .wf-stack-hide marks a folded duplicate the card shows in its own cell.
+   Cells name their place with data-col; a cell without one hides in a card.
+   75rem is the panel beside the sidebar on a screen just under 1536px.
    Unlayered on purpose: it must override the cells' display and padding utilities. */
-@container (width < 58rem) {
+@container (width < 75rem) {
   .wf-stack,
   .wf-stack > tbody {
     display: block;
   }
-  .wf-stack > thead,
-  .wf-stack .wf-stack-hide {
+  .wf-stack > thead {
     display: none;
   }
   .wf-stack > tbody > tr {
@@ -1395,11 +1394,22 @@
     linear-gradient(to left, color-mix(in oklab, var(--foreground) 12%, transparent), transparent) right center / 16px 100% no-repeat scroll;
 }
 
-/* Long status chips in a page header wrap on phones. */
+/* A select never pushes its form wider than the screen: its words end in an ellipsis. */
+[data-slot="select-trigger"] {
+  min-width: 0;
+}
+[data-slot="select-trigger"] > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Long chips in a page header (status chips, Gini's trust line) wrap on phones. */
 @media (max-width: 639px) {
-  .wf-page-header__meta .wf-chip {
+  .wf-page-header .wf-chip {
     height: auto;
-    min-height: 20px;
+    min-height: 22px;
     padding-block: 3px;
     line-height: 1.35;
     white-space: normal;

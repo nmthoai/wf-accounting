@@ -34,7 +34,7 @@ export function PnlTable({ pnl, labels, currency, className }: { pnl: Pnl; label
   const cell = "wf-num px-3 py-2.5 text-right last:pr-5";
   // The total stays in view on the right when many months scroll sideways.
   const total = "sticky right-0 z-[1] border-l border-border bg-card";
-  const head = "h-9 font-mono text-[10.5px] font-medium tracking-[0.1em] uppercase text-muted-foreground";
+  const head = "h-9 font-mono text-[12px] font-medium tracking-[0.1em] uppercase text-muted-foreground";
   // The sticky first column needs an opaque fill: the row's tint laid over the card.
   const tint = "bg-[color-mix(in_oklab,var(--muted)_40%,var(--card))]";
   const hoverTint = "group-hover:bg-[color-mix(in_oklab,var(--secondary)_45%,var(--card))]";
@@ -61,14 +61,14 @@ export function PnlTable({ pnl, labels, currency, className }: { pnl: Pnl; label
                 <button type="button" onClick={() => toggle(k)} aria-expanded={isOpen} className={cn(label, "inline-flex items-center gap-1.5 text-left text-foreground hover:text-primary")}>
                   {isOpen ? <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" /> : <ChevronRight className="size-3.5 shrink-0" aria-hidden="true" />}
                   <span className="truncate">{c.name}</span>
-                  <span className="wf-num ml-auto pl-2 text-[11px] text-muted-foreground">{c.items.length}</span>
+                  <span className="wf-num ml-auto pl-2 text-[12.5px] text-muted-foreground">{c.items.length}</span>
                 </button>
               </th>
               {c.perMonth.map((v, i) => <td key={i} className={cell}>{num(v)}</td>)}
               <td className={cn(cell, total, hoverTint, "font-semibold text-foreground")}>{num(c.total)}</td>
             </tr>
             {isOpen && c.items.map((it) => (
-              <tr key={it.id} className="group border-t border-dashed border-border text-[12px] text-muted-foreground transition-colors duration-150 hover:bg-secondary/45">
+              <tr key={it.id} className="group border-t border-dashed border-border text-[13.5px] text-muted-foreground transition-colors duration-150 hover:bg-secondary/45">
                 <th scope="row" className={cn(first, hoverTint, "pl-10 font-normal")}>
                   <Link href={`/entry/${it.id}`} title={it.description || undefined} className={cn(label, "block")}>
                     <span className="block truncate text-foreground hover:text-primary">{it.description || t("noDescription")}</span>
@@ -103,16 +103,16 @@ export function PnlTable({ pnl, labels, currency, className }: { pnl: Pnl; label
           </Button>
         }
       />
-      <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("subtitle", { currency })}</p>
+      <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("subtitle", { currency })}</p>
       {/* Provisional is about a VND estimate; the USD view is marked as an estimate already. */}
       {pnl.provisional > 0 && currency === "VND" && (
-        <p className="flex items-start gap-2 border-b border-border px-5 py-3 text-[13px] text-text-secondary">
+        <p className="flex items-start gap-2 border-b border-border px-5 py-3 text-[14.5px] text-text-secondary">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden="true" />
           {t("provisionalNote", { count: pnl.provisional })}
         </p>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-[13.5px]">
+        <table className="w-full border-collapse text-[15px]">
           <caption className="sr-only">{t("caption")}</caption>
           <thead>
             <tr className="bg-muted/40">
@@ -131,7 +131,7 @@ export function PnlTable({ pnl, labels, currency, className }: { pnl: Pnl; label
               {pnl.net.map((v, i) => <td key={i} className={cn(cell, v < 0 && "text-neg")}>{num(v)}</td>)}
               <td className={cn(cell, total, pnl.netTotal < 0 && "text-neg")}>{num(pnl.netTotal)}</td>
             </tr>
-            <tr className="border-t border-border text-[12px] text-muted-foreground">
+            <tr className="border-t border-border text-[13.5px] text-muted-foreground">
               <th scope="row" className={cn(first, "font-normal")}>{t("margin")}</th>
               {pnl.months.map((_, i) => {
                 const r = pnl.revenue.perMonth[i];

@@ -12,7 +12,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col overflow-hidden rounded-xl border border-border-strong/80 bg-card text-sm text-card-foreground shadow-panel [--card-spacing:--spacing(5)] data-[size=sm]:[--card-spacing:--spacing(4)] *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "group/card flex flex-col overflow-hidden rounded-xl border border-border-strong/80 bg-card text-[15px] text-card-foreground shadow-panel [--card-spacing:--spacing(5)] data-[size=sm]:[--card-spacing:--spacing(4)] *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         className
       )}
       {...props}
@@ -38,7 +38,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-title"
       className={cn(
-        "flex min-w-0 items-center gap-2.5 text-[15px] leading-snug font-bold tracking-[-0.01em] text-foreground group-data-[size=sm]/card:text-sm",
+        "flex min-w-0 items-center gap-2.5 text-[17px] leading-snug font-bold tracking-[-0.01em] text-foreground group-data-[size=sm]/card:text-[15px]",
         className
       )}
       {...props}
@@ -50,7 +50,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-[13px] text-muted-foreground", className)}
+      className={cn("text-[14.5px] text-muted-foreground", className)}
       {...props}
     />
   )

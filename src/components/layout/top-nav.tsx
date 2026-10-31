@@ -60,12 +60,12 @@ export function TopNav({
         <p className="hidden min-w-0 items-center gap-2.5 sm:flex">
           <span className="wf-kicker text-muted-foreground">{group}</span>
           <span className="text-border-strong" aria-hidden="true">/</span>
-          <span className="truncate text-[15px] font-semibold text-foreground" title={page}>{page}</span>
+          <span className="truncate text-[17px] font-semibold text-foreground" title={page}>{page}</span>
         </p>
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <span className="wf-num hidden text-[12.5px] text-muted-foreground lg:inline">{today}</span>
+        <span className="wf-num hidden text-[14px] text-muted-foreground lg:inline">{today}</span>
         <LanguageSwitcher />
         <ThemeMenu initial={theme} />
         {greeting && (
@@ -73,11 +73,11 @@ export function TopNav({
             href="/profile"
             title={t("header.profile")}
             aria-current={pathname === "/profile" ? "page" : undefined}
-            className="flex items-center gap-2.5 rounded-full py-1 pr-2 pl-1 text-[13.5px] text-text-secondary transition-colors hover:bg-secondary hover:text-foreground aria-[current=page]:bg-secondary"
+            className="flex items-center gap-2.5 rounded-full py-1 pr-2 pl-1 text-[15px] text-text-secondary transition-colors hover:bg-secondary hover:text-foreground aria-[current=page]:bg-secondary"
           >
             <span
               aria-hidden="true"
-              className="flex size-7 items-center justify-center rounded-full border border-border-strong font-mono text-[11px] font-semibold text-primary uppercase"
+              className="flex size-7 items-center justify-center rounded-full border border-border-strong font-mono text-[12.5px] font-semibold text-primary uppercase"
             >
               {greeting.charAt(0)}
             </span>

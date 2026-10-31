@@ -126,7 +126,7 @@ export function EditInvoiceDialog({
                 ))}
               </div>
             </div>
-            {currency === "USD" && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
+            {currency === "USD" && <p className="wf-num text-[13.5px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`iss-${invoice.id}`}>{t("form.issueDate")}</Label>
@@ -140,12 +140,12 @@ export function EditInvoiceDialog({
             <Label htmlFor={`notes-${invoice.id}`}>{t("form.notes")}</Label>
             <Input id={`notes-${invoice.id}`} name="notes" defaultValue={invoice.notes ?? ""} placeholder={t("form.notesPlaceholder")} />
           </div>
-          {currencyLocked && <p className="text-[12px] text-muted-foreground sm:col-span-2">{t("errors.currencyLocked")}</p>}
+          {currencyLocked && <p className="text-[13.5px] text-muted-foreground sm:col-span-2">{t("errors.currencyLocked")}</p>}
           {(invoice.status === "PAID" || invoice.status === "PARTIAL") && (
             <Notice tone="warning" className="sm:col-span-2">{t("edit.paidNote")}</Notice>
           )}
           {err && (
-            <p className="flex items-center gap-1.5 text-[12px] text-destructive sm:col-span-2" role="alert">
+            <p className="flex items-center gap-1.5 text-[13.5px] text-destructive sm:col-span-2" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}

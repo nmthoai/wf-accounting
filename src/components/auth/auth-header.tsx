@@ -36,7 +36,7 @@ export async function AuthShell({ lead, children }: { lead: ReactNode; children:
             <h1 className="mt-6 text-[42px] leading-[1.02] font-extrabold tracking-[-0.032em] text-foreground sm:text-[64px] xl:text-[74px]">
               {t.rich("headline", { proof: (chunks) => <span className="block text-primary">{chunks}</span> })}
             </h1>
-            <p className="mt-6 max-w-[34rem] text-[17px] leading-relaxed text-text-secondary">{lead}</p>
+            <p className="mt-6 max-w-[34rem] text-[19px] leading-relaxed text-text-secondary">{lead}</p>
           </div>
           {children}
         </div>

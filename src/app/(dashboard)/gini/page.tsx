@@ -19,14 +19,14 @@ export default async function GiniPage() {
             <p className="wf-kicker"><span>AI</span><span>{t("page.kicker")}</span></p>
             <h1 className="wf-page-header__title">
               {t("page.title")}
-              <span className="ml-2 align-baseline text-[17px] font-semibold tracking-normal text-text-secondary">· {t("page.titleSub")}</span>
+              <span className="ml-2 align-baseline text-[19px] font-semibold tracking-normal text-text-secondary">· {t("page.titleSub")}</span>
             </h1>
             <p className="wf-page-header__lead">{t("page.lead")}</p>
           </div>
         </div>
         <div className="wf-page-header__actions">
           {/* Wraps instead of pushing a phone screen sideways. */}
-          <span className="wf-chip wf-chip--pos h-auto min-h-7 min-w-0 shrink gap-2 px-3 py-1 text-[12.5px] leading-snug whitespace-normal">
+          <span className="wf-chip wf-chip--pos h-auto min-h-7 min-w-0 shrink gap-2 px-3 py-1 text-[14px] leading-snug whitespace-normal">
             <ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
             {t("page.trust")}
           </span>

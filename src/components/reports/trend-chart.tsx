@@ -68,7 +68,7 @@ export function TrendChart({ labels, revenue, cost, net, currency, locale }: Pro
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-text-secondary">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] text-text-secondary">
         {series.slice(0, 2).map(([k, c]) => (
           <span key={k} className="inline-flex items-center gap-2"><span className="size-2.5 rounded-xs" style={{ background: c }} aria-hidden="true" />{t(k)}</span>
         ))}
@@ -83,13 +83,13 @@ export function TrendChart({ labels, revenue, cost, net, currency, locale }: Pro
             {tk.map((v) => (
               <g key={v} aria-hidden>
                 <line x1={M.left} x2={width - M.right} y1={y(v)} y2={y(v)} stroke="var(--border)" strokeWidth={1} />
-                <text x={M.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-muted-foreground font-mono text-[10.5px] tabular-nums">{short.format(v)}</text>
+                <text x={M.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-muted-foreground font-mono text-[12px] tabular-nums">{short.format(v)}</text>
               </g>
             ))}
             {labels.map((l, i) => (
               <g key={l} aria-hidden>
                 {hover === i && <rect x={M.left + band * i} y={M.top} width={band} height={ih} className="fill-secondary/60" />}
-                {i % every === 0 && <text x={cx(i)} y={H - M.bottom + 18} textAnchor="middle" className="fill-muted-foreground font-mono text-[10.5px]">{l}</text>}
+                {i % every === 0 && <text x={cx(i)} y={H - M.bottom + 18} textAnchor="middle" className="fill-muted-foreground font-mono text-[12px]">{l}</text>}
               </g>
             ))}
             {labels.map((l, i) => (
@@ -112,7 +112,7 @@ export function TrendChart({ labels, revenue, cost, net, currency, locale }: Pro
           </svg>
         )}
         {w !== null && hover !== null && (
-          <div className="pointer-events-none absolute z-10 rounded-lg border border-border-strong bg-popover p-3 text-[13px] text-popover-foreground shadow-float" style={{ left: tipX, top: M.top, width: Math.min(TIP, width) }} aria-hidden>
+          <div className="pointer-events-none absolute z-10 rounded-lg border border-border-strong bg-popover p-3 text-[14.5px] text-popover-foreground shadow-float" style={{ left: tipX, top: M.top, width: Math.min(TIP, width) }} aria-hidden>
             <p className="wf-label mb-2">{labels[hover]}</p>
             {series.map(([k, c]) => {
               const v = k === "revenue" ? revenue[hover] : k === "cost" ? cost[hover] : net[hover];
