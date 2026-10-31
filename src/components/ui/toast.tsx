@@ -67,7 +67,7 @@ function ToastList() {
         "data-ending-style:data-[swipe-direction=down]:[transform:translateY(calc(var(--toast-swipe-movement-y)+150%))] data-ending-style:data-[swipe-direction=right]:[transform:translateX(calc(var(--toast-swipe-movement-x)+150%))_translateY(var(--offset-y))]",
         "[transition:transform_0.5s_cubic-bezier(0.22,1,0.36,1),opacity_0.5s,height_0.15s]",
         // Looks like the app's dialogs.
-        "rounded-xl border border-border-strong bg-popover text-popover-foreground text-[13.5px] shadow-float",
+        "rounded-xl border border-border-strong bg-popover text-popover-foreground text-[15px] shadow-float",
         "data-[type=error]:border-destructive/70"
       )}
     >

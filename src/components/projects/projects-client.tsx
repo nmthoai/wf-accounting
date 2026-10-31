@@ -104,7 +104,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
             </Button>
           </form>
           {err && (
-            <p className="mt-3 flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+            <p className="mt-3 flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}
@@ -113,7 +113,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
 
       <Card>
         <PanelHead title={t("list.title")} count={projects.length} />
-        <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("list.description")}</p>
+        <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("list.description")}</p>
         <Table>
           <TableHeader>
             <TableRow>
@@ -148,7 +148,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                 </TableCell>
                 <TableCell className="py-3">
                   <span className={cn("block", p.clientName ? "text-foreground" : "text-muted-foreground")}>{p.clientName || t("noClient")}</span>
-                  <span className="block text-[12px] text-muted-foreground">{t("list.txnCount", { count: p.txnCount })}</span>
+                  <span className="block text-[13.5px] text-muted-foreground">{t("list.txnCount", { count: p.txnCount })}</span>
                 </TableCell>
                 <TableCell className="text-right text-pos">{vnd(p.income)}</TableCell>
                 <TableCell className="text-right">{p.expense ? "−" : ""}{vnd(p.expense)}</TableCell>

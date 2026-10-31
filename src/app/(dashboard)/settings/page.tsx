@@ -64,7 +64,7 @@ export default async function SettingsPage() {
             </div>
           </li>
         ))}
-        {list.length === 0 && <li className="text-[13px] text-muted-foreground">{empty}</li>}
+        {list.length === 0 && <li className="text-[14.5px] text-muted-foreground">{empty}</li>}
       </ul>
     </>
   );
@@ -83,7 +83,7 @@ export default async function SettingsPage() {
             <Card>
               <PanelHead title={t("categories.title")} />
               <CardContent className="grid gap-4 border-b border-border">
-                <p className="text-[13px] text-muted-foreground">{t("categories.description")}</p>
+                <p className="text-[14.5px] text-muted-foreground">{t("categories.description")}</p>
                 <ActionForm action={createCategory} success={t("categories.toast.added")} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
                   <div className="grid gap-2">
                     <Label htmlFor="name">{t("fields.name")}</Label>
@@ -111,7 +111,7 @@ export default async function SettingsPage() {
             <Card>
               <PanelHead title={t("unitRates.title")} />
               <CardContent className="grid gap-4 border-b border-border">
-                <p className="text-[13px] text-muted-foreground">{t("unitRates.description")}</p>
+                <p className="text-[14.5px] text-muted-foreground">{t("unitRates.description")}</p>
                 <ActionForm action={createUnitRate} success={t("unitRates.toast.added")} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem_8rem_auto] sm:items-end">
                   <div className="grid gap-2">
                     <Label htmlFor="description">{t("fields.description")}</Label>
@@ -142,7 +142,7 @@ export default async function SettingsPage() {
                   <li key={r.id} className="py-2.5">
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">{r.description}</p>
-                      <p className="wf-num mt-0.5 text-[12px] text-muted-foreground">{t("unitRates.rateLine", { rate: r.rate, unit: unitPer[r.unit] ?? r.unit })}</p>
+                      <p className="wf-num mt-0.5 text-[13.5px] text-muted-foreground">{t("unitRates.rateLine", { rate: r.rate, unit: unitPer[r.unit] ?? r.unit })}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       <EditUnitRateDialog unitRate={r} action={updateUnitRate} />
@@ -152,25 +152,25 @@ export default async function SettingsPage() {
                     </div>
                   </li>
                 ))}
-                {unitRates.length === 0 && <li className="text-[13px] text-muted-foreground">{t("unitRates.empty")}</li>}
+                {unitRates.length === 0 && <li className="text-[14.5px] text-muted-foreground">{t("unitRates.empty")}</li>}
               </ul>
             </Card>
           </div>
 
           <Card className="self-start lg:col-span-6">
             <PanelHead title={t("exchangeRate.title")} />
-            <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("exchangeRate.description")}</p>
+            <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("exchangeRate.description")}</p>
             <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-muted/40 px-5 py-4">
               <div className="grid gap-2">
                 <p className="wf-label">{t("exchangeRate.current")}</p>
                 <p className="flex items-baseline gap-2">
                   <span className="wf-num text-[28px] leading-none font-semibold text-primary">{new Intl.NumberFormat('vi-VN').format(currentUser?.defaultUsdRate || 25400)}</span>
-                  <span className="wf-num text-[12px] text-muted-foreground">VND / USD</span>
+                  <span className="wf-num text-[13.5px] text-muted-foreground">VND / USD</span>
                 </p>
               </div>
               <div className="grid gap-2 text-right">
                 <p className="wf-label">{t("exchangeRate.lastUpdated")}</p>
-                <p className="wf-num text-[13px] text-foreground">
+                <p className="wf-num text-[14.5px] text-foreground">
                   {currentUser?.updatedAt ? fmtDate(currentUser.updatedAt, locale, { timeZone: "Asia/Ho_Chi_Minh" }) : t("exchangeRate.never")}
                 </p>
               </div>
@@ -180,7 +180,7 @@ export default async function SettingsPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="rate">{t("exchangeRate.newRate")}</Label>
                   <Input key={currentUser?.defaultUsdRate} id="rate" name="rate" type="number" step="0.01" defaultValue={currentUser?.defaultUsdRate} required />
-                  <p className="text-[12px] text-muted-foreground">{t("exchangeRate.hint")}</p>
+                  <p className="text-[13.5px] text-muted-foreground">{t("exchangeRate.hint")}</p>
                 </div>
                 <Button type="submit" className="justify-self-start">{t("exchangeRate.submit")}</Button>
               </ActionForm>

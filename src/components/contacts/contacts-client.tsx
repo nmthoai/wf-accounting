@@ -89,7 +89,7 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
             <li key={c.id}>
               <div className="min-w-0">
                 <p className="truncate text-foreground">{c.name}</p>
-                <p className="truncate text-[12px] text-muted-foreground">{t("clients.meta", { contact: [c.email, c.phone].filter(Boolean).join(" · ") || "—", projects: c.projectCount, invoices: c.invoiceCount })}</p>
+                <p className="truncate text-[13.5px] text-muted-foreground">{t("clients.meta", { contact: [c.email, c.phone].filter(Boolean).join(" · ") || "—", projects: c.projectCount, invoices: c.invoiceCount })}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <span className={cn("wf-figure mr-2", c.revenue > 0 ? "text-pos" : "text-muted-foreground")} title={t("clients.revenueTitle")}>{fmtVnd(c.revenue)}</span>
@@ -132,7 +132,7 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
             <li key={v.id}>
               <div className="min-w-0">
                 <p className="truncate text-foreground">{v.name}</p>
-                <p className="truncate text-[12px] text-muted-foreground">{t("vendors.meta", { contact: [v.email, v.phone].filter(Boolean).join(" · ") || "—", payments: v.txnCount })}</p>
+                <p className="truncate text-[13.5px] text-muted-foreground">{t("vendors.meta", { contact: [v.email, v.phone].filter(Boolean).join(" · ") || "—", payments: v.txnCount })}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <span className={cn("wf-figure mr-2", v.spend > 0 ? "text-foreground" : "text-muted-foreground")}>{v.spend > 0 ? "\u2212" : ""}{fmtVnd(v.spend)}</span>

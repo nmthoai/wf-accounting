@@ -96,7 +96,7 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader><DialogTitle>{item ? `${item.provider}${item.ref ? ` · ${item.ref}` : ""}` : t("form.addTitle")}</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="grid gap-4 pt-1">
-          {locked && <p className="text-[12px] text-muted-foreground">{t("form.locked")}</p>}
+          {locked && <p className="text-[13.5px] text-muted-foreground">{t("form.locked")}</p>}
           <fieldset disabled={locked} className="m-0 grid min-w-0 gap-4 border-0 p-0 md:grid-cols-2">
             <div className="grid gap-2 md:col-span-2">
               <Label htmlFor="ci-provider">{t("form.provider")}</Label>
@@ -154,11 +154,11 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
             <div className="grid gap-2 md:col-span-2">
               <Label htmlFor="ci-files">{t("form.files")}</Label>
               <Input id="ci-files" name="files" type="file" multiple accept="image/*,application/pdf,.zip" />
-              {item && item.attachments.length > 0 && <p className="text-[12px] text-muted-foreground">{t("form.alreadyAttached", { count: item.attachments.length })}</p>}
+              {item && item.attachments.length > 0 && <p className="text-[13.5px] text-muted-foreground">{t("form.alreadyAttached", { count: item.attachments.length })}</p>}
             </div>
           </div>
           {err && (
-            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+            <p className="flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}
@@ -221,7 +221,7 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
               <div className="grid min-w-[240px] flex-1 gap-1">
                 <p className="flex flex-wrap items-center gap-2">
                   {i.ref && <Chip mono className="rounded-[4px]">{i.ref}</Chip>}
-                  <span className="text-[15px] font-semibold text-foreground">{i.provider}</span>
+                  <span className="text-[17px] font-semibold text-foreground">{i.provider}</span>
                   <Chip tone={DOC_TONE[i.docStatus] ?? "neutral"}>{tc.has(`review.doc.${i.docStatus}`) ? tc(`review.doc.${i.docStatus}`) : i.docStatus}</Chip>
                   {i.status !== "PENDING" && <Chip>{t(`status.${i.status}`)}</Chip>}
                   {i.attachments.map((a) => (
@@ -231,12 +231,12 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
                     </a>
                   ))}
                 </p>
-                <p className="text-[13px] text-muted-foreground">
+                <p className="text-[14.5px] text-muted-foreground">
                   <span className="wf-num text-text-secondary">{i.receiptDate}</span>
                   {period(i) ? ` · ${t("list.service", { period: period(i)! })}` : ""}{i.receiptNumber ? ` · ${t("list.number", { number: i.receiptNumber })}` : ""}
                   {i.billingEntity ? ` · ${t("list.billedTo", { name: i.billingEntity })}` : ""}
                 </p>
-                <p className="text-[13px] text-text-secondary">
+                <p className="text-[14.5px] text-text-secondary">
                   {t("list.paidBy", { payer: t.has(`payer.${i.payer}`) ? t(`payer.${i.payer}`) : i.payer })}
                   {i.payer !== "COMPANY" && (
                     <span className={i.reimbursement === "OWED" ? "text-warn" : "text-muted-foreground"}> · {t.has(`reimbursement.${i.reimbursement}`) ? t(`reimbursement.${i.reimbursement}`) : i.reimbursement}</span>
@@ -246,11 +246,11 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
                   )}
                 </p>
                 {(i.reviewNote || i.notes) && (
-                  <p className="line-clamp-2 text-[12px] text-muted-foreground" title={[i.reviewNote, i.notes].filter(Boolean).join("\n")}>{i.reviewNote ?? i.notes}</p>
+                  <p className="line-clamp-2 text-[13.5px] text-muted-foreground" title={[i.reviewNote, i.notes].filter(Boolean).join("\n")}>{i.reviewNote ?? i.notes}</p>
                 )}
               </div>
               <div className="ml-auto flex items-center gap-1">
-                <span className="wf-figure mr-2 text-[15px]">{fmtMoney(i.amount, i.currency)}</span>
+                <span className="wf-figure mr-2 text-[17px]">{fmtMoney(i.amount, i.currency)}</span>
                 <ItemDialog item={i} trigger={<Button variant="ghost" size="icon-sm" aria-label={tc("actions.edit")} title={tc("actions.edit")}><Pencil /></Button>} />
                 {i.status === "PENDING" && (
                   <Button variant="outline" size="sm" className="text-pos" render={<Link href={`/entry?costItem=${i.id}`} />} nativeButton={false} title={t("list.toLedgerTitle")}>

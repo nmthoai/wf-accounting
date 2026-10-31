@@ -97,11 +97,11 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
           <div className="grid gap-2">
             <Label htmlFor="description">{t("edit.description")}</Label>
             <textarea id="description" name="description" defaultValue={project.description ?? ""} rows={3}
-              className="w-full min-w-0 rounded-lg border border-input bg-card px-3 py-2 text-[13.5px] text-foreground transition-colors duration-150 ease-wf outline-none placeholder:text-muted-foreground hover:border-muted-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+              className="w-full min-w-0 rounded-lg border border-input bg-card px-3 py-2 text-[15px] text-foreground transition-colors duration-150 ease-wf outline-none placeholder:text-muted-foreground hover:border-muted-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
               placeholder={t("edit.descriptionPlaceholder")} />
           </div>
           {err && (
-            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+            <p className="flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}

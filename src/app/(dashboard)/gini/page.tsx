@@ -25,7 +25,7 @@ export default async function GiniPage() {
           </div>
         </div>
         <div className="wf-page-header__actions">
-          <span className="wf-chip wf-chip--pos h-7 gap-2 px-3 text-[12.5px]">
+          <span className="wf-chip wf-chip--pos h-7 gap-2 px-3 text-[14px]">
             <ShieldCheck className="size-3.5" aria-hidden="true" />
             {t("page.trust")}
           </span>

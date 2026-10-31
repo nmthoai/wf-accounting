@@ -31,7 +31,7 @@ export function RowActions({ id, href, status, isAdmin }: { id: string; href: st
   }
   const openLabel = status === "POSTED" ? t("rowActions.openPosted") : tc("actions.edit");
   return (
-    <div className="ml-auto flex w-[4.25rem] flex-wrap justify-end gap-1 @min-[80rem]:w-auto @min-[80rem]:flex-nowrap">
+    <div className="ml-auto flex w-[4.25rem] flex-wrap justify-end gap-1 @min-[92rem]:w-auto @min-[92rem]:flex-nowrap">
       {isAdmin && (status === "DRAFT" || status === "REJECTED") && (
         <Button variant="ghost" size="icon-sm" className="text-pos hover:text-pos" title={t("rowActions.approve")} aria-label={t("rowActions.approve")} disabled={busy}
           onClick={() => run(() => reviewEntries([id]), t("toast.approved"))}>

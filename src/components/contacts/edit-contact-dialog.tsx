@@ -66,7 +66,7 @@ export function EditContactDialog({
             <Input id={`p-${contact.id}`} name="phone" type="tel" defaultValue={contact.phone ?? ""} placeholder="+84 …" />
           </div>
           {err && (
-            <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+            <p className="flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}

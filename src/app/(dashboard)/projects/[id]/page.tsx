@@ -93,7 +93,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               {t.has(`status.${status}`) ? t(`status.${status}`) : status}
             </Chip>
             <Chip>{project.client?.name || t("noClient")}</Chip>
-            {dateRange && <span className="wf-num text-[12px] text-muted-foreground">{dateRange}</span>}
+            {dateRange && <span className="wf-num text-[13.5px] text-muted-foreground">{dateRange}</span>}
           </>
         }
         actions={
@@ -117,7 +117,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-6">
           <PanelHead title={t("detail.outstandingTitle")} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("detail.outstandingDescription")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("detail.outstandingDescription")}</p>
           <ProjectOutstanding items={outstanding} accounts={accounts} defaultUsdRate={usdRate} feeCategories={feeCategories} />
         </Card>
 
@@ -131,7 +131,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                   <div className="flex items-center justify-between gap-3">
                     <span className="min-w-0 truncate text-foreground">{name}</span>
                     <span className="flex shrink-0 items-baseline gap-3">
-                      <span className="wf-num text-[12px] text-muted-foreground">{pct}%</span>
+                      <span className="wf-num text-[13.5px] text-muted-foreground">{pct}%</span>
                       <span className="wf-figure">{vnd(amt)}</span>
                     </span>
                   </div>
@@ -145,7 +145,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
         <Card className="lg:col-span-12">
           <PanelHead title={t("detail.documentsTitle")} count={documents.length} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("detail.documentsDescription")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("detail.documentsDescription")}</p>
           <ProjectDocuments projectId={project.id} documents={documents} />
         </Card>
 

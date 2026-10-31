@@ -18,7 +18,7 @@ import { notify, notifyResult } from "@/components/ui/toast";
 import { BookedRate } from "@/components/ledger/booked-rate";
 import { Chip, Notice } from "@/components/wf/ledger-ui";
 
-const hint = "text-[12px] text-muted-foreground";
+const hint = "text-[13.5px] text-muted-foreground";
 
 // One of the evidence/tax review statuses, as a dropdown.
 function StatusSelect({ id, label, options, value, onChange, disabled }: {
@@ -250,7 +250,7 @@ export function EntryForm({
           <fieldset disabled={locked} className="m-0 grid min-w-0 gap-5 border-0 p-0 md:grid-cols-2">
             <div className="grid gap-2 md:col-span-2">
               <Label>{type === "INCOME" ? t("form.receivedInto") : t("form.paidFrom")}</Label>
-              <div className="[&_[data-slot=select-trigger]]:w-full">
+              <div className="min-w-0 [&_[data-slot=select-trigger]]:w-full">
                 <AccountSelect
                   accounts={accounts.filter((a) => a.isActive || a.id === accountId)}
                   value={accountId}

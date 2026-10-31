@@ -52,7 +52,7 @@ export function RejectDialog({ id, compact = false }: { id: string; compact?: bo
             <Input id={`reject-${id}`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reject.reasonPlaceholder")} autoFocus />
           </div>
           {err && (
-            <p className="flex items-start gap-1.5 text-[12px] text-destructive">
+            <p className="flex items-start gap-1.5 text-[13.5px] text-destructive">
               <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}

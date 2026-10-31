@@ -118,7 +118,7 @@ export function EditInvoiceDialog({
               </div>
             </div>
             <Input id={`amt-${invoice.id}`} name="amount" type="number" step="0.01" min="0" defaultValue={invoice.amount} required />
-            {currency === "USD" && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
+            {currency === "USD" && <p className="wf-num text-[13.5px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`iss-${invoice.id}`}>{t("form.issueDate")}</Label>
@@ -136,7 +136,7 @@ export function EditInvoiceDialog({
             <Notice tone="warning" className="sm:col-span-2">{t("edit.paidNote")}</Notice>
           )}
           {err && (
-            <p className="flex items-center gap-1.5 text-[12px] text-destructive sm:col-span-2" role="alert">
+            <p className="flex items-center gap-1.5 text-[13.5px] text-destructive sm:col-span-2" role="alert">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}

@@ -77,7 +77,7 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
               {rejection.by ? t("status.rejectedReasonBy", { reason: rejection.reason, name: rejection.by }) : t("status.rejectedReason", { reason: rejection.reason })}
             </p>
           )}
-          {correctionOf && <p className="mt-1 text-[12px]">{t.rich("status.correctionOf", { label: correctionOf.label, link: (c) => <Link className={refLink} href={`/entry/${correctionOf.id}`}>{c}</Link> })}</p>}
+          {correctionOf && <p className="mt-1 text-[13.5px]">{t.rich("status.correctionOf", { label: correctionOf.label, link: (c) => <Link className={refLink} href={`/entry/${correctionOf.id}`}>{c}</Link> })}</p>}
         </div>
         {isAdmin && !reversalOf && !reversedBy && (
           <div className="flex flex-wrap gap-2">
@@ -100,14 +100,14 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
                   <DialogHeader>
                     <DialogTitle>{t("reverse.title")}</DialogTitle>
                     <DialogDescription>{t("reverse.body")}</DialogDescription>
-                    {withFee && <p className="text-[13.5px] text-text-secondary">{t("reverse.withFee")}</p>}
+                    {withFee && <p className="text-[15px] text-text-secondary">{t("reverse.withFee")}</p>}
                   </DialogHeader>
                   <div className="grid gap-2">
                     <Label htmlFor="reverse-reason">{t("reverse.reason")}</Label>
                     <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reverse.reasonPlaceholder")} />
                   </div>
                   {err && (
-                    <p className="flex items-start gap-1.5 text-[12px] text-destructive">
+                    <p className="flex items-start gap-1.5 text-[13.5px] text-destructive">
                       <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />{err}
                     </p>
                   )}

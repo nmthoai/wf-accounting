@@ -51,7 +51,7 @@ function FlagText({ f, locale }: { f: Flag; locale: string }) {
   return (
     <div className="min-w-0">
       <p className="font-semibold text-foreground">{t(`kinds.${f.kind}.title`, v)}</p>
-      <p className="mt-1 text-[13px] text-text-secondary">
+      <p className="mt-1 text-[14.5px] text-text-secondary">
         {t(`kinds.${f.kind}.body`, v)}
         {f.provisionalVnd ? ` ${t("provisionalPart", { amount: vnd(f.provisionalVnd) })}` : ""}
       </p>
@@ -91,9 +91,9 @@ function NoteDialog({ flag, locale, trigger }: { flag: FlagView; locale: string;
             <Label htmlFor="flag-note">{t("noteLabel")}</Label>
             <textarea id="flag-note" value={text} onChange={(e) => setText(e.target.value)} rows={3} maxLength={1000}
               placeholder={t("notePlaceholder")}
-              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-[13.5px] text-foreground transition-colors duration-150 ease-wf outline-none placeholder:text-muted-foreground hover:border-muted-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring" />
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 text-[15px] text-foreground transition-colors duration-150 ease-wf outline-none placeholder:text-muted-foreground hover:border-muted-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring" />
           </div>
-          {err && <p role="alert" className="flex items-center gap-1.5 text-[12px] text-destructive"><CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}</p>}
+          {err && <p role="alert" className="flex items-center gap-1.5 text-[13.5px] text-destructive"><CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}</p>}
           <Button className="w-full" disabled={busy || !text.trim()} onClick={save}>{busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("saveNote")}</Button>
         </div>
       </DialogContent>
@@ -159,7 +159,7 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
   const signed = new Set(LINES[form].filter((l) => l.signed).map((l) => l.code));
   const figure = (code: string) => (
     <div className="grid gap-1.5">
-      <Label htmlFor={`tr-l-${code}`} className="text-[12px] leading-tight font-normal text-text-secondary">
+      <Label htmlFor={`tr-l-${code}`} className="text-[13.5px] leading-tight font-normal text-text-secondary">
         <span className="wf-num text-muted-foreground">[{code}]</span> {t(`lines.${formKey(form)}.${lineKey(code)}`)}
       </Label>
       <Input id={`tr-l-${code}`} name={`line_${code}`} inputMode={signed.has(code) ? "text" : "numeric"} defaultValue={shown(code)}
@@ -175,7 +175,7 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
         <form onSubmit={submit} className="grid gap-5">
           <div className="grid gap-4 sm:grid-cols-4">
             {ret ? (
-              <p className="text-[13.5px] text-foreground sm:col-span-4"><span className="text-muted-foreground">{t("form.form")}:</span> {t(`forms.${formKey(form)}`)} · {periodLabel(ret.period, locale)}</p>
+              <p className="text-[15px] text-foreground sm:col-span-4"><span className="text-muted-foreground">{t("form.form")}:</span> {t(`forms.${formKey(form)}`)} · {periodLabel(ret.period, locale)}</p>
             ) : (
               <>
                 <div className="grid gap-2 sm:col-span-2">
@@ -201,7 +201,7 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
             <div className="grid content-start gap-2">
               <Label htmlFor="tr-supp">{t("form.supplement")}</Label>
               <Input id="tr-supp" name="supplement" type="number" min={0} max={20} step={1} defaultValue={ret?.supplement ?? 0} />
-              <p className="text-[12px] text-muted-foreground">{t("form.supplementHint")}</p>
+              <p className="text-[13.5px] text-muted-foreground">{t("form.supplementHint")}</p>
             </div>
             <div className="grid content-start gap-2">
               <Label htmlFor="tr-filed">{t("form.filedDate")}</Label>
@@ -210,7 +210,7 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
             <div className="grid content-start gap-2">
               <Label htmlFor="tr-due">{t("form.dueDate")}</Label>
               <Input id="tr-due" name="dueDate" type="date" defaultValue={ret?.dueDate ?? ""} />
-              <p className="text-[12px] text-muted-foreground">{t("form.dueHint")}</p>
+              <p className="text-[13.5px] text-muted-foreground">{t("form.dueHint")}</p>
             </div>
             <div className="grid content-start gap-2">
               <Label htmlFor="tr-template">{t("form.template")}</Label>
@@ -228,8 +228,8 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
 
           <fieldset className="min-w-0 space-y-3 border-t border-border pt-4">
             <legend className="sr-only">{t("form.figures")}</legend>
-            <p aria-hidden="true" className="text-[13.5px] font-semibold text-foreground">{t("form.figures")}</p>
-            <p className="text-[12px] text-muted-foreground">{t("form.figuresHint")}</p>
+            <p aria-hidden="true" className="text-[15px] font-semibold text-foreground">{t("form.figures")}</p>
+            <p className="text-[13.5px] text-muted-foreground">{t("form.figuresHint")}</p>
             {form === "01/GTGT" ? (
               // As printed: the value column on the left, the VAT column on the right, row by row.
               <div className="space-y-2.5" key={form}>
@@ -253,9 +253,9 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
           <div className="grid gap-2">
             <Label htmlFor="tr-files">{t("form.files")}</Label>
             <Input id="tr-files" name="files" type="file" multiple accept=".pdf,.xml,.xls,.xlsx,.zip,.png,.jpg,.jpeg" />
-            <p className="text-[12px] text-muted-foreground">{t("form.filesHint")}</p>
+            <p className="text-[13.5px] text-muted-foreground">{t("form.filesHint")}</p>
             {ret && ret.files.length > 0 && (
-              <ul className="mt-1 border-y border-border text-[13px]">
+              <ul className="mt-1 border-y border-border text-[14.5px]">
                 {ret.files.map((f) => (
                   <li key={f.id} className="flex items-center justify-between gap-2 border-t border-border py-1 first:border-t-0">
                     <a href={f.url} target="_blank" rel="noreferrer" className="truncate text-primary hover:underline">{f.name}</a>
@@ -267,7 +267,7 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
               </ul>
             )}
           </div>
-          {err && <p role="alert" className="flex items-center gap-1.5 text-[12px] text-destructive"><CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}</p>}
+          {err && <p role="alert" className="flex items-center gap-1.5 text-[13.5px] text-destructive"><CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}</p>}
           <div className="flex flex-wrap gap-2 border-t border-border pt-4">
             {ret && <Button type="button" variant="destructive" disabled={busy} onClick={remove}><Trash2 aria-hidden="true" />{t("form.delete")}</Button>}
             <Button type="button" variant="outline" disabled={busy} onClick={() => setOpen(false)}>{tc("actions.cancel")}</Button>
@@ -315,11 +315,11 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
       <Severity s={f.severity} />
       <div className="w-full min-w-0 sm:flex-1">
         <FlagText f={f} locale={locale} />
-        {f.changedFrom != null && <p className="mt-1.5 text-[13px] text-warn">{t("flags.changed", { was: f.kind === "math" || f.kind === "creditChain" ? nf.format(f.changedFrom) : vnd(f.changedFrom) })}</p>}
+        {f.changedFrom != null && <p className="mt-1.5 text-[14.5px] text-warn">{t("flags.changed", { was: f.kind === "math" || f.kind === "creditChain" ? nf.format(f.changedFrom) : vnd(f.changedFrom) })}</p>}
         {f.note && (
           <>
-            <p className="mt-2 text-[13px] text-foreground"><span className="font-semibold">{t("flags.noteLabel")}:</span> {f.note.text}</p>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">{t("flags.by", { user: f.note.user ?? "—", date: date(f.note.at) })}</p>
+            <p className="mt-2 text-[14.5px] text-foreground"><span className="font-semibold">{t("flags.noteLabel")}:</span> {f.note.text}</p>
+            <p className="mt-0.5 text-[13.5px] text-muted-foreground">{t("flags.by", { user: f.note.user ?? "—", date: date(f.note.at) })}</p>
           </>
         )}
       </div>
@@ -385,7 +385,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
       <div className="mt-6 grid gap-6">
         <Card>
           <PanelHead title={t("flags.title")} count={open.length} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("flags.subtitle")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("flags.subtitle")}</p>
           <ul className="wf-rows">
             {open.map((f) => flagRow(f, false))}
             {open.length === 0 && <li className="text-muted-foreground">{t("flags.none")}</li>}
@@ -404,7 +404,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
 
         <Card>
           <PanelHead title={t("returns.title")} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("returns.subtitle")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("returns.subtitle")}</p>
           <Table>
             <TableHeader>
               <TableRow>
@@ -444,7 +444,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
                         </span>
                       )}
                       {prior.length > 0 && (
-                        <span className="mt-1.5 block space-y-0.5 text-[12px] font-normal">
+                        <span className="mt-1.5 block space-y-0.5 text-[13.5px] font-normal">
                           <span className="block text-muted-foreground">{t("returns.supplements", { count: prior.length })}</span>
                           {prior.map((r) => (
                             <ReturnDialog key={r.id} ret={r} defaultPeriod={p} locale={locale} trigger={
@@ -460,11 +460,11 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
                     <TableCell className="text-right">{cell(v, "25")}</TableCell>
                     <TableCell className="text-right">{cell(v, "40")}</TableCell>
                     <TableCell className="text-right">{cell(v, "43")}</TableCell>
-                    <TableCell className="text-[12px]">{filed(v, "01/GTGT", p)}</TableCell>
+                    <TableCell className="text-[13.5px]">{filed(v, "01/GTGT", p)}</TableCell>
                     <TableCell className="border-l border-border text-right">{cell(k, "16")}</TableCell>
                     <TableCell className="text-right">{cell(k, "21")}</TableCell>
                     <TableCell className="text-right">{cell(k, "29")}</TableCell>
-                    <TableCell className="text-[12px]">{filed(k, "05/KK-TNCN", p)}</TableCell>
+                    <TableCell className="text-[13.5px]">{filed(k, "05/KK-TNCN", p)}</TableCell>
                   </TableRow>
                 );
               })}
@@ -475,7 +475,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
 
         <Card>
           <PanelHead title={t("compare.title")} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("compare.subtitle")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("compare.subtitle")}</p>
           <Table>
             <TableHeader>
               <TableRow>
@@ -501,7 +501,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
               {comparison.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">{t("compare.none")}</TableCell></TableRow>}
             </TableBody>
           </Table>
-          <p className="border-t border-border px-5 py-3 text-[12px] text-muted-foreground">{t("compare.note")}</p>
+          <p className="border-t border-border px-5 py-3 text-[13.5px] text-muted-foreground">{t("compare.note")}</p>
         </Card>
       </div>
     </div>

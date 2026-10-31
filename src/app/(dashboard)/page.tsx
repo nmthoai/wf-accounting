@@ -102,11 +102,11 @@ export default async function DashboardPage() {
     <li key={i.id}>
       <div className="min-w-0">
         <p className="truncate text-foreground">{i.label}</p>
-        {i.sub && <p className="truncate text-[12px] text-muted-foreground">{i.sub}</p>}
+        {i.sub && <p className="truncate text-[13.5px] text-muted-foreground">{i.sub}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-3">
         {i.overdue && <Chip tone="neg" mono>{tr("coming.overdue")}</Chip>}
-        <span className="wf-num hidden text-[12px] text-muted-foreground sm:inline">{tr("coming.due", { date: i.due })}</span>
+        <span className="wf-num hidden text-[13.5px] text-muted-foreground sm:inline">{tr("coming.due", { date: i.due })}</span>
         <span className="wf-figure min-w-[7.5rem] text-right">{fmtMoney(i.amount, i.currency)}</span>
       </div>
     </li>
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
             {accountList.length === 0 && <li className="text-muted-foreground">{tr("accounts.empty")}</li>}
           </ul>
           {(ownerTotals.length > 0 || unclassified > 0) && (
-            <div className="grid gap-2 border-t border-border bg-muted/40 px-5 py-4 text-[13px]">
+            <div className="grid gap-2 border-t border-border bg-muted/40 px-5 py-4 text-[14.5px]">
               {ownerTotals.map(([c, v]) => (
                 <p key={c} className={cn("flex items-center gap-2", v < 0 ? "text-neg" : "text-warn")}>
                   <ArrowLeftRight className="size-4 shrink-0" aria-hidden="true" />
@@ -232,7 +232,7 @@ export default async function DashboardPage() {
                         {t.status === "DRAFT" && <Chip tone="warn" mono>{tc("status.DRAFT")}</Chip>}
                         {t.status === "REJECTED" && <Chip tone="neg" mono>{tc("status.REJECTED")}</Chip>}
                       </p>
-                      <p className="truncate text-[12px] text-muted-foreground">
+                      <p className="truncate text-[13.5px] text-muted-foreground">
                         <span className="wf-num">{fmtDate(t.date, locale)}</span>{t.description ? ` · ${t.description}` : ""}
                       </p>
                     </div>
@@ -268,7 +268,7 @@ export default async function DashboardPage() {
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold text-foreground">{a.title}</span>
-                      <span className={cn("block truncate text-[12px]", a.gini ? "wf-label mt-1 text-agent-text" : "text-muted-foreground")}>{a.sub}</span>
+                      <span className={cn("block truncate text-[13.5px]", a.gini ? "wf-label mt-1 text-agent-text" : "text-muted-foreground")}>{a.sub}</span>
                     </span>
                     <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:translate-x-[3px] group-hover:text-primary" aria-hidden="true" />
                   </Link>

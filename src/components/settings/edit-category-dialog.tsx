@@ -76,7 +76,7 @@ export function EditCategoryDialog({
             <Input id={`cd-${category.id}`} name="description" defaultValue={category.description ?? ""} placeholder={t("categories.descriptionPlaceholder")} />
           </div>
           {err && (
-            <p role="alert" className="flex items-center gap-1.5 text-[12px] text-destructive">
+            <p role="alert" className="flex items-center gap-1.5 text-[13.5px] text-destructive">
               <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
             </p>
           )}

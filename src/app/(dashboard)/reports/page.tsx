@@ -39,7 +39,7 @@ function Lines({ rows, total, tone, emptyText, totalText }: {
             <div className="flex items-center justify-between gap-3">
               <span className="min-w-0 truncate text-foreground">{name}</span>
               <span className="flex shrink-0 items-baseline gap-3">
-                <span className="wf-num text-[12px] text-muted-foreground">{pct}%</span>
+                <span className="wf-num text-[13.5px] text-muted-foreground">{pct}%</span>
                 <span className="wf-figure">{fmt(amt)}</span>
               </span>
             </div>
@@ -164,7 +164,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-12">
           <PanelHead title={tr("trend.title")} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{tr("trend.subtitle")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{tr("trend.subtitle")}</p>
           <CardContent>
             <TrendChart labels={labels} revenue={pnl.revenue.perMonth} cost={pnl.cost.perMonth} net={pnl.net} locale={locale} />
           </CardContent>
@@ -201,7 +201,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
         <Card className="lg:col-span-8">
           <PanelHead title={tr("tax.title")} />
-          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{tr("tax.intro")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{tr("tax.intro")}</p>
           <div className="grid flex-1 md:grid-cols-2 md:divide-x md:divide-border">
             <section aria-labelledby="tax-cit">
               <p id="tax-cit" className="wf-label px-5 pt-4 pb-1">{tr("tax.citTitle")}</p>
@@ -228,7 +228,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                     <li key={d.label}>
                       <span className="flex min-w-0 flex-wrap items-center gap-2">
                         <Chip tone={DOC_TONE[d.key] ?? "neutral"}>{d.label}</Chip>
-                        <span className="text-[12px] text-muted-foreground">{tr("tax.entryCount", { count: d.count })}</span>
+                        <span className="text-[13.5px] text-muted-foreground">{tr("tax.entryCount", { count: d.count })}</span>
                       </span>
                       <span className={cn("wf-figure", d.key === "MISSING" && "text-neg")}>{fmt(d.vnd)}</span>
                     </li>
@@ -236,7 +236,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                   {docsOpen.length === 0 && <li className="text-muted-foreground">{tr("tax.allDocs")}</li>}
                   {docsOpen.length > 0 && (
                     <li>
-                      <Link href="/ledger?view=docs" className="text-[13px] font-semibold text-primary hover:underline">{tr("tax.openLedger")}</Link>
+                      <Link href="/ledger?view=docs" className="text-[14.5px] font-semibold text-primary hover:underline">{tr("tax.openLedger")}</Link>
                     </li>
                   )}
                 </ul>

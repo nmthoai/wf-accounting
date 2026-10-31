@@ -45,7 +45,7 @@ export function GiniChat({ name }: { name: string }) {
               <ArrowUp />
             </Button>
           </div>
-          <p id="gini-soon" className="mt-2 text-[12px] text-muted-foreground">{t("chat.soon")}</p>
+          <p id="gini-soon" className="mt-2 text-[13.5px] text-muted-foreground">{t("chat.soon")}</p>
         </div>
       </Card>
 
@@ -55,8 +55,8 @@ export function GiniChat({ name }: { name: string }) {
           <span className="wf-gini-stage">
             <GiniAvatar variant="full" animated title={t("canvas.alt")} className="h-[300px] w-auto" />
           </span>
-          <h3 className="mt-4 text-[20px] leading-normal font-extrabold tracking-[-0.02em] text-foreground">{t("canvas.emptyTitle")}</h3>
-          <p className="max-w-md text-[15px] leading-relaxed text-text-secondary">{t("canvas.emptyBody")}</p>
+          <h3 className="mt-4 text-[22px] leading-normal font-extrabold tracking-[-0.02em] text-foreground">{t("canvas.emptyTitle")}</h3>
+          <p className="max-w-md text-[17px] leading-relaxed text-text-secondary">{t("canvas.emptyBody")}</p>
           <div className="max-w-xl [&_.wf-suggest]:justify-center">{suggestions}</div>
         </div>
       </Card>

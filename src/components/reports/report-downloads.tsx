@@ -24,7 +24,7 @@ export function ReportDownloads({ defaultFrom, defaultTo, className }: { default
   return (
     <Card className={className}>
       <PanelHead title={<><FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />{t("title")}</>} />
-      <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("description")}</p>
+      <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("description")}</p>
       <CardContent className="grid gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
@@ -37,7 +37,7 @@ export function ReportDownloads({ defaultFrom, defaultTo, className }: { default
           </div>
         </div>
         {!valid && (
-          <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+          <p className="flex items-center gap-1.5 text-[13.5px] text-destructive" role="alert">
             <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{t("invalidRange")}
           </p>
         )}

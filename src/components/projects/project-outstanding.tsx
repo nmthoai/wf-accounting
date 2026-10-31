@@ -43,7 +43,7 @@ export function ProjectOutstanding({ items, accounts, defaultUsdRate, feeCategor
                     ? <Chip tone={INVOICE_STATUS_TONE.OVERDUE} mono>{t("outstanding.overdue")}</Chip>
                     : <Chip tone={INVOICE_STATUS_TONE[i.status] ?? "warn"} mono>{i.status === "PARTIAL" ? tc("invoiceStatus.PARTIAL") : t("outstanding.unpaid")}</Chip>}
                 </p>
-                <p className="truncate text-[12px] text-muted-foreground">
+                <p className="truncate text-[13.5px] text-muted-foreground">
                   {t("outstanding.due", { ref: [i.number, i.party].filter(Boolean).join(" · ") || "—", date: i.dueDate })}
                 </p>
               </div>
@@ -51,7 +51,7 @@ export function ProjectOutstanding({ items, accounts, defaultUsdRate, feeCategor
             <div className="flex shrink-0 items-center gap-3">
               <div className="text-right">
                 <p className={cn("wf-figure", payable ? "text-neg" : "text-pos")}>{fmtMoney(i.difference, i.currency)}</p>
-                {i.status === "PARTIAL" && <p className="text-[12px] text-muted-foreground">{t("outstanding.openOf", { amount: fmtMoney(i.amount, i.currency) })}</p>}
+                {i.status === "PARTIAL" && <p className="text-[13.5px] text-muted-foreground">{t("outstanding.openOf", { amount: fmtMoney(i.amount, i.currency) })}</p>}
               </div>
               <RecordPaymentDialog invoice={i} accounts={accounts} defaultUsdRate={defaultUsdRate} feeCategories={feeCategories} />
             </div>
