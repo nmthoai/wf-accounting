@@ -17,9 +17,15 @@ export function RowActions({ id, href, status, isAdmin }: { id: string; href: st
   const tc = useTranslations("common");
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  async function run(fn: () => Promise<unknown>, done: string) {
+  // An action can refuse (e.g. the entry changed meanwhile): say so, not "done".
+  async function run(fn: () => Promise<{ success: boolean; message?: string } | void>, done: string) {
     setBusy(true);
-    try { await fn(); notify.success(done); router.refresh(); }
+    try {
+      const res = await fn();
+      if (res && !res.success) notify.error(res.message || tc("errors.somethingWrong"));
+      else notify.success(done);
+      router.refresh();
+    }
     catch { notify.error(tc("errors.somethingWrong")); }
     finally { setBusy(false); }
   }
