@@ -35,7 +35,7 @@
     "addPartyFirst": "Add one in Clients & Vendors first",
     "project": "Project (optional)",
     "noProject": "No project",
-    "category": "Category",
+    "category": "Category (optional)",
     "noCategory": "No category",
     "addIncomeCategories": "Add income categories in Settings",
     "addExpenseCategories": "Add expense categories in Settings",
@@ -121,7 +121,7 @@
     "descPaidNo": "Vendor payment — Bill {number}",
     "amountSettled": "Amount settled ({currency})",
     "feeDeducted": "Fee deducted ({currency})",
-    "feePlaceholder": "Optional — what the bank kept",
+    "feePlaceholder": "What the bank kept, if any",
     "feeCategory": "Fee category",
     "feeCategoryPlaceholder": "Choose a category",
     "breakdown": {

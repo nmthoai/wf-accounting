@@ -64,7 +64,7 @@ export function SidebarFoot() {
 
 export function AppSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
-    <aside className="wf-glass relative z-20 hidden w-(--size-sidebar) shrink-0 flex-col border-r border-border lg:flex">
+    <aside className="wf-glass relative z-20 hidden w-(--size-sidebar) shrink-0 flex-col border-r border-border lg:flex print:hidden">
       <SidebarBrand />
       <div className="flex-1 overflow-y-auto">
         <SidebarNav isAdmin={isAdmin} />

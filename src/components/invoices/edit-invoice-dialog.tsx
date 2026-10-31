@@ -12,6 +12,7 @@ import { CircleAlert, Pencil, Loader2 } from "lucide-react";
 import { Notice } from "@/components/wf/ledger-ui";
 import { updateInvoice } from "@/app/actions/invoices";
 import { notify } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
@@ -19,6 +20,7 @@ type Invoice = {
   id: string; number: string | null; direction: string; status: string;
   clientId: string | null; vendorId: string | null; projectId: string | null; categoryId: string | null;
   issueDate: string; dueDate: string; currency: string; amount: number; notes: string | null;
+  allocations: unknown[];
 };
 
 export function EditInvoiceDialog({
@@ -39,6 +41,8 @@ export function EditInvoiceDialog({
   const [projectId, setProjectId] = useState(invoice.projectId ?? "");
   const [categoryId, setCategoryId] = useState(invoice.categoryId ?? "");
   const [currency, setCurrency] = useState(invoice.currency);
+  // Linked payments are in the invoice's currency; the server refuses a change until they are unlinked.
+  const currencyLocked = invoice.allocations.length > 0;
 
   // Receivables become income; payables an expense — show the matching categories.
   const cats = categories.filter((c) => c.type === (isReceivable ? "INCOME" : "EXPENSE"));
@@ -73,7 +77,7 @@ export function EditInvoiceDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>{isReceivable ? t("edit.titleInvoice") : t("edit.titleBill")}</DialogTitle></DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+        <form onSubmit={onSubmit} className="grid items-start gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
             <Label htmlFor={`party-${invoice.id}`}>{isReceivable ? t("form.client") : t("form.vendor")}</Label>
             <Select value={partyId} onValueChange={(v) => setPartyId(v === "none" ? "" : v || "")}>
@@ -109,15 +113,17 @@ export function EditInvoiceDialog({
             <Input id={`num-${invoice.id}`} name="number" defaultValue={invoice.number ?? ""} placeholder={t("form.numberPlaceholder")} />
           </div>
           <div className="grid gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor={`amt-${invoice.id}`}>{t("form.amount")}</Label>
-              <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
+            <Label htmlFor={`amt-${invoice.id}`}>{t("form.amount")}</Label>
+            {/* The currency sits beside the input, so the label row matches its neighbour's. */}
+            <div className="flex items-center gap-2">
+              <Input id={`amt-${invoice.id}`} name="amount" type="number" step="0.01" min="0" defaultValue={invoice.amount} required className="flex-1" />
+              <div className={cn("wf-seg wf-seg--mono shrink-0", currencyLocked && "opacity-60")} role="group" aria-label={t("form.currency")}
+                title={currencyLocked ? t("errors.currencyLocked") : undefined}>
                 {["VND", "USD"].map((c) => (
-                  <button key={c} type="button" aria-pressed={currency === c} onClick={() => setCurrency(c)}>{c}</button>
+                  <button key={c} type="button" aria-pressed={currency === c} disabled={currencyLocked} className="disabled:cursor-not-allowed" onClick={() => setCurrency(c)}>{c}</button>
                 ))}
               </div>
             </div>
-            <Input id={`amt-${invoice.id}`} name="amount" type="number" step="0.01" min="0" defaultValue={invoice.amount} required />
             {currency === "USD" && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
           </div>
           <div className="grid gap-2">
@@ -128,10 +134,11 @@ export function EditInvoiceDialog({
             <Label htmlFor={`due-${invoice.id}`}>{t("form.dueDate")}</Label>
             <Input id={`due-${invoice.id}`} name="dueDate" type="date" defaultValue={invoice.dueDate} required />
           </div>
-          <div className="grid gap-2 sm:col-span-2">
+          <div className="grid gap-2">
             <Label htmlFor={`notes-${invoice.id}`}>{t("form.notes")}</Label>
             <Input id={`notes-${invoice.id}`} name="notes" defaultValue={invoice.notes ?? ""} placeholder={t("form.notesPlaceholder")} />
           </div>
+          {currencyLocked && <p className="text-[12px] text-muted-foreground sm:col-span-2">{t("errors.currencyLocked")}</p>}
           {(invoice.status === "PAID" || invoice.status === "PARTIAL") && (
             <Notice tone="warning" className="sm:col-span-2">{t("edit.paidNote")}</Notice>
           )}

@@ -101,7 +101,7 @@
   "documents": {
     "add": "Add document(s)",
     "upload": "Upload",
-    "hint": "PDF, Word, Excel or images. Stored privately — only viewable while signed in.",
+    "hint": "PDF, Word, Excel or images.",
     "confirmRemove": "Remove this document? This deletes the file.",
     "couldNotUpload": "Could not upload.",
     "couldNotRemove": "Could not remove the document."

@@ -27,7 +27,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
   const month = sp.month && /^\d{4}-\d{2}$/.test(sp.month) ? sp.month : lastMonth();
   const data = await collect(month);
   const s = summarize(data);
-  const open = questions(data, locale);
+  const open = questions(data, locale, fmtMoney);
   const label = fmtMonth(month, locale);
 
   // What should be true before the package goes to the accountant.
@@ -78,7 +78,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
       </StatStrip>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-5">
+        <Card className="lg:col-span-5 lg:self-start">
           <PanelHead title={t("page.send.title")} />
           <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("page.send.description")}</p>
           <ol className="wf-rows">
@@ -95,7 +95,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
             ))}
           </ol>
           <div className="border-t border-border p-5">
-            <Button className="w-full" render={<a href={`/api/handover?month=${month}`} />} nativeButton={false}>
+            <Button className="h-auto min-h-9 w-full py-2 leading-snug whitespace-normal" render={<a href={`/api/handover?month=${month}`} />} nativeButton={false}>
               <Download />{t("page.send.download", { month: label })}
             </Button>
           </div>

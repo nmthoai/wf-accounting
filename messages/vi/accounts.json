@@ -105,7 +105,7 @@
     "amountReceived": "Số tiền nhận được ({currency})",
     "exactFigures": "Nhập đúng số liệu theo sao kê ngân hàng.",
     "rate": "Tỷ giá của lần chuyển tiền này: <b>{rate} VND/USD</b>",
-    "notePlaceholder": "Ví dụ: đổi USD → VND",
+    "notePlaceholder": "VD: đổi USD → VND",
     "save": "Lưu bút toán chuyển tiền",
     "record": "Ghi nhận chuyển tiền"
   },

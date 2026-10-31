@@ -58,7 +58,7 @@ function useSubmit(close: () => void, done: string) {
       setSaving(false);
     }
   }
-  return { saving, err, submit };
+  return { saving, err, submit, clearErr: () => setErr("") };
 }
 
 function CurrencyToggle({ label, value, onChange, disabled }: { label: string; value: string; onChange: (c: string) => void; disabled?: boolean }) {
@@ -167,7 +167,7 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
   const [toId, setToId] = useState(transfer?.toAccountId ?? "");
   const [out, setOut] = useState(transfer ? String(transfer.amountOut) : "");
   const [inn, setInn] = useState(transfer ? String(transfer.amountIn) : "");
-  const { saving, err, submit } = useSubmit(() => setOpen(false), transfer ? t("toast.transferSaved") : t("toast.transferRecorded"));
+  const { saving, err, submit, clearErr } = useSubmit(() => setOpen(false), transfer ? t("toast.transferSaved") : t("toast.transferRecorded"));
 
   const pick = accounts.filter((a) => a.isActive || a.id === fromId || a.id === toId);
   const from = accounts.find((a) => a.id === fromId);
@@ -189,8 +189,9 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
         )}>
           <p className="text-[12px] text-muted-foreground">{t("transferDialog.intro")}</p>
           <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2"><Label>{t("transferDialog.from")}</Label><AccountSelect accounts={pick} value={fromId} onChange={setFromId} /></div>
-            <div className="grid gap-2"><Label>{t("transferDialog.to")}</Label><AccountSelect accounts={pick} value={toId} onChange={setToId} /></div>
+            {/* A changed choice clears the last submit's error (e.g. "choose two different accounts"). */}
+            <div className="grid gap-2"><Label htmlFor="tr-from">{t("transferDialog.from")}</Label><AccountSelect id="tr-from" className="w-full" accounts={pick} value={fromId} onChange={(id) => { setFromId(id); clearErr(); }} /></div>
+            <div className="grid gap-2"><Label htmlFor="tr-to">{t("transferDialog.to")}</Label><AccountSelect id="tr-to" className="w-full" accounts={pick} value={toId} onChange={(id) => { setToId(id); clearErr(); }} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
@@ -268,7 +269,7 @@ export function MovementDialog({ accounts, loans, movement, trigger }: {
             </Select>
             <p className="text-[12px] text-muted-foreground">{t("movementDialog.financingHelp")}</p>
           </div>
-          <div className="grid gap-2"><Label>{t("form.account")}</Label><AccountSelect accounts={pick} value={accountId} onChange={setAccountId} /></div>
+          <div className="grid gap-2"><Label htmlFor="mv-account">{t("form.account")}</Label><AccountSelect id="mv-account" className="w-full" accounts={pick} value={accountId} onChange={setAccountId} /></div>
           {isLoan && (
             <div className="grid gap-2">
               <Label>{t("form.loan")}</Label>

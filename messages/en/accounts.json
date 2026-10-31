@@ -105,7 +105,7 @@
     "amountReceived": "Amount received ({currency})",
     "exactFigures": "Use the exact figures from the bank statement.",
     "rate": "Rate for this transfer: <b>{rate} VND/USD</b>",
-    "notePlaceholder": "e.g. USD → VND conversion",
+    "notePlaceholder": "e.g. USD → VND",
     "save": "Save transfer",
     "record": "Record transfer"
   },

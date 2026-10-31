@@ -152,7 +152,7 @@ export function InvoicesClient({
         <Card className="mt-4">
           <PanelHead title={t("newButton")} />
           <CardContent>
-            <form onSubmit={handleCreate} className="grid gap-5 md:grid-cols-2">
+            <form onSubmit={handleCreate} className="grid items-start gap-5 md:grid-cols-2">
               <div className="wf-seg justify-self-start md:col-span-2" role="group" aria-label={t("form.direction")}>
                 <button type="button" aria-pressed={direction === "RECEIVABLE"} onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); setCategoryId(""); }}>
                   {t("form.receivable")}
@@ -199,15 +199,16 @@ export function InvoicesClient({
                 <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="amount">{t("form.amount")}</Label>
-                  <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
+                <Label htmlFor="amount">{t("form.amount")}</Label>
+                {/* The currency sits beside the input, so the label row matches its neighbour's. */}
+                <div className="flex items-center gap-2">
+                  <Input id="amount" name="amount" type="number" step="0.01" min="0" placeholder="0.00" required className="flex-1" />
+                  <div className="wf-seg wf-seg--mono shrink-0" role="group" aria-label={t("form.currency")}>
                     {["VND", "USD"].map((c) => (
                       <button key={c} type="button" aria-pressed={currency === c} onClick={() => setCurrency(c)}>{c}</button>
                     ))}
                   </div>
                 </div>
-                <Input id="amount" name="amount" type="number" step="0.01" min="0" placeholder="0.00" required />
                 {currency === "USD" && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
               </div>
               <div className="grid gap-2">
@@ -218,7 +219,7 @@ export function InvoicesClient({
                 <Label htmlFor="dueDate">{t("form.dueDate")}</Label>
                 <Input id="dueDate" name="dueDate" type="date" defaultValue={today} required />
               </div>
-              <div className="grid gap-2 md:col-span-2">
+              <div className="grid gap-2">
                 <Label htmlFor="notes">{t("form.notes")}</Label>
                 <Input id="notes" name="notes" placeholder={t("form.notesPlaceholder")} />
               </div>
@@ -269,7 +270,7 @@ export function InvoicesClient({
                         </span>
                         <div className="min-w-0">
                           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span className="font-mono font-semibold text-foreground">{i.number || kind}</span>
+                            <span className="max-w-[10rem] truncate font-mono font-semibold text-foreground" title={i.number ?? undefined}>{i.number || kind}</span>
                             {statusChip(i)}
                             {i.attachment && (
                               <a href={`/api/uploads/${i.attachment.split('/').pop()}`} target="_blank" rel="noreferrer"
@@ -283,8 +284,8 @@ export function InvoicesClient({
                       </div>
                     </TableCell>
                     <TableCell data-col="party">
-                      <span className="block text-foreground">{i.party ?? "—"}</span>
-                      {sub && <span className="block max-w-[16rem] truncate text-[12px] text-muted-foreground">{sub}</span>}
+                      <span className="block max-w-[13rem] truncate text-foreground" title={i.party ?? undefined}>{i.party ?? "—"}</span>
+                      {sub && <span className="block max-w-[13rem] truncate text-[12px] text-muted-foreground" title={sub}>{sub}</span>}
                     </TableCell>
                     <TableCell data-col="due">
                       <span className={cn("wf-num block", i.overdue ? "font-semibold text-neg" : "text-text-secondary")}>{t("list.due", { date: i.dueDate })}</span>

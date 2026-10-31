@@ -36,9 +36,10 @@ function Lines({ rows, total, tone, emptyText, totalText }: {
         const pct = total > 0 ? Math.round((amt / total) * 100) : 0;
         return (
           <li key={name} className="block">
-            <div className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate text-foreground">{name}</span>
-              <span className="flex shrink-0 items-baseline gap-3">
+            {/* In a narrow panel the figures drop under the label rather than cut it. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="min-w-0 truncate text-foreground" title={name}>{name}</span>
+              <span className="ml-auto flex shrink-0 items-baseline gap-3">
                 <span className="wf-num text-[12px] text-muted-foreground">{pct}%</span>
                 <span className="wf-figure">{fmt(amt)}</span>
               </span>
@@ -225,12 +226,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                 <p id="tax-docs" className="wf-label px-5 pt-4 pb-1">{tr("tax.docsTitle")}</p>
                 <ul className="wf-rows">
                   {docsOpen.map((d) => (
-                    <li key={d.label}>
+                    // In a narrow panel the amount takes its own line instead of overlapping the chip.
+                    <li key={d.label} className="flex-wrap">
                       <span className="flex min-w-0 flex-wrap items-center gap-2">
                         <Chip tone={DOC_TONE[d.key] ?? "neutral"}>{d.label}</Chip>
                         <span className="text-[12px] text-muted-foreground">{tr("tax.entryCount", { count: d.count })}</span>
                       </span>
-                      <span className={cn("wf-figure", d.key === "MISSING" && "text-neg")}>{fmt(d.vnd)}</span>
+                      <span className={cn("wf-figure ml-auto", d.key === "MISSING" && "text-neg")}>{fmt(d.vnd)}</span>
                     </li>
                   ))}
                   {docsOpen.length === 0 && <li className="text-muted-foreground">{tr("tax.allDocs")}</li>}

@@ -61,9 +61,9 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label>{t("edit.client")}</Label>
+              <Label htmlFor="ep-client">{t("edit.client")}</Label>
               <Select value={clientId} onValueChange={(v) => setClientId(v === "none" ? "" : v || "")}>
-                <SelectTrigger className="w-full">{clientId ? <span className="truncate">{clients.find(c => c.id === clientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}</SelectTrigger>
+                <SelectTrigger id="ep-client" className="w-full">{clientId ? <span className="truncate">{clients.find(c => c.id === clientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}</SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("noClient")}</SelectItem>
                   {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -71,9 +71,9 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>{t("edit.status")}</Label>
+              <Label htmlFor="ep-status">{t("edit.status")}</Label>
               <Select value={status} onValueChange={(v) => setStatus(v || "ACTIVE")}>
-                <SelectTrigger className="w-full"><span>{t.has(`status.${status}`) ? t(`status.${status}`) : status}</span></SelectTrigger>
+                <SelectTrigger id="ep-status" className="w-full"><span>{t.has(`status.${status}`) ? t(`status.${status}`) : status}</span></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NOT_STARTED">{t("status.NOT_STARTED")}</SelectItem>
                   <SelectItem value="ACTIVE">{t("status.ACTIVE")}</SelectItem>

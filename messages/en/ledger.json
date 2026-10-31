@@ -96,7 +96,7 @@
     "title": "Reverse a posted entry",
     "body": "A posted reversal cancels this entry in full; both stay on record. Its bank match and invoice links are released so the corrected entry — which you enter next — can take them.",
     "reason": "Reason",
-    "reasonPlaceholder": "e.g. wrong amount — bank shows 8,221,200",
+    "reasonPlaceholder": "e.g. wrong amount — bank shows 8.221.200",
     "submit": "Reverse and enter the correction",
     "descPrefix": "Reversal: {description}",
     "withFee": "This receipt and the bank fee withheld from it are reversed together. Its invoice reopens — record the corrected payment from the invoice."
@@ -117,6 +117,10 @@
     "actionField": "{action} · {field}",
     "reason": "Reason: {reason}",
     "empty": "No changes recorded since history began (4 Oct 2026).",
+    "reasons": {
+      "correction": "Correction of a reversed entry",
+      "matchedEntryDeleted": "The matched entry was deleted"
+    },
     "action": {
       "CREATE": "Created",
       "UPDATE": "Changed",
@@ -279,7 +283,8 @@
       "enterValue": "Enter the new rate or VND amount.",
       "matched": "This entry is matched to a bank line in an account kept in another currency — unmatch it before revaluing, then match it again."
     },
-    "postedHint": "Posted: this value is locked. To change it, reverse the entry and enter the correction."
+    "postedHint": "Posted: this value is locked. To change it, reverse the entry and enter the correction.",
+    "reversedHint": "Locked: a reversed entry and its reversal keep this value."
   },
   "reject": {
     "title": "Reject this entry",

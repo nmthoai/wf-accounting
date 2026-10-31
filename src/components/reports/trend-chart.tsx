@@ -15,7 +15,7 @@ const H = 300;
 const M = { top: 16, right: 16, bottom: 32, left: 64 };
 const BAR = 24; // max column width
 const GAP = 2;  // surface gap between the paired columns
-const TIP = 208; // tooltip width
+const TIP = 264; // tooltip width: a label and a long figure on one line, in either language
 
 export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
   const t = useTranslations("reports.trend");
@@ -109,13 +109,13 @@ export function TrendChart({ labels, revenue, cost, net, locale }: Props) {
           </svg>
         )}
         {w !== null && hover !== null && (
-          <div className="pointer-events-none absolute z-10 rounded-lg border border-border-strong bg-popover p-3 text-[13px] text-popover-foreground shadow-float" style={{ left: tipX, top: M.top, width: TIP }} aria-hidden>
+          <div className="pointer-events-none absolute z-10 rounded-lg border border-border-strong bg-popover p-3 text-[13px] text-popover-foreground shadow-float" style={{ left: tipX, top: M.top, width: Math.min(TIP, width) }} aria-hidden>
             <p className="wf-label mb-2">{labels[hover]}</p>
             {series.map(([k, c]) => {
               const v = k === "revenue" ? revenue[hover] : k === "cost" ? cost[hover] : net[hover];
               return (
                 <div key={k} className="flex items-center justify-between gap-3 py-0.5">
-                  <span className="inline-flex items-center gap-2 text-text-secondary"><span className="size-2.5 rounded-xs" style={{ background: c }} />{t(k)}</span>
+                  <span className="inline-flex items-center gap-2 whitespace-nowrap text-text-secondary"><span className="size-2.5 rounded-xs" style={{ background: c }} />{t(k)}</span>
                   <span className={k === "net" && v < 0 ? "wf-figure text-neg" : "wf-figure"}>{vnd(v)}</span>
                 </div>
               );

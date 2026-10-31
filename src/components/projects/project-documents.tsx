@@ -20,6 +20,8 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  // Upload waits for a file, so a click never does nothing.
+  const [hasFile, setHasFile] = useState(false);
 
   async function onUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,6 +38,7 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
         notify.success(t("toast.documentsUploaded", { count: n }));
       } else notify.error(res.message || t("documents.couldNotUpload"));
       form.reset();
+      setHasFile(false);
       router.refresh();
     } catch {
       notify.error(tc("errors.somethingWrong"));
@@ -80,8 +83,9 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
       <form onSubmit={onUpload} className="grid gap-2 p-5">
         <Label htmlFor="files"><UploadCloud className="size-4 text-muted-foreground" aria-hidden="true" />{t("documents.add")}</Label>
         <div className="flex flex-wrap items-center gap-3">
-          <Input id="files" name="files" type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" className="min-w-[220px] flex-1" />
-          <Button type="submit" variant="outline" disabled={uploading}>
+          <Input id="files" name="files" type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" className="min-w-[220px] flex-1"
+            onChange={(e) => setHasFile((e.currentTarget.files?.length ?? 0) > 0)} />
+          <Button type="submit" variant="outline" disabled={uploading || !hasFile}>
             {uploading && <Loader2 className="animate-spin" aria-hidden="true" />}
             {t("documents.upload")}
           </Button>

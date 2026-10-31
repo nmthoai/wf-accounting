@@ -35,7 +35,7 @@
     "addPartyFirst": "Thêm tại trang Khách hàng & NCC trước",
     "project": "Dự án (không bắt buộc)",
     "noProject": "Không thuộc dự án",
-    "category": "Khoản mục",
+    "category": "Khoản mục (không bắt buộc)",
     "noCategory": "Không có khoản mục",
     "addIncomeCategories": "Thêm khoản mục doanh thu trong Cài đặt",
     "addExpenseCategories": "Thêm khoản mục chi phí trong Cài đặt",
@@ -121,7 +121,7 @@
     "descPaidNo": "Trả tiền nhà cung cấp — hóa đơn số {number}",
     "amountSettled": "Số tiền đối trừ hóa đơn ({currency})",
     "feeDeducted": "Phí bị trừ ({currency})",
-    "feePlaceholder": "Không bắt buộc — số phí ngân hàng giữ lại",
+    "feePlaceholder": "Phí ngân hàng giữ lại, nếu có",
     "feeCategory": "Khoản mục phí",
     "feeCategoryPlaceholder": "Chọn khoản mục",
     "breakdown": {

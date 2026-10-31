@@ -84,7 +84,7 @@ function NoteDialog({ flag, locale, trigger }: { flag: FlagView; locale: string;
     <Dialog open={open} onOpenChange={openChange}>
       <DialogTrigger render={trigger} />
       <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>{t("noteTitle")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{flag.note ? t("editNote") : t("noteTitle")}</DialogTitle></DialogHeader>
         <div className="grid gap-4">
           <div className="rounded-lg bg-muted/40 px-4 py-3"><FlagText f={flag} locale={locale} /></div>
           <div className="grid gap-2">
@@ -405,7 +405,8 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
         <Card>
           <PanelHead title={t("returns.title")} />
           <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("returns.subtitle")}</p>
-          <Table>
+          {/* Eleven columns: headers wrap and cells pad tighter, so both forms fit a desktop panel. */}
+          <Table className="[&_td]:px-2 [&_thead_th]:whitespace-normal [&_thead_tr:last-child_th]:px-2 [&_thead_tr:last-child_th]:py-1.5">
             <TableHeader>
               <TableRow>
                 <TableHead rowSpan={2} className="sticky left-0 z-10 bg-[color-mix(in_oklab,var(--muted)_40%,var(--card))] align-bottom">{t("returns.quarter")}</TableHead>
@@ -444,7 +445,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
                         </span>
                       )}
                       {prior.length > 0 && (
-                        <span className="mt-1.5 block space-y-0.5 text-[12px] font-normal">
+                        <span className="mt-1.5 block space-y-0.5 text-[12px] font-normal whitespace-normal">
                           <span className="block text-muted-foreground">{t("returns.supplements", { count: prior.length })}</span>
                           {prior.map((r) => (
                             <ReturnDialog key={r.id} ret={r} defaultPeriod={p} locale={locale} trigger={

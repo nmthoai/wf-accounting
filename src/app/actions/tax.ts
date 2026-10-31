@@ -6,8 +6,9 @@ import { revalidatePath } from "next/cache";
 import { saveTaxFiles, removeTaxFile } from "@/lib/tax-files";
 import { record, type Change } from "@/lib/history";
 import { getT } from "@/i18n/server";
+import { resolveLocale } from "@/i18n/locale";
 import type { TaxReturn } from "@prisma/client";
-import { LINES, TEMPLATES, PERIOD, FLAG_KEY, isForm, parseFigure, parseLines } from "@/lib/tax";
+import { LINES, TEMPLATES, PERIOD, FLAG_KEY, isForm, parseFigure, parseLines, periodLabel } from "@/lib/tax";
 
 // The declaration as filed (PDF, XML), the accountant's lists (Excel), or a ZIP of them.
 const FILE_TYPES = /\.(pdf|xml|xls|xlsx|zip|png|jpe?g)$/i;
@@ -57,7 +58,8 @@ export async function saveTaxReturn(id: string | null, fd: FormData) {
   if (odd) return { success: false, message: t("errors.fileType", { name: odd.name.slice(0, 80) }) };
 
   const clash = await prisma.taxReturn.findFirst({ where: { form, period, supplement, ...(id ? { id: { not: id } } : {}) } });
-  if (clash) return { success: false, message: t("errors.duplicate", { form, period }) };
+  // The quarter as the page writes it ("Q3 2026", "Quý 3/2026"), not the stored key.
+  if (clash) return { success: false, message: t("errors.duplicate", { form, period: periodLabel(period, await resolveLocale()) }) };
 
   // The declaration and its history are saved together or not at all.
   let saved;

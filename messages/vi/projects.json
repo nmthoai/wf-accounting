@@ -101,7 +101,7 @@
   "documents": {
     "add": "Thêm tài liệu",
     "upload": "Tải lên",
-    "hint": "PDF, Word, Excel hoặc hình ảnh. Lưu trữ riêng tư — chỉ xem được khi đã đăng nhập.",
+    "hint": "PDF, Word, Excel hoặc hình ảnh.",
     "confirmRemove": "Xóa tài liệu này? Thao tác này sẽ xóa tệp.",
     "couldNotUpload": "Không thể tải lên.",
     "couldNotRemove": "Không thể xóa tài liệu."

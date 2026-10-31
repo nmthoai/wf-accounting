@@ -19,13 +19,19 @@ import { cn } from "@/lib/utils";
 type ClientRow = { id: string; name: string; email: string | null; phone: string | null; projectCount: number; invoiceCount: number; revenue: number };
 type VendorRow = { id: string; name: string; email: string | null; phone: string | null; spend: number; txnCount: number };
 
-export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; vendors: VendorRow[] }) {
+export function ContactsClient({ clients, vendors, isAdmin }: {
+  clients: ClientRow[]; vendors: VendorRow[];
+  isAdmin: boolean; // deleting a client or vendor is the owner's decision
+}) {
   const router = useRouter();
   const t = useTranslations("contacts");
   const tc = useTranslations("common");
   const [addingClient, setAddingClient] = useState(false);
   const [addingVendor, setAddingVendor] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Email · phone · counts — a missing email or phone is left out, not shown as a dash.
+  const clientMeta = (c: ClientRow) => [c.email, c.phone, t("clients.meta", { projects: c.projectCount, invoices: c.invoiceCount })].filter(Boolean).join(" · ");
+  const vendorMeta = (v: VendorRow) => [v.email, v.phone, t("vendors.meta", { payments: v.txnCount })].filter(Boolean).join(" · ");
 
   async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string, detail?: string) {
     setBusyId(id);
@@ -66,8 +72,9 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
         <PanelHead title={t("clients.title")} count={clients.length} />
         <CardContent>
           <p className="text-text-secondary">{t("clients.description")}</p>
+          {/* The name has its own row, so email and phone get room to be read. */}
           <form onSubmit={(e) => handleAdd(e, "client")} className="mt-4 flex flex-wrap items-end gap-3">
-            <div className="grid min-w-[7rem] flex-[1.2] gap-2">
+            <div className="grid basis-full gap-2">
               <Label htmlFor="cname">{t("form.name")}</Label>
               <Input id="cname" name="name" placeholder={t("clients.namePlaceholder")} required />
             </div>
@@ -88,16 +95,18 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
           {clients.map((c) => (
             <li key={c.id}>
               <div className="min-w-0">
-                <p className="truncate text-foreground">{c.name}</p>
-                <p className="truncate text-[12px] text-muted-foreground">{t("clients.meta", { contact: [c.email, c.phone].filter(Boolean).join(" · ") || "—", projects: c.projectCount, invoices: c.invoiceCount })}</p>
+                <p className="truncate text-foreground" title={c.name}>{c.name}</p>
+                <p className="truncate text-[12px] text-muted-foreground" title={clientMeta(c)}>{clientMeta(c)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <span className={cn("wf-figure mr-2", c.revenue > 0 ? "text-pos" : "text-muted-foreground")} title={t("clients.revenueTitle")}>{fmtVnd(c.revenue)}</span>
                 <EditContactDialog contact={{ id: c.id, name: c.name, email: c.email, phone: c.phone }} kind="client" action={updateClient} />
-                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")} disabled={busyId === c.id}
-                  onClick={() => { if (confirm(t("clients.confirmDelete", { name: c.name }))) run(c.id, () => deleteClient(c.id), t("toast.clientDeleted"), c.name); }}>
-                  <Trash2 />
-                </Button>
+                {isAdmin && (
+                  <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")} disabled={busyId === c.id}
+                    onClick={() => { if (confirm(t("clients.confirmDelete", { name: c.name }))) run(c.id, () => deleteClient(c.id), t("toast.clientDeleted"), c.name); }}>
+                    <Trash2 />
+                  </Button>
+                )}
               </div>
             </li>
           ))}
@@ -110,7 +119,7 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
         <CardContent>
           <p className="text-text-secondary">{t("vendors.description")}</p>
           <form onSubmit={(e) => handleAdd(e, "vendor")} className="mt-4 flex flex-wrap items-end gap-3">
-            <div className="grid min-w-[7rem] flex-[1.2] gap-2">
+            <div className="grid basis-full gap-2">
               <Label htmlFor="vname">{t("form.name")}</Label>
               <Input id="vname" name="name" placeholder={t("vendors.namePlaceholder")} required />
             </div>
@@ -131,16 +140,18 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
           {vendors.map((v) => (
             <li key={v.id}>
               <div className="min-w-0">
-                <p className="truncate text-foreground">{v.name}</p>
-                <p className="truncate text-[12px] text-muted-foreground">{t("vendors.meta", { contact: [v.email, v.phone].filter(Boolean).join(" · ") || "—", payments: v.txnCount })}</p>
+                <p className="truncate text-foreground" title={v.name}>{v.name}</p>
+                <p className="truncate text-[12px] text-muted-foreground" title={vendorMeta(v)}>{vendorMeta(v)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <span className={cn("wf-figure mr-2", v.spend > 0 ? "text-foreground" : "text-muted-foreground")}>{v.spend > 0 ? "\u2212" : ""}{fmtVnd(v.spend)}</span>
                 <EditContactDialog contact={{ id: v.id, name: v.name, email: v.email, phone: v.phone }} kind="vendor" action={updateVendor} />
-                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")} disabled={busyId === v.id}
-                  onClick={() => { if (confirm(t("vendors.confirmDelete", { name: v.name }))) run(v.id, () => deleteVendor(v.id), t("toast.vendorDeleted"), v.name); }}>
-                  <Trash2 />
-                </Button>
+                {isAdmin && (
+                  <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")} disabled={busyId === v.id}
+                    onClick={() => { if (confirm(t("vendors.confirmDelete", { name: v.name }))) run(v.id, () => deleteVendor(v.id), t("toast.vendorDeleted"), v.name); }}>
+                    <Trash2 />
+                  </Button>
+                )}
               </div>
             </li>
           ))}

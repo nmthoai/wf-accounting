@@ -16,7 +16,7 @@
     },
     "cards": {
       "entries": "Bút toán",
-      "entriesDetail": "{posted} đã ghi sổ · {reviewed} đã duyệt · {drafts} nháp",
+      "entriesDetail": "{posted} đã ghi sổ · {reviewed} đã duyệt · {drafts, plural, other {# nháp}}",
       "net": "Doanh thu − chi phí",
       "netDetail": "Doanh thu {income} · chi phí {expense}",
       "questions": "Vấn đề cần làm rõ",

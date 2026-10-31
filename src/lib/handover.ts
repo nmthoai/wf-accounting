@@ -125,11 +125,11 @@ export async function collect(month: string) {
 type Data = Awaited<ReturnType<typeof collect>>;
 
 // Everything the accountant should look at or answer, in the given language.
-export function questions(d: Data, locale: Locale = DEFAULT_LOCALE) {
+// `amt` writes each amount: plain "1131990 VND" text for the workbook by default; the page passes fmtMoney.
+export function questions(d: Data, locale: Locale = DEFAULT_LOCALE, amt: (n: number, currency: string) => string = (n, c) => `${Math.round(n * 100) / 100} ${c}`) {
   const th = translator(locale, "handover");
   const tc = translator(locale, "common");
   const q: { area: string; item: string; detail: string; amount: string; ref: string }[] = [];
-  const amt = (n: number, c: string) => `${Math.round(n * 100) / 100} ${c}`;
   for (const t of d.entries) {
     const what = `${iso(t.date)} · ${t.description ?? tc(`type.${t.type}`)}`;
     if (t.status === "DRAFT") q.push({ area: th("questions.area.notReviewed"), item: what, detail: th("questions.draft"), amount: amt(t.amount, t.currency), ref: t.id });

@@ -1,15 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { DeleteCategoryButton } from "@/components/settings/delete-category-button";
+import { DeleteUnitRateButton } from "@/components/settings/delete-unit-rate-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createCategory, updateCategory, updateExchangeRate, createUnitRate, updateUnitRate, deleteUnitRate } from "@/app/actions/settings";
-import { Trash2 } from "lucide-react";
+import { createCategory, updateCategory, updateExchangeRate, createUnitRate, updateUnitRate } from "@/app/actions/settings";
 import { requirePageSession } from "@/lib/session";
-import { getTranslations, getLocale } from "next-intl/server";
-import { fmtDate } from "@/lib/format";
+import { getTranslations } from "next-intl/server";
+import { fmtMoney } from "@/lib/money";
+import { defaultUsdRate } from "@/lib/fx";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/wf/page-header";
 import { PanelHead } from "@/components/wf/ledger-ui";
@@ -23,8 +24,7 @@ export default async function SettingsPage() {
   const session = await requirePageSession();
   const t = await getTranslations("settings");
   const tc = await getTranslations("common");
-  const locale = await getLocale();
-  const [currentUser, categories, unitRates, allUsers] = await Promise.all([
+  const [currentUser, categories, unitRates, allUsers, usdRate] = await Promise.all([
     prisma.user.findUnique({ where: { id: session?.user?.id } }),
     prisma.category.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.unitRate.findMany({ orderBy: { createdAt: "desc" } }),
@@ -32,6 +32,7 @@ export default async function SettingsPage() {
       orderBy: { createdAt: "asc" },
       select: { id: true, username: true, role: true, isActive: true, twoFactorEnabled: true, mustChangePassword: true, lockedUntil: true },
     }),
+    defaultUsdRate(), // the rate entries actually use, not this viewer's own copy
   ]);
   const isAdmin = currentUser?.role === "ADMIN";
   const now = new Date();
@@ -57,11 +58,13 @@ export default async function SettingsPage() {
       <ul className="wf-rows border-b border-border last:border-b-0">
         {list.map((c) => (
           <li key={c.id} className="py-2">
-            <span className="min-w-0 truncate text-foreground">{c.name}</span>
-            <div className="flex shrink-0 items-center gap-1">
-              <EditCategoryDialog category={c} action={updateCategory} />
-              <DeleteCategoryButton id={c.id} name={c.name} />
-            </div>
+            <span className="min-w-0 truncate text-foreground" title={c.name}>{c.name}</span>
+            {isAdmin && (
+              <div className="flex shrink-0 items-center gap-1">
+                <EditCategoryDialog category={c} action={updateCategory} />
+                <DeleteCategoryButton id={c.id} name={c.name} />
+              </div>
+            )}
           </li>
         ))}
         {list.length === 0 && <li className="text-[13px] text-muted-foreground">{empty}</li>}
@@ -84,7 +87,8 @@ export default async function SettingsPage() {
               <PanelHead title={t("categories.title")} />
               <CardContent className="grid gap-4 border-b border-border">
                 <p className="text-[13px] text-muted-foreground">{t("categories.description")}</p>
-                <ActionForm action={createCategory} success={t("categories.toast.added")} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
+                {/* Changing settings is admin-only (the actions refuse staff). */}
+                {isAdmin && <ActionForm action={createCategory} success={t("categories.toast.added")} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
                   <div className="grid gap-2">
                     <Label htmlFor="name">{t("fields.name")}</Label>
                     <Input id="name" name="name" placeholder={t("categories.namePlaceholder")} required />
@@ -102,7 +106,7 @@ export default async function SettingsPage() {
                     </Select>
                   </div>
                   <Button type="submit">{tc("actions.add")}</Button>
-                </ActionForm>
+                </ActionForm>}
               </CardContent>
               {categoryGroup(t("categories.incomeTitle"), "pos", incomeCategories, t("categories.noIncome"))}
               {categoryGroup(t("categories.expenseTitle"), "neg", expenseCategories, t("categories.noExpense"))}
@@ -112,7 +116,7 @@ export default async function SettingsPage() {
               <PanelHead title={t("unitRates.title")} />
               <CardContent className="grid gap-4 border-b border-border">
                 <p className="text-[13px] text-muted-foreground">{t("unitRates.description")}</p>
-                <ActionForm action={createUnitRate} success={t("unitRates.toast.added")} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem_8rem_auto] sm:items-end">
+                {isAdmin && <ActionForm action={createUnitRate} success={t("unitRates.toast.added")} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_7rem_8rem_auto] sm:items-end">
                   <div className="grid gap-2">
                     <Label htmlFor="description">{t("fields.description")}</Label>
                     <Input id="description" name="description" placeholder={t("unitRates.descriptionPlaceholder")} required />
@@ -135,21 +139,21 @@ export default async function SettingsPage() {
                     </Select>
                   </div>
                   <Button type="submit">{tc("actions.add")}</Button>
-                </ActionForm>
+                </ActionForm>}
               </CardContent>
               <ul className="wf-rows">
                 {unitRates.map((r) => (
                   <li key={r.id} className="py-2.5">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{r.description}</p>
-                      <p className="wf-num mt-0.5 text-[12px] text-muted-foreground">{t("unitRates.rateLine", { rate: r.rate, unit: unitPer[r.unit] ?? r.unit })}</p>
+                      <p className="truncate font-medium text-foreground" title={r.description}>{r.description}</p>
+                      <p className="wf-num mt-0.5 text-[12px] text-muted-foreground">{t("unitRates.rateLine", { rate: fmtMoney(r.rate, "USD"), unit: unitPer[r.unit] ?? r.unit })}</p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <EditUnitRateDialog unitRate={r} action={updateUnitRate} />
-                      <ActionForm action={deleteUnitRate.bind(null, r.id)} success={t("unitRates.toast.deleted")}>
-                        <Button type="submit" variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")}><Trash2 aria-hidden="true" /></Button>
-                      </ActionForm>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        <EditUnitRateDialog unitRate={r} action={updateUnitRate} />
+                        <DeleteUnitRateButton id={r.id} name={r.description} />
+                      </div>
+                    )}
                   </li>
                 ))}
                 {unitRates.length === 0 && <li className="text-[13px] text-muted-foreground">{t("unitRates.empty")}</li>}
@@ -160,31 +164,25 @@ export default async function SettingsPage() {
           <Card className="self-start lg:col-span-6">
             <PanelHead title={t("exchangeRate.title")} />
             <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("exchangeRate.description")}</p>
-            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-muted/40 px-5 py-4">
+            <div className={cn("flex flex-wrap items-end justify-between gap-4 bg-muted/40 px-5 py-4", isAdmin && "border-b border-border")}>
               <div className="grid gap-2">
                 <p className="wf-label">{t("exchangeRate.current")}</p>
                 <p className="flex items-baseline gap-2">
-                  <span className="wf-num text-[28px] leading-none font-semibold text-primary">{new Intl.NumberFormat('vi-VN').format(currentUser?.defaultUsdRate || 25400)}</span>
+                  <span className="wf-num text-[28px] leading-none font-semibold text-primary">{new Intl.NumberFormat('vi-VN').format(usdRate)}</span>
                   <span className="wf-num text-[12px] text-muted-foreground">VND / USD</span>
                 </p>
               </div>
-              <div className="grid gap-2 text-right">
-                <p className="wf-label">{t("exchangeRate.lastUpdated")}</p>
-                <p className="wf-num text-[13px] text-foreground">
-                  {currentUser?.updatedAt ? fmtDate(currentUser.updatedAt, locale, { timeZone: "Asia/Ho_Chi_Minh" }) : t("exchangeRate.never")}
-                </p>
-              </div>
             </div>
-            <CardContent>
+            {isAdmin && <CardContent>
               <ActionForm action={updateExchangeRate} success={t("exchangeRate.toast.updated")} className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="rate">{t("exchangeRate.newRate")}</Label>
-                  <Input key={currentUser?.defaultUsdRate} id="rate" name="rate" type="number" step="0.01" defaultValue={currentUser?.defaultUsdRate} required />
+                  <Input key={usdRate} id="rate" name="rate" type="number" step="0.01" defaultValue={usdRate} required />
                   <p className="text-[12px] text-muted-foreground">{t("exchangeRate.hint")}</p>
                 </div>
                 <Button type="submit" className="justify-self-start">{t("exchangeRate.submit")}</Button>
               </ActionForm>
-            </CardContent>
+            </CardContent>}
           </Card>
         </div>
       </div>

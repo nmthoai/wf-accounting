@@ -178,7 +178,7 @@
   --muted-foreground: #475569;
   --accent: #f1f5f9;
   --accent-foreground: #0f172a;
-  --destructive: #dc2626;
+  --destructive: #b91c1c; /* red-700: 5.66:1 as text on its own 8% tint (#dc2626 was 4.27) */
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
@@ -1223,6 +1223,68 @@
 @media print {
   .wf-wave {
     display: none;
+  }
+}
+
+/* ── Print: the whole page, in ink ─────────────────────────────────────────
+   Reports and Handover print as one long page on white paper, whatever the theme.
+   The dashboard layout drops the sidebar and top bar and its fixed-height scroll
+   boxes (print: utilities); here the light tokens replace the dark ones (same
+   specificity as :root and [data-theme="light"], later, so they win), and wide
+   tables spill out of their scroll boxes and cards instead of being cut there.
+   Unlayered on purpose: it must override the overflow utilities. */
+@media print {
+  :root,
+  [data-theme] {
+    color-scheme: light;
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --text-secondary: #334155;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #0369a1;
+    --primary-hover: #075985;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #475569;
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --destructive: #b91c1c;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --input: #64748b;
+    --ring: #0369a1;
+    --glass: #ffffff;
+    --agent: #f97316;
+    --agent-text: #c2410c;
+    --agent-mark: #ea580c;
+    --pos: #15803d;
+    --pos-ink: #166534;
+    --neg: #dc2626;
+    --neg-ink: #991b1b;
+    --warn: #b45309;
+    --warn-ink: #92400e;
+    --info-ink: #075985;
+    --violet: #6d28d9;
+    --violet-ink: #5b21b6;
+    --gini-rim: #ffffff;
+    --shadow-panel: none;
+    --shadow-float: none;
+    --shadow-modal: none;
+  }
+  .wf-table-scroll,
+  .overflow-x-auto,
+  [data-slot="card"] {
+    overflow: visible;
+  }
+  /* Nothing scrolls on paper, so no edge shades (div. outranks the later rule). */
+  div.wf-table-scroll {
+    background: none;
   }
 }
 

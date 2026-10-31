@@ -117,6 +117,10 @@
     "actionField": "{action} · {field}",
     "reason": "Lý do: {reason}",
     "empty": "Chưa có thay đổi nào được ghi nhận kể từ khi bắt đầu lưu lịch sử (04/10/2026).",
+    "reasons": {
+      "correction": "Điều chỉnh cho bút toán đã đảo",
+      "matchedEntryDeleted": "Bút toán đã khớp bị xóa"
+    },
     "action": {
       "CREATE": "Đã tạo",
       "UPDATE": "Đã sửa",
@@ -279,7 +283,8 @@
       "enterValue": "Nhập tỷ giá mới hoặc số tiền VND.",
       "matched": "Bút toán đã khớp với một dòng sao kê của tài khoản theo dõi bằng loại tiền khác — hãy bỏ khớp trước khi đánh giá lại tỷ giá, rồi khớp lại."
     },
-    "postedHint": "Đã ghi sổ: giá trị này đã khóa. Muốn thay đổi, hãy đảo bút toán và nhập bút toán điều chỉnh."
+    "postedHint": "Đã ghi sổ: giá trị này đã khóa. Muốn thay đổi, hãy đảo bút toán và nhập bút toán điều chỉnh.",
+    "reversedHint": "Đã khóa: bút toán đã đảo và bút toán đảo của nó giữ nguyên giá trị này."
   },
   "reject": {
     "title": "Từ chối bút toán này",

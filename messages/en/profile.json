@@ -31,6 +31,6 @@
   },
   "errors": {
     "unauthorized": "Unauthorized",
-    "nameTooLong": "Keep the name under {max} characters."
+    "nameTooLong": "Use at most {max} characters for the name."
   }
 }

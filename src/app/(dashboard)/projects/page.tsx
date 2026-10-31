@@ -6,7 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/wf/page-header";
 
 export default async function ProjectsPage() {
-  await requirePageSession(); // second line behind the proxy
+  const session = await requirePageSession(); // second line behind the proxy
   const t = await getTranslations("projects");
   const [projects, clients, openInvoices] = await Promise.all([
     prisma.project.findMany({ orderBy: { createdAt: "desc" }, include: { client: true, transactions: { where: BOOKED }, _count: { select: { attachments: true } } } }), // drafts wait for review
@@ -33,7 +33,7 @@ export default async function ProjectsPage() {
   return (
     <div>
       <PageHeader section="projects" title={t("page.title")} description={t("page.subtitle")} />
-      <ProjectsClient projects={projectRows} clients={clients} />
+      <ProjectsClient projects={projectRows} clients={clients} isAdmin={session.user.role === "ADMIN"} />
     </div>
   );
 }

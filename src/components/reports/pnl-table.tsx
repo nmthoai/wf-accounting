@@ -28,6 +28,8 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
   // A fixed width, so opening a category with long descriptions never pushes the months away.
   const label = "w-36 overflow-hidden sm:w-64";
   const cell = "wf-num px-3 py-2.5 text-right last:pr-5";
+  // The total stays in view on the right when many months scroll sideways.
+  const total = "sticky right-0 z-[1] border-l border-border bg-card";
   const head = "h-9 font-mono text-[10.5px] font-medium tracking-[0.1em] uppercase text-muted-foreground";
   // The sticky first column needs an opaque fill: the row's tint laid over the card.
   const tint = "bg-[color-mix(in_oklab,var(--muted)_40%,var(--card))]";
@@ -43,7 +45,7 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
           </span>
         </th>
         {s.perMonth.map((v, i) => <td key={i} className={cell}>{num(v)}</td>)}
-        <td className={cn(cell, "border-l border-border")}>{num(s.total)}</td>
+        <td className={cn(cell, total, tint)}>{num(s.total)}</td>
       </tr>
       {s.categories.map((c) => {
         const k = `${key}:${c.name}`;
@@ -59,7 +61,7 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
                 </button>
               </th>
               {c.perMonth.map((v, i) => <td key={i} className={cell}>{num(v)}</td>)}
-              <td className={cn(cell, "border-l border-border font-semibold text-foreground")}>{num(c.total)}</td>
+              <td className={cn(cell, total, hoverTint, "font-semibold text-foreground")}>{num(c.total)}</td>
             </tr>
             {isOpen && c.items.map((it) => (
               <tr key={it.id} className="group border-t border-dashed border-border text-[12px] text-muted-foreground transition-colors duration-150 hover:bg-secondary/45">
@@ -75,7 +77,7 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
                   </Link>
                 </th>
                 {pnl.months.map((m, i) => <td key={i} className={cell}>{m === it.month ? num(it.vnd) : ""}</td>)}
-                <td className={cn(cell, "border-l border-border")}>{num(it.vnd)}</td>
+                <td className={cn(cell, total, hoverTint)}>{num(it.vnd)}</td>
               </tr>
             ))}
           </Fragment>
@@ -111,7 +113,7 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
             <tr className="bg-muted/40">
               <th scope="col" className={cn(first, head, tint, "py-0")}>{t("item")}</th>
               {labels.map((l) => <th key={l} scope="col" className={cn(cell, head, "py-0 tracking-[0.06em]")}>{l}</th>)}
-              <th scope="col" className={cn(cell, head, "border-l border-border py-0")}>{t("total")}</th>
+              <th scope="col" className={cn(cell, head, total, tint, "py-0")}>{t("total")}</th>
             </tr>
           </thead>
           <tbody>
@@ -122,7 +124,7 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
                 <span className="inline-flex items-center gap-2"><span className="h-0.5 w-3 rounded-full" style={{ background: "var(--chart-net)" }} aria-hidden="true" />{t("net")}</span>
               </th>
               {pnl.net.map((v, i) => <td key={i} className={cn(cell, v < 0 && "text-neg")}>{num(v)}</td>)}
-              <td className={cn(cell, "border-l border-border", pnl.netTotal < 0 && "text-neg")}>{num(pnl.netTotal)}</td>
+              <td className={cn(cell, total, pnl.netTotal < 0 && "text-neg")}>{num(pnl.netTotal)}</td>
             </tr>
             <tr className="border-t border-border text-[12px] text-muted-foreground">
               <th scope="row" className={cn(first, "font-normal")}>{t("margin")}</th>
@@ -130,7 +132,7 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
                 const r = pnl.revenue.perMonth[i];
                 return <td key={i} className={cell}>{r > 0 ? `${Math.round((pnl.net[i] / r) * 100)}%` : "–"}</td>;
               })}
-              <td className={cn(cell, "border-l border-border")}>{pnl.revenue.total > 0 ? `${Math.round((pnl.netTotal / pnl.revenue.total) * 100)}%` : "–"}</td>
+              <td className={cn(cell, total)}>{pnl.revenue.total > 0 ? `${Math.round((pnl.netTotal / pnl.revenue.total) * 100)}%` : "–"}</td>
             </tr>
           </tbody>
         </table>

@@ -58,11 +58,11 @@ export function EditContactDialog({
             <Input id={`n-${contact.id}`} name="name" defaultValue={contact.name} required />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor={`e-${contact.id}`}>{t("form.email")}</Label>
+            <Label htmlFor={`e-${contact.id}`}>{t("form.emailOptional")}</Label>
             <Input id={`e-${contact.id}`} name="email" type="email" defaultValue={contact.email ?? ""} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor={`p-${contact.id}`}>{t("form.phone")}</Label>
+            <Label htmlFor={`p-${contact.id}`}>{t("form.phoneOptional")}</Label>
             <Input id={`p-${contact.id}`} name="phone" type="tel" defaultValue={contact.phone ?? ""} placeholder="+84 …" />
           </div>
           {err && (

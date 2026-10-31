@@ -99,18 +99,18 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
         {isAdmin && <PostThrough defaultDate={lastMonthEnd()} reviewedCount={reviewedCount} />}
       </div>
 
-      {/* Below 2xl the account and invoice number fold under the date and the
-          description, so the amount and the actions stay in view. */}
+      {/* Below a 92rem panel the account and invoice number fold under the date
+          and the description, so the amount and the actions stay in view. */}
       <Card className="@container mt-5">
         <Table className="wf-stack wf-stack--ledger">
           <TableHeader>
             <TableRow>
               <TableHead>{tl("table.date")}</TableHead>
               <TableHead>{tl("table.type")}</TableHead>
-              <TableHead className="hidden @min-[80rem]:table-cell">{tl("table.account")}</TableHead>
+              <TableHead className="hidden @min-[92rem]:table-cell">{tl("table.account")}</TableHead>
               <TableHead className="hidden @min-[64rem]:table-cell">{tl("table.category")}</TableHead>
               <TableHead>{tl("table.description")}</TableHead>
-              <TableHead className="hidden @min-[80rem]:table-cell">{tl("table.invoiceNumber")}</TableHead>
+              <TableHead className="hidden @min-[92rem]:table-cell">{tl("table.invoiceNumber")}</TableHead>
               <TableHead>{tl("table.evidence")}</TableHead>
               <TableHead className="text-right">{tl("table.amountVnd")}</TableHead>
               <TableHead><span className="sr-only">{tl("table.actions")}</span></TableHead>
@@ -132,7 +132,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                 >
                   <TableCell data-col="date">
                     <span className="wf-num text-foreground">{fmtDate(t.date, locale)}</span>
-                    <span className="block max-w-[9rem] text-[12px] whitespace-normal text-muted-foreground @min-[80rem]:hidden">{account}</span>
+                    <span className="block max-w-[9rem] text-[12px] whitespace-normal text-muted-foreground @min-[92rem]:hidden">{account}</span>
                   </TableCell>
                   <TableCell data-col="type">
                     <div className="flex flex-col items-start gap-1.5">
@@ -145,7 +145,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="hidden @min-[80rem]:table-cell">{account}</TableCell>
+                  <TableCell className="hidden @min-[92rem]:table-cell">{account}</TableCell>
                   <TableCell data-col="cat" className="hidden min-w-[8rem] whitespace-normal @min-[64rem]:table-cell">
                     {isPnl(t.type)
                       ? <span className="text-foreground">{t.category?.name || tl("row.uncategorized")}</span>
@@ -170,13 +170,14 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                       </div>
                     )}
                     {t.invoiceNumber && (
-                      <span className="mt-1 block text-[12px] text-muted-foreground @min-[80rem]:hidden">
-                        {tl("table.invoiceNumber")} <span className="wf-num">{t.invoiceNumber}</span>
+                      <span className="mt-1 block text-[12px] text-muted-foreground @min-[92rem]:hidden">
+                        {tl("table.invoiceNumber")} <span className="wf-num whitespace-normal [overflow-wrap:anywhere]">{t.invoiceNumber}</span>
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="hidden @min-[80rem]:table-cell">
-                    {t.invoiceNumber ? <span className="wf-num">{t.invoiceNumber}</span> : <span className="text-muted-foreground">—</span>}
+                  <TableCell className="hidden @min-[92rem]:table-cell">
+                    {/* One long number must not widen the column for every row. */}
+                    {t.invoiceNumber ? <span className="wf-num block max-w-[9rem] truncate" title={t.invoiceNumber}>{t.invoiceNumber}</span> : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell data-col="evidence">
                     {hasEvidence ? (

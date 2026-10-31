@@ -102,12 +102,15 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
               <Label htmlFor="ci-provider">{t("form.provider")}</Label>
               <Input id="ci-provider" name="provider" required defaultValue={item?.provider} placeholder={t("form.providerPlaceholder")} />
             </div>
+            {/* Both label rows as tall as the currency toggle, so the two inputs line up. */}
             <div className="grid gap-2">
-              <Label htmlFor="ci-date">{t("form.receiptDate")}</Label>
+              <div className="flex min-h-8 items-center">
+                <Label htmlFor="ci-date">{t("form.receiptDate")}</Label>
+              </div>
               <Input id="ci-date" name="receiptDate" type="date" required defaultValue={item?.receiptDate} />
             </div>
             <div className="grid gap-2">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex min-h-8 items-center justify-between gap-2">
                 <Label htmlFor="ci-amount">{t("form.amount")}</Label>
                 <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
                   {CURRENCIES.map((c) => (
@@ -237,7 +240,7 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
                   {i.billingEntity ? ` · ${t("list.billedTo", { name: i.billingEntity })}` : ""}
                 </p>
                 <p className="text-[13px] text-text-secondary">
-                  {t("list.paidBy", { payer: t.has(`payer.${i.payer}`) ? t(`payer.${i.payer}`) : i.payer })}
+                  {i.payer === "UNKNOWN" ? t("list.payerUnknown") : t("list.paidBy", { payer: t.has(`payer.${i.payer}`) ? t(`payer.${i.payer}`) : i.payer })}
                   {i.payer !== "COMPANY" && (
                     <span className={i.reimbursement === "OWED" ? "text-warn" : "text-muted-foreground"}> · {t.has(`reimbursement.${i.reimbursement}`) ? t(`reimbursement.${i.reimbursement}`) : i.reimbursement}</span>
                   )}

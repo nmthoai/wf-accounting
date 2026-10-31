@@ -421,7 +421,7 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                       ))}
                       {l.suggestion && (
                         <span className="flex items-center gap-2 text-[12px]">
-                          <span className="max-w-[180px] truncate text-muted-foreground" title={`${l.suggestion.date} · ${l.suggestion.label}`}>{t("lines.suggested", { label: l.suggestion.label, date: l.suggestion.date })}</span>
+                          <span className="max-w-[260px] truncate text-muted-foreground" title={`${l.suggestion.date} · ${l.suggestion.label}`}>{t("lines.suggested", { label: l.suggestion.label, date: l.suggestion.date })}</span>
                           <Button size="xs" variant="outline" className="text-pos" disabled={busyId === l.id}
                             onClick={() => run(l.id, () => matchLine(l.id, [l.suggestion!.id]), t("match.toast.matched"))}>{t("lines.match")}</Button>
                         </span>
@@ -443,7 +443,8 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
               ))}
               {shown.length === 0 && (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                  {/* Left-aligned on phones, where the table scrolls sideways and a centred line would run off. */}
+                  <TableCell colSpan={6} className="py-10 text-left text-muted-foreground sm:text-center">
                     {lines.length === 0 ? t("lines.empty") : t("lines.allMatched")}
                   </TableCell>
                 </TableRow>

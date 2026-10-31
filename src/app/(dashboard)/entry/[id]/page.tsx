@@ -6,7 +6,8 @@ import { defaultUsdRate } from "@/lib/fx";
 import { requirePageSession } from "@/lib/session";
 import { Card } from "@/components/ui/card";
 import { EntryStatus } from "@/components/ledger/entry-status";
-import { fmtMoney } from "@/lib/money";
+import { fmtMoney, fmtVnd } from "@/lib/money";
+import { APP_REASONS, parseSnapshot } from "@/lib/history-format";
 import { PageHeader } from "@/components/wf/page-header";
 import { Chip, ENTRY_STATUS_TONE, ENTRY_TYPE_TONE, PanelHead } from "@/components/wf/ledger-ui";
 
@@ -50,10 +51,26 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   // Where each coded field's labels live in the common messages.
   const labels: Record<string, string> = {
     status: "status", type: "type", docStatus: "review.doc", purposeStatus: "review.purpose", citStatus: "review.cit", vatStatus: "review.vat",
+    rateSource: "rateSource",
   };
   const label = (key: string, raw: string) => (tc.has(key) ? tc(key) : raw);
-  const show = (field: string | null, v: string | null) =>
-    v === null ? "—" : field && names[field] ? names[field].get(v) ?? v : field && labels[field] ? label(`${labels[field]}.${v}`, v) : v;
+  const num = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
+  const show = (field: string | null, v: string | null) => {
+    if (v === null) return "—";
+    if (field && names[field]) return names[field].get(v) ?? v;
+    if (field && labels[field]) return label(`${labels[field]}.${v}`, v);
+    // Numbers grouped as on the rest of the page.
+    const n = Number(v);
+    if (field === "vndAmount" && Number.isFinite(n)) return fmtVnd(n);
+    if ((field === "amount" || field === "exchangeRate" || field === "vatAmount") && Number.isFinite(n)) return num.format(n);
+    return v;
+  };
+  // A created or deleted entry's snapshot, in the reader's language.
+  const showSnapshot = (v: string | null) => {
+    const s = v === null ? null : parseSnapshot(v);
+    return s ? [label(`type.${s.type}`, s.type), s.date, fmtMoney(s.amount, s.currency), s.description].filter(Boolean).join(" · ") : v;
+  };
+  const reason = (r: string) => (APP_REASONS[r] ? t(`history.reasons.${APP_REASONS[r]}`) : r);
   // Why the owner sent it back: the latest rejection (history is newest first).
   const rejected = transaction.status === "REJECTED" ? history.find((h) => h.action === "REJECT") : undefined;
   const rejection = rejected?.reason ? { reason: rejected.reason, by: rejected.user } : null;
@@ -116,9 +133,9 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
                     <p className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">{show(h.field, h.oldValue)} → <span className="text-foreground">{show(h.field, h.newValue)}</span></p>
                   )}
                   {(h.action === "CREATE" || h.action === "DELETE" || h.action === "LINK" || h.action === "UNLINK") && (
-                    <p className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">{h.newValue ?? h.oldValue}</p>
+                    <p className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">{showSnapshot(h.newValue ?? h.oldValue)}</p>
                   )}
-                  {h.reason && <p className="text-[12px] text-text-secondary">{t("history.reason", { reason: h.reason })}</p>}
+                  {h.reason && <p className="text-[12px] text-text-secondary">{t("history.reason", { reason: reason(h.reason) })}</p>}
                 </div>
                 <span className="wf-num shrink-0 text-[12px] text-muted-foreground">
                   {h.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC{h.user ? ` · ${h.user}` : ""}

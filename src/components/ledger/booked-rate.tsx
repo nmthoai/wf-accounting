@@ -14,6 +14,7 @@ import { fmtMoney } from "@/lib/money";
 type Entry = {
   id: string; currency: string; amount: number; exchangeRate: number; vndAmount: number | null; rateSource: string | null;
   transferId?: string | null; deductedFromId?: string | null; deductedFee?: { amount: number } | null;
+  reversalOfId?: string | null; reversedBy?: { id: string } | null;
 };
 
 const vndFmt = new Intl.NumberFormat("vi-VN");
@@ -76,7 +77,8 @@ export function BookedRate({ entry, isAdmin, locked, defaultUsdRate }: { entry: 
       </p>
       {fee > 0 && <p className="text-[12px] text-muted-foreground">{t("revalue.withFee", { fee: fmtMoney(fee, entry.currency) })}</p>}
       <p className="text-[12px] text-muted-foreground">
-        {locked ? t("revalue.postedHint") : entry.deductedFromId ? t("revalue.feeHint") : entry.transferId ? t("revalue.transferHint") : isAdmin ? t("revalue.keptHint") : t("revalue.adminOnly")}
+        {/* A reversal, or an entry already reversed, can't be reversed (again). */}
+        {locked ? (entry.reversalOfId || entry.reversedBy ? t("revalue.reversedHint") : t("revalue.postedHint")) : entry.deductedFromId ? t("revalue.feeHint") : entry.transferId ? t("revalue.transferHint") : isAdmin ? t("revalue.keptHint") : t("revalue.adminOnly")}
       </p>
       {canRevalue && !open && (
         <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setOpen(true)}>{t("revalue.open")}</Button>

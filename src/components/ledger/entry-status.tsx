@@ -102,20 +102,23 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
                     <DialogDescription>{t("reverse.body")}</DialogDescription>
                     {withFee && <p className="text-[13.5px] text-text-secondary">{t("reverse.withFee")}</p>}
                   </DialogHeader>
-                  <div className="grid gap-2">
-                    <Label htmlFor="reverse-reason">{t("reverse.reason")}</Label>
-                    <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reverse.reasonPlaceholder")} />
-                  </div>
-                  {err && (
-                    <p className="flex items-start gap-1.5 text-[12px] text-destructive">
-                      <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />{err}
-                    </p>
-                  )}
-                  <DialogFooter>
-                    <Button disabled={busy || !reason.trim()} onClick={reverse}>
-                      {busy && <Loader2 className="animate-spin" aria-hidden="true" />}{t("reverse.submit")}
-                    </Button>
-                  </DialogFooter>
+                  {/* A form, like the Reject dialog, so Enter in the reason submits. */}
+                  <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); if (reason.trim() && !busy) reverse(); }}>
+                    <div className="grid gap-2">
+                      <Label htmlFor="reverse-reason">{t("reverse.reason")}</Label>
+                      <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reverse.reasonPlaceholder")} />
+                    </div>
+                    {err && (
+                      <p className="flex items-start gap-1.5 text-[12px] text-destructive">
+                        <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />{err}
+                      </p>
+                    )}
+                    <DialogFooter>
+                      <Button type="submit" disabled={busy || !reason.trim()}>
+                        {busy && <Loader2 className="animate-spin" aria-hidden="true" />}{t("reverse.submit")}
+                      </Button>
+                    </DialogFooter>
+                  </form>
                 </DialogContent>
               </Dialog>
             )}

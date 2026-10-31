@@ -26,7 +26,10 @@ type ClientOpt = { id: string; name: string };
 
 const vnd = (n: number) => fmtMoney(n, "VND");
 
-export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; clients: ClientOpt[] }) {
+export function ProjectsClient({ projects, clients, isAdmin }: {
+  projects: ProjectRow[]; clients: ClientOpt[];
+  isAdmin: boolean; // deleting a project is the owner's decision
+}) {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -87,9 +90,9 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
               <Input id="name" name="name" placeholder={t("list.namePlaceholder")} required />
             </div>
             <div className="grid gap-2">
-              <Label>{t("list.client")}</Label>
+              <Label htmlFor="np-client">{t("list.client")}</Label>
               <Select value={projectClientId} onValueChange={(v) => setProjectClientId(v === "none" ? "" : v || "")}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="np-client" className="w-full">
                   {projectClientId ? <span className="truncate">{clients.find(c => c.id === projectClientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}
                 </SelectTrigger>
                 <SelectContent>
@@ -129,7 +132,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
             {projects.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="py-3">
-                  <Link href={`/projects/${p.id}`} className="font-semibold text-foreground hover:text-primary">{p.name}</Link>
+                  <Link href={`/projects/${p.id}`} className="block max-w-[16rem] truncate font-semibold text-foreground hover:text-primary" title={p.name}>{p.name}</Link>
                   <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     {statusChip(p.status)}
                     {p.openCount > 0 && (
@@ -147,7 +150,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                   </span>
                 </TableCell>
                 <TableCell className="py-3">
-                  <span className={cn("block", p.clientName ? "text-foreground" : "text-muted-foreground")}>{p.clientName || t("noClient")}</span>
+                  <span className={cn("block max-w-[14rem] truncate", p.clientName ? "text-foreground" : "text-muted-foreground")} title={p.clientName ?? undefined}>{p.clientName || t("noClient")}</span>
                   <span className="block text-[12px] text-muted-foreground">{t("list.txnCount", { count: p.txnCount })}</span>
                 </TableCell>
                 <TableCell className="text-right text-pos">{vnd(p.income)}</TableCell>
@@ -166,11 +169,13 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                         {t("list.reactivate")}
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive" disabled={busyId === p.id}
-                      aria-label={t("list.deleteLabel", { name: p.name })}
-                      onClick={() => { if (confirm(t("list.confirmDelete", { name: p.name }))) run(p.id, () => deleteProject(p.id), t("toast.deleted"), p.name); }}>
-                      <Trash2 aria-hidden="true" />
-                    </Button>
+                    {isAdmin && (
+                      <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive" disabled={busyId === p.id}
+                        aria-label={t("list.deleteLabel", { name: p.name })}
+                        onClick={() => { if (confirm(t("list.confirmDelete", { name: p.name }))) run(p.id, () => deleteProject(p.id), t("toast.deleted"), p.name); }}>
+                        <Trash2 aria-hidden="true" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

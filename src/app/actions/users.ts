@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { getT } from "@/i18n/server";
 import { endSessions } from "@/lib/session-version";
+import { defaultUsdRate } from "@/lib/fx";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -54,6 +55,8 @@ export async function createUser(formData: FormData) {
       mustChangePassword: true,
       twoFactorEnabled: false,
       isActive: true,
+      // A new admin carries the company rate, as updateExchangeRate keeps every admin.
+      ...(role === "ADMIN" && { defaultUsdRate: await defaultUsdRate() }),
     },
   });
 

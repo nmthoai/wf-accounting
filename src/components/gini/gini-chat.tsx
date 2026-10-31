@@ -51,13 +51,17 @@ export function GiniChat({ name }: { name: string }) {
 
       <Card className="min-h-[38rem] lg:col-span-7 lg:h-[calc(100dvh-var(--size-topbar)-15rem)] lg:min-h-[34rem]">
         <PanelHead title={t("canvas.title")} />
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-y-auto px-6 py-10 text-center">
-          <span className="wf-gini-stage">
-            <GiniAvatar variant="full" animated title={t("canvas.alt")} className="h-[300px] w-auto" />
-          </span>
-          <h3 className="mt-4 text-[20px] leading-normal font-extrabold tracking-[-0.02em] text-foreground">{t("canvas.emptyTitle")}</h3>
-          <p className="max-w-md text-[15px] leading-relaxed text-text-secondary">{t("canvas.emptyBody")}</p>
-          <div className="max-w-xl [&_.wf-suggest]:justify-center">{suggestions}</div>
+        {/* Centred by auto margins, not justify-center: when it is taller than the panel it
+            scrolls from its top instead of spilling past both ends. */}
+        <div className="flex flex-1 flex-col overflow-y-auto px-6 py-10">
+          <div className="my-auto flex flex-col items-center gap-4 text-center">
+            <span className="wf-gini-stage">
+              <GiniAvatar variant="full" animated title={t("canvas.alt")} className="h-[300px] w-auto" />
+            </span>
+            <h3 className="mt-4 text-[20px] leading-normal font-extrabold tracking-[-0.02em] text-foreground">{t("canvas.emptyTitle")}</h3>
+            <p className="max-w-md text-[15px] leading-relaxed text-text-secondary">{t("canvas.emptyBody")}</p>
+            <div className="max-w-xl [&_.wf-suggest]:justify-center">{suggestions}</div>
+          </div>
         </div>
       </Card>
     </div>

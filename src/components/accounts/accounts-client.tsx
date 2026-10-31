@@ -109,11 +109,11 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
           </Notice>
           <ul className="wf-rows border-t border-border">
             {unclassified.map((m) => (
-              <li key={m.id}>
-                <p className="min-w-0 truncate text-text-secondary">
+              <li key={m.id} className="flex-wrap">
+                <p className="min-w-[14rem] flex-1 truncate text-text-secondary" title={`${m.date} · ${m.accountName}${m.description ? ` · ${m.description}` : ""}`}>
                   <span className="wf-num text-foreground">{m.date}</span> · {m.accountName}{m.description ? ` · ${m.description}` : ""}
                 </p>
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="ml-auto flex shrink-0 items-center gap-3">
                   <span className={cn("wf-figure", m.kind !== "OTHER_OUT" && "text-pos")}>
                     {m.kind === "OTHER_OUT" ? "−" : "+"}{fmtMoney(Math.abs(m.amount), m.currency)}
                   </span>
@@ -129,11 +129,12 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
         {accounts.map((a) => {
           const meta = { type: tc(`accountType.${a.type}`), currency: a.currency };
           return (
-            <Card key={a.id} className={cn(!a.isActive && "opacity-60")}>
+            // Inactive: a dashed edge and a muted name; the figures keep full contrast.
+            <Card key={a.id} className={cn(!a.isActive && "border-dashed")}>
               <div className="flex flex-1 items-start justify-between gap-3 p-5">
                 <div className="min-w-0">
                   <p className="wf-label">{a.isActive ? t("account.meta", meta) : t("account.metaInactive", meta)}</p>
-                  <h2 className="mt-2 truncate text-[15px] leading-snug font-bold text-foreground">{a.name}</h2>
+                  <h2 className={cn("mt-2 truncate text-[15px] leading-snug font-bold", a.isActive ? "text-foreground" : "text-text-secondary")} title={a.name}>{a.name}</h2>
                   <p className={cn("wf-num mt-3 text-[22px] leading-tight font-semibold tracking-[-0.02em] text-foreground", a.balance < 0 && "text-neg")}>
                     {fmtMoney(a.balance, a.currency)}
                   </p>
@@ -169,7 +170,8 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
               const Icon = m.isTransfer ? ArrowLeftRight : out ? ArrowUpRight : ArrowDownLeft;
               return (
                 <li key={m.id} className="flex-wrap items-start">
-                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                  {/* At least 14rem for the description: below that the amount wraps underneath. */}
+                  <div className="flex min-w-[14rem] flex-1 items-start gap-3">
                     <Icon className={cn("mt-0.5 size-4 shrink-0", !m.isTransfer && !out ? "text-pos" : "text-muted-foreground")} aria-hidden="true" />
                     <div className="min-w-0">
                       <p className="flex flex-wrap items-center gap-2 text-foreground">
@@ -246,7 +248,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
             {loans.map((l) => (
               <li key={l.id} className="flex-col items-stretch gap-2">
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-foreground">{l.lender}</p>
+                  <p className="truncate font-semibold text-foreground" title={l.lender}>{l.lender}</p>
                   {l.notes && <p className="text-[12px] text-muted-foreground">{l.notes}</p>}
                 </div>
                 <div className="grid gap-1 font-mono text-[12px] tabular-nums">

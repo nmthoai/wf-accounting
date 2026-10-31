@@ -16,7 +16,7 @@
     },
     "cards": {
       "entries": "Entries",
-      "entriesDetail": "{posted} posted · {reviewed} reviewed · {drafts} drafts",
+      "entriesDetail": "{posted} posted · {reviewed} reviewed · {drafts, plural, one {# draft} other {# drafts}}",
       "net": "Income − expenses",
       "netDetail": "{income} in · {expense} out",
       "questions": "Open questions",
