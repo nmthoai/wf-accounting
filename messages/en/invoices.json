@@ -32,7 +32,7 @@
     "selectClient": "Select client",
     "selectVendor": "Select vendor",
     "none": "None",
-    "addPartyFirst": "Add one in Projects first",
+    "addPartyFirst": "Add one in Clients & Vendors first",
     "project": "Project (optional)",
     "noProject": "No project",
     "category": "Category",

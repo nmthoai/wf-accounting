@@ -115,7 +115,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
                 </p>
                 <div className="flex shrink-0 items-center gap-3">
                   <span className={cn("wf-figure", m.kind !== "OTHER_OUT" && "text-pos")}>
-                    {m.kind === "OTHER_OUT" ? "−" : "+"}{fmtMoney(m.amount, m.currency)}
+                    {m.kind === "OTHER_OUT" ? "−" : "+"}{fmtMoney(Math.abs(m.amount), m.currency)}
                   </span>
                   <MovementDialog accounts={accounts} loans={loans} movement={m} trigger={<Button size="sm" variant="outline">{t("actions.classify")}</Button>} />
                 </div>

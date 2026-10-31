@@ -14,7 +14,7 @@
     "title": "Clients",
     "description": "Who you invoice and run projects for. Revenue is total income received from them.",
     "namePlaceholder": "e.g. Acme Co",
-    "meta": "{contact} · {projects} projects · {invoices} invoices",
+    "meta": "{contact} · {projects, plural, one {# project} other {# projects}} · {invoices, plural, one {# invoice} other {# invoices}}",
     "revenueTitle": "Revenue received",
     "confirmDelete": "Delete client {name}?",
     "empty": "No clients yet."
@@ -23,7 +23,7 @@
     "title": "Vendors",
     "description": "Who you pay (e.g. subcontractors, services). Spend is total expenses tagged to them.",
     "namePlaceholder": "e.g. ZDN",
-    "meta": "{contact} · {payments} payments",
+    "meta": "{contact} · {payments, plural, one {# payment} other {# payments}}",
     "confirmDelete": "Delete vendor {name}?",
     "empty": "No vendors yet."
   },

@@ -14,7 +14,7 @@
     "title": "Khách hàng",
     "description": "Công ty lập hóa đơn và thực hiện dự án cho các khách hàng này. Doanh thu là tổng các khoản thu đã nhận từ khách hàng.",
     "namePlaceholder": "Ví dụ: Acme Co",
-    "meta": "{contact} · {projects} dự án · {invoices} hóa đơn",
+    "meta": "{contact} · {projects, plural, other {# dự án}} · {invoices, plural, other {# hóa đơn}}",
     "revenueTitle": "Doanh thu (đã thu tiền)",
     "confirmDelete": "Xóa khách hàng {name}?",
     "empty": "Chưa có khách hàng nào."
@@ -23,7 +23,7 @@
     "title": "Nhà cung cấp",
     "description": "Công ty thanh toán cho các nhà cung cấp này (ví dụ: nhà thầu phụ, dịch vụ). Số đã chi là tổng các khoản chi gắn với nhà cung cấp.",
     "namePlaceholder": "Ví dụ: ZDN",
-    "meta": "{contact} · {payments} lần thanh toán",
+    "meta": "{contact} · {payments, plural, other {# lần thanh toán}}",
     "confirmDelete": "Xóa nhà cung cấp {name}?",
     "empty": "Chưa có nhà cung cấp nào."
   },

@@ -147,7 +147,7 @@ export default async function SettingsPage() {
                     <div className="flex shrink-0 items-center gap-1">
                       <EditUnitRateDialog unitRate={r} action={updateUnitRate} />
                       <ActionForm action={deleteUnitRate.bind(null, r.id)} success={t("unitRates.toast.deleted")}>
-                        <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")}><Trash2 aria-hidden="true" /></Button>
+                        <Button type="submit" variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")}><Trash2 aria-hidden="true" /></Button>
                       </ActionForm>
                     </div>
                   </li>
