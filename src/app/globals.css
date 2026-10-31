@@ -720,6 +720,8 @@
     height: 20px;
     margin: -4px 0 -4px -2px;
     flex: none;
+    border-radius: 9999px;
+    object-fit: cover;
   }
   .wf-nav__name {
     min-width: 0;
@@ -850,7 +852,7 @@
   .wf-gini-badge img {
     width: 100%;
     height: 100%;
-    transform: translateY(6%);
+    object-fit: cover;
   }
   .wf-gini-stage {
     position: relative;
@@ -1050,6 +1052,7 @@
   .wf-report__by img {
     width: 20px;
     height: 20px;
+    border-radius: 9999px;
   }
   .wf-report__title {
     margin: 8px 0 0;
@@ -1220,5 +1223,123 @@
 @media print {
   .wf-wave {
     display: none;
+  }
+}
+
+/* ── Registers as cards ────────────────────────────────────────────────────
+   When the Ledger's or Invoices & Bills' columns no longer fit their panel (the
+   panel is an @container), each row becomes a card: three columns, two on phones.
+   Cells name their place with data-col; a cell without one hides in a card, and
+   .wf-stack-hide marks a folded duplicate the card shows in its own cell.
+   Unlayered on purpose: it must override the cells' display and padding utilities. */
+@container (width < 58rem) {
+  .wf-stack,
+  .wf-stack > tbody {
+    display: block;
+  }
+  .wf-stack > thead,
+  .wf-stack .wf-stack-hide {
+    display: none;
+  }
+  .wf-stack > tbody > tr {
+    display: grid;
+    grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr) auto;
+    column-gap: 24px;
+    row-gap: 10px;
+    padding: 16px 20px;
+  }
+  .wf-stack > tbody > tr > td {
+    display: none;
+    min-width: 0;
+    padding: 0;
+    white-space: normal;
+  }
+  .wf-stack > tbody > tr > td[data-col] {
+    display: block;
+  }
+  .wf-stack > tbody > tr > td[data-col="full"] {
+    grid-column: 1 / -1;
+  }
+  .wf-stack td[data-col="amount"] {
+    text-align: right;
+  }
+  .wf-stack td[data-col="actions"] {
+    align-self: end;
+    justify-self: end;
+  }
+  .wf-stack td[data-col="actions"] > div {
+    width: auto;
+    flex-wrap: nowrap;
+  }
+  .wf-stack td[data-col="type"] > div {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  /* Ledger: date, account and chips · description, category, evidence · amount and actions. */
+  .wf-stack--ledger td[data-col="date"] { grid-area: 1 / 1; }
+  .wf-stack--ledger td[data-col="type"] { grid-area: 2 / 1 / 4 / 2; }
+  .wf-stack--ledger td[data-col="desc"] { grid-area: 1 / 2; }
+  .wf-stack--ledger td[data-col="cat"] { grid-area: 2 / 2; }
+  .wf-stack--ledger td[data-col="evidence"] { grid-area: 3 / 2; }
+  .wf-stack--ledger td[data-col="amount"] { grid-area: 1 / 3; }
+  .wf-stack--ledger td[data-col="actions"] { grid-area: 2 / 3 / 4 / 4; }
+
+  /* Invoices & Bills: number and state · party and due date · amount and actions;
+     the linked-entries toggle continues the card under the number. */
+  .wf-stack--invoices td[data-col="invoice"] { grid-area: 1 / 1; }
+  .wf-stack--invoices td[data-col="party"] { grid-area: 1 / 2; }
+  .wf-stack--invoices td[data-col="due"] { grid-area: 2 / 2; }
+  .wf-stack--invoices td[data-col="amount"] { grid-area: 1 / 3; }
+  .wf-stack--invoices td[data-col="actions"] { grid-area: 2 / 3; }
+  .wf-stack--invoices > tbody > tr[data-row="more"] {
+    padding-top: 0;
+  }
+  .wf-stack--invoices td[data-col="more"] {
+    grid-column: 1 / -1;
+    padding-left: 48px;
+  }
+}
+
+@container (width < 40rem) {
+  .wf-stack > tbody > tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 16px;
+  }
+  /* Ledger: the date with the amount, then the rest; actions beside the evidence. */
+  .wf-stack--ledger td[data-col="date"] { grid-area: 1 / 1; }
+  .wf-stack--ledger td[data-col="amount"] { grid-area: 1 / 2; }
+  .wf-stack--ledger td[data-col="type"] { grid-area: 2 / 1 / 3 / 3; }
+  .wf-stack--ledger td[data-col="cat"] { grid-area: 3 / 1 / 4 / 3; }
+  .wf-stack--ledger td[data-col="desc"] { grid-area: 4 / 1 / 5 / 3; }
+  .wf-stack--ledger td[data-col="evidence"] { grid-area: 5 / 1; }
+  .wf-stack--ledger td[data-col="actions"] { grid-area: 5 / 2; }
+  /* Invoices & Bills: the number with the amount, the party, then the due date beside the actions. */
+  .wf-stack--invoices td[data-col="invoice"] { grid-area: 1 / 1; }
+  .wf-stack--invoices td[data-col="amount"] { grid-area: 1 / 2; }
+  .wf-stack--invoices td[data-col="party"] { grid-area: 2 / 1 / 3 / 3; }
+  .wf-stack--invoices td[data-col="due"] { grid-area: 3 / 1; }
+  .wf-stack--invoices td[data-col="actions"] { grid-area: 3 / 2; }
+  .wf-stack--invoices td[data-col="more"] { padding-left: 0; }
+}
+
+/* A table wider than its panel scrolls sideways; a soft shade marks the edge where
+   more columns wait (the card-coloured covers scroll with the content). */
+.wf-table-scroll {
+  background:
+    linear-gradient(to right, var(--card) 30%, transparent) left center / 40px 100% no-repeat local,
+    linear-gradient(to left, var(--card) 30%, transparent) right center / 40px 100% no-repeat local,
+    linear-gradient(to right, color-mix(in oklab, var(--foreground) 12%, transparent), transparent) left center / 16px 100% no-repeat scroll,
+    linear-gradient(to left, color-mix(in oklab, var(--foreground) 12%, transparent), transparent) right center / 16px 100% no-repeat scroll;
+}
+
+/* Long status chips in a page header wrap on phones. */
+@media (max-width: 639px) {
+  .wf-page-header__meta .wf-chip {
+    height: auto;
+    min-height: 20px;
+    padding-block: 3px;
+    line-height: 1.35;
+    white-space: normal;
   }
 }
