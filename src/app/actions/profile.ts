@@ -29,3 +29,15 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/", "layout");
   return { success: true };
 }
+
+// The currency summaries are shown in (Dashboard, Reports, Projects, Invoices
+// totals). Each user's own choice; the books are not touched.
+export async function setDisplayCurrency(currency: string) {
+  const session = await getSession();
+  const t = await getT("profile");
+  if (!session?.user?.id) return { success: false, message: t("errors.unauthorized") };
+  if (currency !== "VND" && currency !== "USD") return { success: false, message: t("errors.badCurrency") };
+  await prisma.user.update({ where: { id: session.user.id }, data: { displayCurrency: currency } });
+  revalidatePath("/", "layout");
+  return { success: true };
+}

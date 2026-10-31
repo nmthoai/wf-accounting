@@ -76,8 +76,8 @@ export function PnlTable({ pnl, labels, className }: { pnl: Pnl; labels: string[
                     </span>
                   </Link>
                 </th>
-                {pnl.months.map((m, i) => <td key={i} className={cell}>{m === it.month ? num(it.vnd) : ""}</td>)}
-                <td className={cn(cell, total, hoverTint)}>{num(it.vnd)}</td>
+                {pnl.months.map((m, i) => <td key={i} className={cell}>{m === it.month ? num(it.value) : ""}</td>)}
+                <td className={cn(cell, total, hoverTint)}>{num(it.value)}</td>
               </tr>
             ))}
           </Fragment>

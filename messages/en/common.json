@@ -150,5 +150,9 @@
     "light": "Light",
     "dark": "Dark",
     "motion": "Moving background"
+  },
+  "view": {
+    "usdNote": "USD view · {rate} ₫/USD",
+    "usdHint": "Entries made in USD show their real USD; VND amounts are converted at the Settings rate ({rate} ₫/USD) as an estimate. Change it in your Profile."
   }
 }
