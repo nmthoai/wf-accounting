@@ -6,11 +6,19 @@
     "disclaimer": "Sổ theo dõi nội bộ các tờ khai thuế do kế toán dịch vụ đã nộp, nhập từ bản PDF đã nộp. Tờ khai được lưu riêng, không liên kết với bút toán, hóa đơn hay tệp đính kèm của sổ sách, và chỉ dùng để đối chiếu với sổ sách theo từng quý nhằm thấy chênh lệch. Đây không phải tờ khai thuế và không phải xác nhận tuân thủ — các mục cần lưu ý là câu hỏi, không phải kết luận. Chỉ chủ doanh nghiệp xem được trang này.",
     "addReturn": "Ghi nhận tờ khai"
   },
+  "stats": {
+    "severityCount": "{count} {severity}",
+    "knownDetail": "Đã để riêng, kèm ghi chú của bạn",
+    "returns": "Tờ khai đã ghi nhận",
+    "quarters": "{count, plural, other {# quý}} trong bảng",
+    "difference": "Sổ sách − kê khai [34]",
+    "differenceDetail": "{period}: sổ sách {books}, đã kê khai {declared}"
+  },
   "flags": {
-    "title": "Cần lưu ý ({count})",
+    "title": "Cần lưu ý",
     "subtitle": "Các chênh lệch giữa tờ khai và sổ sách. Khi đã xem xét, hãy đánh dấu đã biết kèm ghi chú — mục đó vẫn được lưu, để riêng bên dưới.",
     "none": "Không có mục nào cần lưu ý.",
-    "known": "Đã biết ({count})",
+    "known": "Đã biết",
     "markKnown": "Đánh dấu đã biết",
     "reopen": "Mở lại",
     "reopenConfirm": "Mở lại mục này? Ghi chú sẽ được gỡ khỏi mục; lịch sử thay đổi vẫn lưu lại.",

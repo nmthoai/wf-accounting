@@ -57,36 +57,37 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
   }
 
   return (
-    <div className="space-y-4">
+    <>
       {documents.length > 0 && (
-        <div className="space-y-2">
+        <ul className="wf-rows border-b border-border">
           {documents.map((d) => (
-            <div key={d.id} className="flex items-center justify-between gap-2 bg-muted/50 p-3 rounded-md">
+            <li key={d.id}>
               <a href={`/api/uploads/${d.filePath.split("/").pop()}`} target="_blank" rel="noreferrer"
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 truncate" title={d.fileName}>
-                <FileText className="h-4 w-4 shrink-0" />
+                className="flex min-w-0 items-center gap-3 text-foreground transition-colors duration-150 hover:text-primary" title={d.fileName}>
+                <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span className="truncate">{d.fileName}</span>
-                <span className="text-xs text-muted-foreground shrink-0">· {d.createdAt}</span>
+                <span className="wf-num shrink-0 text-[12px] text-muted-foreground">{d.createdAt}</span>
               </a>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
-                disabled={removingId === d.id} onClick={() => remove(d.id)} title={tc("actions.remove")}>
-                {removingId === d.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                disabled={removingId === d.id} onClick={() => remove(d.id)} title={tc("actions.remove")} aria-label={`${tc("actions.remove")} ${d.fileName}`}>
+                {removingId === d.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Trash2 aria-hidden="true" />}
               </Button>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
-      <form onSubmit={onUpload} className="flex items-end gap-3 flex-wrap">
-        <div className="space-y-2 flex-1 min-w-[220px]">
-          <Label htmlFor="files" className="flex items-center gap-2"><UploadCloud className="h-4 w-4" /> {t("documents.add")}</Label>
-          <Input id="files" name="files" type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" />
+      <form onSubmit={onUpload} className="grid gap-2 p-5">
+        <Label htmlFor="files"><UploadCloud className="size-4 text-muted-foreground" aria-hidden="true" />{t("documents.add")}</Label>
+        <div className="flex flex-wrap items-center gap-3">
+          <Input id="files" name="files" type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" className="min-w-[220px] flex-1" />
+          <Button type="submit" variant="outline" disabled={uploading}>
+            {uploading && <Loader2 className="animate-spin" aria-hidden="true" />}
+            {t("documents.upload")}
+          </Button>
         </div>
-        <Button type="submit" disabled={uploading}>
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("documents.upload")}
-        </Button>
+        <p className="text-[12px] text-muted-foreground">{t("documents.hint")}</p>
       </form>
-      <p className="text-xs text-muted-foreground">{t("documents.hint")}</p>
-    </div>
+    </>
   );
 }

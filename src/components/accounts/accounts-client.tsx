@@ -3,12 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, PiggyBank, User, Landmark, ArrowLeftRight, Plus, Pencil, Trash2, AlertTriangle, Lock, Undo2 } from "lucide-react";
+import {
+  Wallet, PiggyBank, User, Landmark, ArrowLeftRight, ArrowDownLeft, ArrowUpRight, Plus, Pencil, Trash2, Lock, Undo2,
+} from "lucide-react";
 import { deleteTransaction, reverseEntry } from "@/app/actions/ledger";
 import { notify, notifyResult } from "@/components/ui/toast";
 import { fmtMoney, fmtVnd, totalsList, type Totals } from "@/lib/money";
+import { cn } from "@/lib/utils";
+import { Chip, ENTRY_TYPE_TONE, Notice, Stat, StatStrip } from "@/components/wf/ledger-ui";
 import {
   AccountDialog, TransferDialog, MovementDialog, LoanDialog,
   type AccountRow, type LoanRow, type TransferRow, type SingleRow,
@@ -16,30 +20,13 @@ import {
 
 export type MovementRow = TransferRow | SingleRow;
 
-const kindColor: Record<string, string> = {
-  CAPITAL_IN: "bg-violet-100 text-violet-700",
-  LOAN_IN: "bg-sky-100 text-sky-700",
-  LOAN_REPAY: "bg-sky-100 text-sky-700",
-  OTHER_IN: "bg-amber-100 text-amber-700",
-  OTHER_OUT: "bg-amber-100 text-amber-700",
-};
 const OUT_KINDS = new Set(["LOAN_REPAY", "OTHER_OUT"]);
 
 // One line per currency — currencies are never added together.
-function Stat({ label, totals, sub, icon, primary }: { label: string; totals: Totals; sub: string; icon: React.ReactNode; primary?: boolean }) {
-  const lines = totalsList(totals);
-  return (
-    <Card className={primary ? "bg-primary text-primary-foreground" : ""}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{label}</CardTitle>{icon}
-      </CardHeader>
-      <CardContent>
-        {lines.length === 0 && <div className="text-2xl font-bold">{fmtVnd(0)}</div>}
-        {lines.map(([c, v], i) => <div key={c} className={i === 0 ? "text-2xl font-bold" : "text-lg font-semibold"}>{fmtMoney(v, c)}</div>)}
-        <p className={`text-xs mt-1 ${primary ? "opacity-75" : "text-muted-foreground"}`}>{sub}</p>
-      </CardContent>
-    </Card>
-  );
+function lines(totals: Totals) {
+  const list = totalsList(totals);
+  if (list.length === 0) return fmtVnd(0);
+  return list.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>));
 }
 
 export function AccountsClient({ isAdmin, position, accounts, loans, movements }: {
@@ -74,179 +61,207 @@ export function AccountsClient({ isAdmin, position, accounts, loans, movements }
     finally { setBusyId(null); }
   }
 
-  const editButton = <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={tc("actions.edit")}><Pencil className="h-4 w-4" /></Button>;
+  const editButton = (
+    <Button variant="ghost" size="icon-sm" aria-label={tc("actions.edit")} title={tc("actions.edit")}><Pencil /></Button>
+  );
 
   const ownerLines = totalsList(position.owner);
+  const ownerSays = (v: number) => (v < 0 ? t("stats.companyOwesOwner") : t("stats.ownerHoldsMoney"));
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Stat primary label={t("stats.cashBank")} totals={position.liquid} icon={<Wallet className="h-4 w-4 opacity-75" />}
-          sub={t("stats.cashBankSub")} />
-        <Stat label={t("stats.termDeposits")} totals={position.deposits} icon={<PiggyBank className="h-4 w-4 text-muted-foreground" />} sub={t("stats.termDepositsSub")} />
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("stats.ownerPosition")}</CardTitle><User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {ownerLines.length === 0 && <div className="text-2xl font-bold">{fmtVnd(0)}</div>}
-            {ownerLines.map(([c, v]) => (
-              <div key={c}>
-                <div className={`text-lg font-bold ${v < 0 ? "text-red-600" : "text-amber-700"}`}>{fmtMoney(Math.abs(v), c)}</div>
-                <p className="text-xs text-muted-foreground">{v < 0 ? t("stats.companyOwesOwner") : t("stats.ownerHoldsMoney")}</p>
-              </div>
-            ))}
-            {ownerLines.length === 0 && <p className="text-xs text-muted-foreground">{t("stats.nothingOwed")}</p>}
-          </CardContent>
-        </Card>
-        <Stat label={t("stats.capital")} totals={position.capital} icon={<Landmark className="h-4 w-4 text-muted-foreground" />} sub={t("stats.capitalSub")} />
-      </div>
+      <StatStrip className="lg:grid-cols-4">
+        <Stat label={t("stats.cashBank")} icon={Wallet} emphasis sub={t("stats.cashBankSub")}>
+          {lines(position.liquid)}
+        </Stat>
+        <Stat label={t("stats.termDeposits")} icon={PiggyBank} sub={t("stats.termDepositsSub")}>
+          {lines(position.deposits)}
+        </Stat>
+        <Stat
+          label={t("stats.ownerPosition")}
+          icon={User}
+          tone={ownerLines[0] ? (ownerLines[0][1] < 0 ? "neg" : "warn") : "neutral"}
+          sub={ownerLines.length === 0
+            ? t("stats.nothingOwed")
+            : ownerLines.map(([c, v]) => <p key={c}>{ownerLines.length > 1 ? `${c} · ` : ""}{ownerSays(v)}</p>)}
+        >
+          {ownerLines.length === 0 && fmtVnd(0)}
+          {ownerLines.map(([c, v], i) => (i === 0
+            ? <span key={c}>{fmtMoney(Math.abs(v), c)}</span>
+            : <small key={c}>{fmtMoney(Math.abs(v), c)}</small>))}
+        </Stat>
+        <Stat label={t("stats.capital")} icon={Landmark} tone="violet" sub={t("stats.capitalSub")}>
+          {lines(position.capital)}
+        </Stat>
+      </StatStrip>
 
       <div className="flex flex-wrap gap-2">
-        <TransferDialog accounts={accounts} trigger={<Button className="gap-2"><ArrowLeftRight className="h-4 w-4" />{t("actions.transfer")}</Button>} />
-        <MovementDialog accounts={accounts} loans={loans} trigger={<Button variant="outline" className="gap-2"><Plus className="h-4 w-4" />{t("actions.capitalOrLoan")}</Button>} />
-        <LoanDialog trigger={<Button variant="outline" className="gap-2"><Plus className="h-4 w-4" />{t("actions.newLoan")}</Button>} />
-        {isAdmin && <AccountDialog trigger={<Button variant="outline" className="gap-2"><Plus className="h-4 w-4" />{t("actions.newAccount")}</Button>} />}
+        <TransferDialog accounts={accounts} trigger={<Button><ArrowLeftRight />{t("actions.transfer")}</Button>} />
+        <MovementDialog accounts={accounts} loans={loans} trigger={<Button variant="outline"><Plus />{t("actions.capitalOrLoan")}</Button>} />
+        <LoanDialog trigger={<Button variant="outline"><Plus />{t("actions.newLoan")}</Button>} />
+        {isAdmin && <AccountDialog trigger={<Button variant="outline"><Plus />{t("actions.newAccount")}</Button>} />}
       </div>
 
       {unclassified.length > 0 && (
-        <Card className="border-amber-300 bg-amber-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-800">
-              <AlertTriangle className="h-4 w-4" />{t("unclassified.title", { count: unclassified.length })}
-            </CardTitle>
-            <CardDescription className="text-amber-800/80">{t("unclassified.description")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <Card className="border-warn/50">
+          <Notice tone="warning" title={t("unclassified.title", { count: unclassified.length })} className="rounded-none border-0 px-5 py-4">
+            <p>{t("unclassified.description")}</p>
+          </Notice>
+          <ul className="wf-rows border-t border-border">
             {unclassified.map((m) => (
-              <div key={m.id} className="flex items-center justify-between gap-2 bg-white/70 p-2 rounded-md text-sm">
-                <span>{m.date} · {m.accountName}{m.description ? ` · ${m.description}` : ""}</span>
-                <span className="flex items-center gap-2">
-                  <span className="font-semibold">{m.kind === "OTHER_OUT" ? "−" : "+"}{fmtMoney(m.amount, m.currency)}</span>
+              <li key={m.id}>
+                <p className="min-w-0 truncate text-text-secondary">
+                  <span className="wf-num text-foreground">{m.date}</span> · {m.accountName}{m.description ? ` · ${m.description}` : ""}
+                </p>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className={cn("wf-figure", m.kind !== "OTHER_OUT" && "text-pos")}>
+                    {m.kind === "OTHER_OUT" ? "−" : "+"}{fmtMoney(m.amount, m.currency)}
+                  </span>
                   <MovementDialog accounts={accounts} loans={loans} movement={m} trigger={<Button size="sm" variant="outline">{t("actions.classify")}</Button>} />
-                </span>
-              </div>
+                </div>
+              </li>
             ))}
-          </CardContent>
+          </ul>
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {accounts.map((a) => (
-          <Card key={a.id} className={a.isActive ? "" : "opacity-60"}>
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-              <div>
-                <CardTitle className="text-base">{a.name}</CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {a.isActive
-                    ? t("account.meta", { type: tc(`accountType.${a.type}`), currency: a.currency })
-                    : t("account.metaInactive", { type: tc(`accountType.${a.type}`), currency: a.currency })}
-                </p>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {accounts.map((a) => {
+          const meta = { type: tc(`accountType.${a.type}`), currency: a.currency };
+          return (
+            <Card key={a.id} className={cn(!a.isActive && "opacity-60")}>
+              <div className="flex flex-1 items-start justify-between gap-3 p-5">
+                <div className="min-w-0">
+                  <p className="wf-label">{a.isActive ? t("account.meta", meta) : t("account.metaInactive", meta)}</p>
+                  <h2 className="mt-2 truncate text-[15px] leading-snug font-bold text-foreground">{a.name}</h2>
+                  <p className={cn("wf-num mt-3 text-[22px] leading-tight font-semibold tracking-[-0.02em] text-foreground", a.balance < 0 && "text-neg")}>
+                    {fmtMoney(a.balance, a.currency)}
+                  </p>
+                  {a.type === "OWNER" && a.balance < 0 && <p className="mt-1 text-[12px] text-warn">{t("account.companyOwes", { amount: fmtMoney(-a.balance, a.currency) })}</p>}
+                  {a.type === "OWNER" && a.balance > 0 && <p className="mt-1 text-[12px] text-warn">{t("account.ownerHolds", { amount: fmtMoney(a.balance, a.currency) })}</p>}
+                  {a.notes && <p className="mt-1 text-[12px] text-muted-foreground">{a.notes}</p>}
+                </div>
+                {isAdmin && <AccountDialog account={a} trigger={editButton} />}
               </div>
-              {isAdmin && <AccountDialog account={a} trigger={editButton} />}
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${a.balance < 0 ? "text-red-600" : ""}`}>{fmtMoney(a.balance, a.currency)}</div>
-              {a.type === "OWNER" && a.balance < 0 && <p className="text-xs text-red-600 mt-1">{t("account.companyOwes", { amount: fmtMoney(-a.balance, a.currency) })}</p>}
-              {a.type === "OWNER" && a.balance > 0 && <p className="text-xs text-amber-700 mt-1">{t("account.ownerHolds", { amount: fmtMoney(a.balance, a.currency) })}</p>}
-              {a.notes && <p className="text-xs text-muted-foreground mt-1">{a.notes}</p>}
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="border-t border-border bg-muted/40 px-5 py-3 font-mono text-[12px] text-muted-foreground tabular-nums">
                 {a.openingDate
                   ? t("account.opening", { amount: fmtMoney(a.openingBalance, a.currency), date: a.openingDate })
                   : t("account.openingNoDate", { amount: fmtMoney(a.openingBalance, a.currency) })}
               </p>
-            </CardContent>
-          </Card>
-        ))}
-        {accounts.length === 0 && <p className="text-sm text-muted-foreground">{isAdmin ? t("account.emptyAdmin") : t("account.empty")}</p>}
+            </Card>
+          );
+        })}
+        {accounts.length === 0 && <p className="text-muted-foreground">{isAdmin ? t("account.emptyAdmin") : t("account.empty")}</p>}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("loans.title")}</CardTitle>
-          <CardDescription>{t("loans.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {loans.map((l) => (
-            <div key={l.id} className="flex items-center justify-between gap-3 bg-muted/50 p-3 rounded-md text-sm flex-wrap">
-              <div className="flex flex-col">
-                <span className="font-medium">{l.lender}</span>
-                {l.notes && <span className="text-xs text-muted-foreground">{l.notes}</span>}
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-muted-foreground">{t("loans.received", { amount: fmtMoney(l.received, l.currency) })}</span>
-                <span className="text-muted-foreground">{t("loans.repaid", { amount: fmtMoney(l.repaid, l.currency) })}</span>
-                <span className={`font-semibold ${l.outstanding > 0 ? "text-red-600" : "text-green-700"}`}>
-                  {t("loans.outstanding", { amount: fmtMoney(l.outstanding, l.currency) })}
-                </span>
-              </div>
-            </div>
-          ))}
-          {loans.length === 0 && <p className="text-sm text-muted-foreground">{t("loans.empty")}</p>}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("movements.title")}</CardTitle>
-          <CardDescription>{t("movements.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {movements.map((m) => (
-            <div key={m.id} className="flex items-center justify-between gap-3 bg-muted/50 p-3 rounded-md flex-wrap">
-              <div className="flex flex-col min-w-[220px]">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  {m.isTransfer ? (
-                    <><span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700">{t("movements.transfer")}</span>{m.fromName} → {m.toName}</>
-                  ) : (
-                    <><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${kindColor[m.kind] ?? "bg-slate-200 text-slate-700"}`}>{tc(`type.${m.kind}`)}</span>{m.accountName}</>
-                  )}
-                  {m.status === "DRAFT" && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">{t("movements.draft")}</span>}
-                  {m.status === "REJECTED" && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700" title={m.rejectedReason ?? undefined}>{tc("status.REJECTED")}</span>}
-                  {m.status === "REJECTED" && m.rejectedReason && <span className="text-[11px] text-red-700">{t("movements.rejectedReason", { reason: m.rejectedReason })}</span>}
-                  {m.reversal && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-700">{t("movements.reversal")}</span>}
-                  {m.reversed && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200 text-slate-700">{t("movements.reversed")}</span>}
-                  {m.status === "POSTED" && <span title={t("movements.postedLocked")}><Lock className="h-3.5 w-3.5 text-muted-foreground" /></span>}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {m.date}
-                  {!m.isTransfer && m.lender ? ` · ${m.lender}` : ""}
-                  {m.description ? ` · ${m.description}` : ""}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {m.isTransfer ? (
-                  <div className="text-right text-sm">
-                    <div className="font-semibold">{fmtMoney(m.amountOut, m.currencyOut)}{m.currencyOut !== m.currencyIn && <> → {fmtMoney(m.amountIn, m.currencyIn)}</>}</div>
-                    {m.rate && <div className="text-xs text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(Math.round(m.rate * 100) / 100)} VND/USD</div>}
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="lg:col-span-8">
+          <CardHeader>
+            <h2 className="wf-panel__title">
+              {t("movements.title")}
+              <span className="wf-panel__count">{movements.length}</span>
+            </h2>
+            <CardDescription>{t("movements.description")}</CardDescription>
+          </CardHeader>
+          <ul className="wf-rows">
+            {movements.map((m) => {
+              const out = !m.isTransfer && OUT_KINDS.has(m.kind) === m.amount >= 0;
+              const Icon = m.isTransfer ? ArrowLeftRight : out ? ArrowUpRight : ArrowDownLeft;
+              return (
+                <li key={m.id} className="flex-wrap items-start">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <Icon className={cn("mt-0.5 size-4 shrink-0", !m.isTransfer && !out ? "text-pos" : "text-muted-foreground")} aria-hidden="true" />
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 text-foreground">
+                        {m.isTransfer ? (
+                          <><Chip>{t("movements.transfer")}</Chip><span>{m.fromName} → {m.toName}</span></>
+                        ) : (
+                          <><Chip tone={ENTRY_TYPE_TONE[m.kind] ?? "neutral"}>{tc(`type.${m.kind}`)}</Chip><span>{m.accountName}</span></>
+                        )}
+                        {m.status === "DRAFT" && <Chip tone="warn" mono>{t("movements.draft")}</Chip>}
+                        {m.status === "REJECTED" && <Chip tone="neg" mono title={m.rejectedReason ?? undefined}>{tc("status.REJECTED")}</Chip>}
+                        {m.reversal && <Chip mono>{t("movements.reversal")}</Chip>}
+                        {m.reversed && <Chip mono>{t("movements.reversed")}</Chip>}
+                        {m.status === "POSTED" && (
+                          <span title={t("movements.postedLocked")} className="inline-flex text-muted-foreground">
+                            <Lock className="size-3.5" aria-hidden="true" />
+                            <span className="sr-only">{t("movements.postedLocked")}</span>
+                          </span>
+                        )}
+                      </p>
+                      <p className="mt-1 text-[12px] text-muted-foreground">
+                        <span className="wf-num">{m.date}</span>
+                        {!m.isTransfer && m.lender ? ` · ${m.lender}` : ""}
+                        {m.description ? ` · ${m.description}` : ""}
+                      </p>
+                      {m.status === "REJECTED" && m.rejectedReason && (
+                        <p className="mt-1 text-[12px] text-neg">{t("movements.rejectedReason", { reason: m.rejectedReason })}</p>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <span className={`text-sm font-semibold ${OUT_KINDS.has(m.kind) === m.amount >= 0 ? "text-red-600" : "text-green-700"}`}>
-                    {OUT_KINDS.has(m.kind) === m.amount >= 0 ? "−" : "+"}{fmtMoney(Math.abs(m.amount), m.currency)}
-                  </span>
-                )}
-                {/* Posted movements are locked: an admin reverses them, then records the correct one. */}
-                {m.status !== "POSTED" && (m.isTransfer
-                  ? <TransferDialog accounts={accounts} transfer={m} trigger={editButton} />
-                  : <MovementDialog accounts={accounts} loans={loans} movement={m} trigger={editButton} />)}
-                {isAdmin && m.status !== "POSTED" && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title={tc("actions.delete")}
-                    disabled={busyId === m.id} onClick={() => remove(m.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-                {isAdmin && m.status === "POSTED" && !m.reversal && !m.reversed && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={t("actions.reverse")}
-                    disabled={busyId === m.id} onClick={() => reverse(m.id)}>
-                    <Undo2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-          {movements.length === 0 && <p className="text-sm text-muted-foreground">{t("movements.empty")}</p>}
-        </CardContent>
-      </Card>
+                  <div className="ml-auto flex shrink-0 items-center gap-1">
+                    {m.isTransfer ? (
+                      <div className="mr-2 text-right">
+                        <p className="wf-figure">{fmtMoney(m.amountOut, m.currencyOut)}{m.currencyOut !== m.currencyIn && <> → {fmtMoney(m.amountIn, m.currencyIn)}</>}</p>
+                        {m.rate && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(Math.round(m.rate * 100) / 100)} VND/USD</p>}
+                      </div>
+                    ) : (
+                      <span className={cn("wf-figure mr-2", !out && "text-pos")}>
+                        {out ? "−" : "+"}{fmtMoney(Math.abs(m.amount), m.currency)}
+                      </span>
+                    )}
+                    {/* Posted movements are locked: an admin reverses them, then records the correct one. */}
+                    {m.status !== "POSTED" && (m.isTransfer
+                      ? <TransferDialog accounts={accounts} transfer={m} trigger={editButton} />
+                      : <MovementDialog accounts={accounts} loans={loans} movement={m} trigger={editButton} />)}
+                    {isAdmin && m.status !== "POSTED" && (
+                      <Button variant="ghost" size="icon-sm" className="hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")}
+                        disabled={busyId === m.id} onClick={() => remove(m.id)}>
+                        <Trash2 />
+                      </Button>
+                    )}
+                    {isAdmin && m.status === "POSTED" && !m.reversal && !m.reversed && (
+                      <Button variant="ghost" size="icon-sm" aria-label={t("actions.reverse")} title={t("actions.reverse")}
+                        disabled={busyId === m.id} onClick={() => reverse(m.id)}>
+                        <Undo2 />
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+            {movements.length === 0 && <li className="text-muted-foreground">{t("movements.empty")}</li>}
+          </ul>
+        </Card>
+
+        <Card className="self-start lg:col-span-4">
+          <CardHeader>
+            <h2 className="wf-panel__title">
+              {t("loans.title")}
+              <span className="wf-panel__count">{loans.length}</span>
+            </h2>
+            <CardDescription>{t("loans.description")}</CardDescription>
+          </CardHeader>
+          <ul className="wf-rows">
+            {loans.map((l) => (
+              <li key={l.id} className="flex-col items-stretch gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-foreground">{l.lender}</p>
+                  {l.notes && <p className="text-[12px] text-muted-foreground">{l.notes}</p>}
+                </div>
+                <div className="grid gap-1 font-mono text-[12px] tabular-nums">
+                  <p className="text-muted-foreground">{t("loans.received", { amount: fmtMoney(l.received, l.currency) })}</p>
+                  <p className="text-muted-foreground">{t("loans.repaid", { amount: fmtMoney(l.repaid, l.currency) })}</p>
+                  <p className={cn("text-[13.5px] font-semibold", l.outstanding > 0 ? "text-neg" : "text-pos")}>
+                    {t("loans.outstanding", { amount: fmtMoney(l.outstanding, l.currency) })}
+                  </p>
+                </div>
+              </li>
+            ))}
+            {loans.length === 0 && <li className="text-muted-foreground">{t("loans.empty")}</li>}
+          </ul>
+        </Card>
+      </div>
     </div>
   );
 }

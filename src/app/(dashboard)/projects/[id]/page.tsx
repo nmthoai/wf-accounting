@@ -2,18 +2,21 @@ import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft } from "lucide-react";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight, TrendingUp } from "lucide-react";
 import { ProjectOutstanding } from "@/components/projects/project-outstanding";
 import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
 import { ProjectDocuments } from "@/components/projects/project-documents";
-import { toVnd, settlement, BOOKED, BOOKED_ALLOCATIONS , vnTodayStart , isMoneyIn } from "@/lib/money";
+import { toVnd, settlement, BOOKED, BOOKED_ALLOCATIONS , vnTodayStart , isMoneyIn, fmtMoney } from "@/lib/money";
 import { defaultUsdRate } from "@/lib/fx";
 import { getTranslations, getLocale } from "next-intl/server";
 import { fmtDate as formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/wf/page-header";
+import { Bar, Chip, ENTRY_TYPE_TONE, PanelHead, PROJECT_STATUS_TONE, Stat, StatStrip } from "@/components/wf/ledger-ui";
 
-const vnd = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+const vnd = (n: number) => fmtMoney(n, "VND");
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const fmtDate = (d: Date | null, locale: string) => (d ? formatDate(d, locale, { day: "2-digit", month: "short", year: "numeric" }) : null);
 
@@ -73,88 +76,84 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   }
   const costRows = [...byCategory.entries()].sort((a, b) => b[1] - a[1]);
   const typeBadge = (type: string) => (t.has(`detail.typeBadge.${type}`) ? t(`detail.typeBadge.${type}`) : type);
+  const status = project.status;
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <Link href="/projects" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-2">
-            <ArrowLeft className="h-4 w-4" /> {t("page.title")}
-          </Link>
-          <h1 className="text-3xl font-serif font-bold text-primary">{project.name}</h1>
-          <p className="text-muted-foreground mt-1">
-            {project.client?.name || t("noClient")} · {t.has(`status.${project.status}`) ? t(`status.${project.status}`) : project.status}
-            {dateRange && <> · {dateRange}</>}
-          </p>
-          {project.description && <p className="text-sm text-muted-foreground mt-2 max-w-2xl whitespace-pre-wrap">{project.description}</p>}
-        </div>
-        <EditProjectDialog
-          project={{
-            id: project.id, name: project.name, clientId: project.clientId, status: project.status,
-            description: project.description, startDate: project.startDate ? iso(project.startDate) : null,
-            endDate: project.endDate ? iso(project.endDate) : null,
-          }}
-          clients={clients}
-        />
-      </div>
+    <div>
+      <Link href="/projects" className="wf-label mb-5 inline-flex items-center gap-2 transition-colors duration-150 hover:text-primary">
+        <ArrowLeft className="size-3.5" aria-hidden="true" />{t("page.title")}
+      </Link>
+      <PageHeader
+        section="projects"
+        title={project.name}
+        description={project.description && <span className="whitespace-pre-wrap">{project.description}</span>}
+        meta={
+          <>
+            <Chip tone={PROJECT_STATUS_TONE[status] ?? "neutral"} mono dot={status === "ACTIVE"}>
+              {t.has(`status.${status}`) ? t(`status.${status}`) : status}
+            </Chip>
+            <Chip>{project.client?.name || t("noClient")}</Chip>
+            {dateRange && <span className="wf-num text-[12px] text-muted-foreground">{dateRange}</span>}
+          </>
+        }
+        actions={
+          <EditProjectDialog
+            project={{
+              id: project.id, name: project.name, clientId: project.clientId, status: project.status,
+              description: project.description, startDate: project.startDate ? iso(project.startDate) : null,
+              endDate: project.endDate ? iso(project.endDate) : null,
+            }}
+            clients={clients}
+          />
+        }
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">{t("detail.income")}</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{vnd(income)}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">{t("detail.expenses")}</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-red-600">{vnd(expense)}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">{t("detail.netProfit")}</CardTitle></CardHeader>
-          <CardContent><div className={`text-2xl font-bold ${net >= 0 ? "text-primary" : "text-red-600"}`}>{vnd(net)}</div></CardContent>
-        </Card>
-      </div>
+      <StatStrip className="lg:grid-cols-3">
+        <Stat label={t("detail.income")} icon={ArrowDownLeft} tone="pos">{vnd(income)}</Stat>
+        <Stat label={t("detail.expenses")} icon={ArrowUpRight} tone="neg">{vnd(expense)}</Stat>
+        <Stat label={t("detail.netProfit")} icon={TrendingUp} tone={net >= 0 ? "info" : "neg"} emphasis>{vnd(net)}</Stat>
+      </StatStrip>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("detail.outstandingTitle")}</CardTitle>
-          <CardDescription>{t("detail.outstandingDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        <Card className="lg:col-span-6">
+          <PanelHead title={t("detail.outstandingTitle")} />
+          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("detail.outstandingDescription")}</p>
           <ProjectOutstanding items={outstanding} accounts={accounts} defaultUsdRate={usdRate} feeCategories={feeCategories} />
-        </CardContent>
-      </Card>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("detail.documentsTitle")}</CardTitle>
-          <CardDescription>{t("detail.documentsDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <Card className="lg:col-span-6">
+          <PanelHead title={t("detail.costBreakdown")} />
+          <ul className="wf-rows">
+            {costRows.map(([name, amt]) => {
+              const pct = expense > 0 ? Math.round((amt / expense) * 100) : 0;
+              return (
+                <li key={name} className="block">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-foreground">{name}</span>
+                    <span className="flex shrink-0 items-baseline gap-3">
+                      <span className="wf-num text-[12px] text-muted-foreground">{pct}%</span>
+                      <span className="wf-figure">{vnd(amt)}</span>
+                    </span>
+                  </div>
+                  <Bar pct={pct} tone="neg" />
+                </li>
+              );
+            })}
+            {costRows.length === 0 && <li className="text-muted-foreground">{t("detail.noCosts")}</li>}
+          </ul>
+        </Card>
+
+        <Card className="lg:col-span-12">
+          <PanelHead title={t("detail.documentsTitle")} count={documents.length} />
+          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("detail.documentsDescription")}</p>
           <ProjectDocuments projectId={project.id} documents={documents} />
-        </CardContent>
-      </Card>
+        </Card>
 
-      <Card>
-        <CardHeader><CardTitle>{t("detail.costBreakdown")}</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {costRows.map(([name, amt]) => (
-            <div key={name} className="flex items-center justify-between text-sm">
-              <span>{name}</span>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">{expense > 0 ? Math.round((amt / expense) * 100) : 0}%</span>
-                <span className="font-semibold text-red-600">{vnd(amt)}</span>
-              </div>
-            </div>
-          ))}
-          {costRows.length === 0 && <p className="text-sm text-muted-foreground">{t("detail.noCosts")}</p>}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>{t("detail.transactions")}</CardTitle></CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <Card className="lg:col-span-12">
+          <PanelHead title={t("detail.transactions")} count={txns.length} />
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
+              <TableRow>
                 <TableHead>{t("detail.table.date")}</TableHead>
                 <TableHead>{t("detail.table.type")}</TableHead>
                 <TableHead>{t("detail.table.category")}</TableHead>
@@ -164,27 +163,28 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {txns.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="whitespace-nowrap">{formatDate(t.date, locale)}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.type === "INCOME" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{typeBadge(t.type)}</span>
-                  </TableCell>
-                  <TableCell>{t.category?.name || "—"}</TableCell>
-                  <TableCell>{t.vendor?.name || "—"}</TableCell>
-                  <TableCell className="max-w-[220px] truncate" title={t.description || ""}>{t.description || "—"}</TableCell>
-                  <TableCell className={`text-right font-semibold ${t.type === "INCOME" ? "text-green-600" : ""}`}>
-                    {isMoneyIn(t) ? "+" : "−"}{new Intl.NumberFormat("vi-VN").format(Math.round(Math.abs(toVnd(t))))}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {txns.map((t) => {
+                const moneyIn = isMoneyIn(t);
+                return (
+                  <TableRow key={t.id}>
+                    <TableCell className="wf-num text-text-secondary">{formatDate(t.date, locale)}</TableCell>
+                    <TableCell><Chip tone={ENTRY_TYPE_TONE[t.type] ?? "neutral"} mono>{typeBadge(t.type)}</Chip></TableCell>
+                    <TableCell className="text-foreground">{t.category?.name || "—"}</TableCell>
+                    <TableCell className="text-text-secondary">{t.vendor?.name || "—"}</TableCell>
+                    <TableCell className="max-w-[220px] truncate text-text-secondary" title={t.description || ""}>{t.description || "—"}</TableCell>
+                    <TableCell className={cn("text-right font-semibold", moneyIn && "text-pos")}>
+                      {moneyIn ? "+" : "−"}{new Intl.NumberFormat("vi-VN").format(Math.round(Math.abs(toVnd(t))))}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {txns.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{t("detail.noTransactions")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">{t("detail.noTransactions")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

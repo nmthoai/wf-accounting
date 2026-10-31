@@ -1,0 +1,33 @@
+{
+  "page": {
+    "kicker": "Assistant",
+    "title": "Gini",
+    "titleSub": "AI accounting assistant",
+    "lead": "Ask in plain words. Gini reads your books and builds the report next to the chat.",
+    "trust": "Reads reviewed and posted entries · never changes the books"
+  },
+  "chat": {
+    "title": "Chat with Gini",
+    "greeting": "Hi {name}, I'm Gini. I build reports from your books: profit and loss, what's owed, cash by account, missing documents, top expenses and the month-end checklist. What shall we look at?",
+    "who": "Gini",
+    "placeholder": "Ask Gini… for example: P&L for last month",
+    "label": "Your question",
+    "send": "Send",
+    "soon": "Gini isn't connected to the books yet — her report skills are on the way."
+  },
+  "suggest": {
+    "pnlThis": "P&L for this month",
+    "pnlLast": "P&L for last month",
+    "owed": "What's overdue?",
+    "cash": "Cash position by account",
+    "docs": "Which documents are missing?",
+    "expenses": "Top expenses this month",
+    "close": "Month-end checklist"
+  },
+  "canvas": {
+    "title": "Report canvas",
+    "emptyTitle": "Reports appear here",
+    "emptyBody": "Ask for a report and Gini builds it on this canvas, every figure traced to your entries.",
+    "alt": "Gini, the WorkFactory accounting assistant"
+  }
+}

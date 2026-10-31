@@ -3,6 +3,7 @@ import { requirePageSession } from "@/lib/session";
 import { ProjectsClient } from "@/components/projects/projects-client";
 import { toVnd, settlement, totalsList, fmtMoney, BOOKED, BOOKED_ALLOCATIONS, type Totals } from "@/lib/money";
 import { getTranslations } from "next-intl/server";
+import { PageHeader } from "@/components/wf/page-header";
 
 export default async function ProjectsPage() {
   await requirePageSession(); // second line behind the proxy
@@ -30,11 +31,8 @@ export default async function ProjectsPage() {
   });
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
-      </div>
+    <div>
+      <PageHeader section="projects" title={t("page.title")} description={t("page.subtitle")} />
       <ProjectsClient projects={projectRows} clients={clients} />
     </div>
   );

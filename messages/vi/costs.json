@@ -28,6 +28,7 @@
     "renewalsNote": "Theo các ngày gia hạn đã ghi nhận"
   },
   "views": {
+    "label": "Chế độ xem",
     "pending": "Chờ hạch toán ({count})",
     "converted": "Đã hạch toán ({count})",
     "dismissed": "Không phải CP công ty ({count})",
@@ -66,6 +67,7 @@
     "providerPlaceholder": "Ví dụ: Google Workspace, OpenAI, Contabo",
     "receiptDate": "Ngày chứng từ",
     "amount": "Số tiền ghi trên chứng từ",
+    "currency": "Loại tiền",
     "periodFrom": "Kỳ dịch vụ từ ngày",
     "periodTo": "đến ngày",
     "receiptNumber": "Số hóa đơn, chứng từ",

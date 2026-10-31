@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,11 +12,12 @@ import { createClient, deleteClient, updateClient } from "@/app/actions/clients"
 import { createVendor, deleteVendor, updateVendor } from "@/app/actions/vendors";
 import { EditContactDialog } from "@/components/contacts/edit-contact-dialog";
 import { notify } from "@/components/ui/toast";
+import { PanelHead } from "@/components/wf/ledger-ui";
+import { fmtVnd } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 type ClientRow = { id: string; name: string; email: string | null; phone: string | null; projectCount: number; invoiceCount: number; revenue: number };
 type VendorRow = { id: string; name: string; email: string | null; phone: string | null; spend: number; txnCount: number };
-
-const vnd = (n: number) => new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " ₫";
 
 export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; vendors: VendorRow[] }) {
   const router = useRouter();
@@ -60,95 +61,91 @@ export function ContactsClient({ clients, vendors }: { clients: ClientRow[]; ven
   }
 
   return (
-    <div className="space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("clients.title")}</CardTitle>
-          <CardDescription>{t("clients.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <form onSubmit={(e) => handleAdd(e, "client")} className="flex gap-3 items-end flex-wrap">
-            <div className="space-y-2 flex-1 min-w-[160px]">
+    <div className="grid gap-6 lg:grid-cols-12">
+      <Card className="lg:col-span-6">
+        <PanelHead title={t("clients.title")} count={clients.length} />
+        <CardContent>
+          <p className="text-text-secondary">{t("clients.description")}</p>
+          <form onSubmit={(e) => handleAdd(e, "client")} className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="grid min-w-[7rem] flex-[1.2] gap-2">
               <Label htmlFor="cname">{t("form.name")}</Label>
               <Input id="cname" name="name" placeholder={t("clients.namePlaceholder")} required />
             </div>
-            <div className="space-y-2 flex-1 min-w-[140px]">
+            <div className="grid min-w-[7rem] flex-1 gap-2">
               <Label htmlFor="cemail">{t("form.emailOptional")}</Label>
               <Input id="cemail" name="email" type="email" placeholder="billing@acme.co" />
             </div>
-            <div className="space-y-2 w-40">
+            <div className="grid min-w-[7rem] flex-1 gap-2">
               <Label htmlFor="cphone">{t("form.phoneOptional")}</Label>
               <Input id="cphone" name="phone" type="tel" placeholder="+84 …" />
             </div>
-            <Button type="submit" disabled={addingClient} className="gap-2">
-              {addingClient ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} {tc("actions.add")}
+            <Button type="submit" disabled={addingClient}>
+              {addingClient ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserPlus aria-hidden="true" />}{tc("actions.add")}
             </Button>
           </form>
-          <div className="space-y-2">
-            {clients.map((c) => (
-              <div key={c.id} className="flex items-center justify-between gap-2 bg-muted/50 p-3 rounded-md">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{c.name}</span>
-                  <span className="text-xs text-muted-foreground">{t("clients.meta", { contact: [c.email, c.phone].filter(Boolean).join(" · ") || "—", projects: c.projectCount, invoices: c.invoiceCount })}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-green-700" title={t("clients.revenueTitle")}>{vnd(c.revenue)}</span>
-                  <EditContactDialog contact={{ id: c.id, name: c.name, email: c.email, phone: c.phone }} kind="client" action={updateClient} />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === c.id}
-                    onClick={() => { if (confirm(t("clients.confirmDelete", { name: c.name }))) run(c.id, () => deleteClient(c.id), t("toast.clientDeleted"), c.name); }}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            {clients.length === 0 && <p className="text-sm text-muted-foreground">{t("clients.empty")}</p>}
-          </div>
         </CardContent>
+        <ul className="wf-rows border-t border-border">
+          {clients.map((c) => (
+            <li key={c.id}>
+              <div className="min-w-0">
+                <p className="truncate text-foreground">{c.name}</p>
+                <p className="truncate text-[12px] text-muted-foreground">{t("clients.meta", { contact: [c.email, c.phone].filter(Boolean).join(" · ") || "—", projects: c.projectCount, invoices: c.invoiceCount })}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <span className={cn("wf-figure mr-2", c.revenue > 0 ? "text-pos" : "text-muted-foreground")} title={t("clients.revenueTitle")}>{fmtVnd(c.revenue)}</span>
+                <EditContactDialog contact={{ id: c.id, name: c.name, email: c.email, phone: c.phone }} kind="client" action={updateClient} />
+                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")} disabled={busyId === c.id}
+                  onClick={() => { if (confirm(t("clients.confirmDelete", { name: c.name }))) run(c.id, () => deleteClient(c.id), t("toast.clientDeleted"), c.name); }}>
+                  <Trash2 />
+                </Button>
+              </div>
+            </li>
+          ))}
+          {clients.length === 0 && <li className="text-muted-foreground">{t("clients.empty")}</li>}
+        </ul>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("vendors.title")}</CardTitle>
-          <CardDescription>{t("vendors.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <form onSubmit={(e) => handleAdd(e, "vendor")} className="flex gap-3 items-end flex-wrap">
-            <div className="space-y-2 flex-1 min-w-[160px]">
+      <Card className="lg:col-span-6">
+        <PanelHead title={t("vendors.title")} count={vendors.length} />
+        <CardContent>
+          <p className="text-text-secondary">{t("vendors.description")}</p>
+          <form onSubmit={(e) => handleAdd(e, "vendor")} className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="grid min-w-[7rem] flex-[1.2] gap-2">
               <Label htmlFor="vname">{t("form.name")}</Label>
               <Input id="vname" name="name" placeholder={t("vendors.namePlaceholder")} required />
             </div>
-            <div className="space-y-2 flex-1 min-w-[140px]">
+            <div className="grid min-w-[7rem] flex-1 gap-2">
               <Label htmlFor="vemail">{t("form.emailOptional")}</Label>
               <Input id="vemail" name="email" type="email" placeholder="billing@zdn.co" />
             </div>
-            <div className="space-y-2 w-40">
+            <div className="grid min-w-[7rem] flex-1 gap-2">
               <Label htmlFor="vphone">{t("form.phoneOptional")}</Label>
               <Input id="vphone" name="phone" type="tel" placeholder="+84 …" />
             </div>
-            <Button type="submit" disabled={addingVendor} className="gap-2">
-              {addingVendor ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />} {tc("actions.add")}
+            <Button type="submit" disabled={addingVendor}>
+              {addingVendor ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Truck aria-hidden="true" />}{tc("actions.add")}
             </Button>
           </form>
-          <div className="space-y-2">
-            {vendors.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-2 bg-muted/50 p-3 rounded-md">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{v.name}</span>
-                  <span className="text-xs text-muted-foreground">{t("vendors.meta", { contact: [v.email, v.phone].filter(Boolean).join(" · ") || "—", payments: v.txnCount })}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-red-600">{vnd(v.spend)}</span>
-                  <EditContactDialog contact={{ id: v.id, name: v.name, email: v.email, phone: v.phone }} kind="vendor" action={updateVendor} />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" disabled={busyId === v.id}
-                    onClick={() => { if (confirm(t("vendors.confirmDelete", { name: v.name }))) run(v.id, () => deleteVendor(v.id), t("toast.vendorDeleted"), v.name); }}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            {vendors.length === 0 && <p className="text-sm text-muted-foreground">{t("vendors.empty")}</p>}
-          </div>
         </CardContent>
+        <ul className="wf-rows border-t border-border">
+          {vendors.map((v) => (
+            <li key={v.id}>
+              <div className="min-w-0">
+                <p className="truncate text-foreground">{v.name}</p>
+                <p className="truncate text-[12px] text-muted-foreground">{t("vendors.meta", { contact: [v.email, v.phone].filter(Boolean).join(" · ") || "—", payments: v.txnCount })}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <span className={cn("wf-figure mr-2", v.spend > 0 ? "text-foreground" : "text-muted-foreground")}>{v.spend > 0 ? "\u2212" : ""}{fmtVnd(v.spend)}</span>
+                <EditContactDialog contact={{ id: v.id, name: v.name, email: v.email, phone: v.phone }} kind="vendor" action={updateVendor} />
+                <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" aria-label={tc("actions.delete")} title={tc("actions.delete")} disabled={busyId === v.id}
+                  onClick={() => { if (confirm(t("vendors.confirmDelete", { name: v.name }))) run(v.id, () => deleteVendor(v.id), t("toast.vendorDeleted"), v.name); }}>
+                  <Trash2 />
+                </Button>
+              </div>
+            </li>
+          ))}
+          {vendors.length === 0 && <li className="text-muted-foreground">{t("vendors.empty")}</li>}
+        </ul>
       </Card>
     </div>
   );

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Pencil, Loader2 } from "lucide-react";
+import { Pencil, Loader2, CircleAlert } from "lucide-react";
 import { notify } from "@/components/ui/toast";
 
 type UnitRate = { id: string; description: string; rate: number; unit: string };
@@ -51,25 +51,25 @@ export function EditUnitRateDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={tc("actions.edit")} />}>
-        <Pencil className="h-4 w-4" />
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" title={tc("actions.edit")} aria-label={tc("actions.edit")} />}>
+        <Pencil aria-hidden="true" />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>{t("unitRates.editTitle")}</DialogTitle></DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4 pt-2">
-          <div className="space-y-2">
+        <form onSubmit={onSubmit} className="grid gap-4">
+          <div className="grid gap-2">
             <Label htmlFor={`ud-${unitRate.id}`}>{t("fields.description")}</Label>
             <Input id={`ud-${unitRate.id}`} name="description" defaultValue={unitRate.description} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label htmlFor={`ur-${unitRate.id}`}>{t("fields.rate")}</Label>
               <Input id={`ur-${unitRate.id}`} name="rate" type="number" step="0.01" min="0" defaultValue={unitRate.rate} required />
             </div>
-            <div className="space-y-2">
+            <div className="grid gap-2">
               <Label>{t("fields.unit")}</Label>
               <Select value={unit} onValueChange={(v) => setUnit(v || "hours")}>
-                <SelectTrigger><span>{unitLabel[unit] || unit}</span></SelectTrigger>
+                <SelectTrigger className="w-full"><span>{unitLabel[unit] || unit}</span></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="hours">{t("unitRates.units.hours")}</SelectItem>
                   <SelectItem value="project">{t("unitRates.units.project")}</SelectItem>
@@ -78,9 +78,13 @@ export function EditUnitRateDialog({
               </Select>
             </div>
           </div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
+          {err && (
+            <p role="alert" className="flex items-center gap-1.5 text-[12px] text-destructive">
+              <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
+            </p>
+          )}
           <Button type="submit" className="w-full" disabled={saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("saveChanges")}
+            {saving ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("saveChanges")}
           </Button>
         </form>
       </DialogContent>

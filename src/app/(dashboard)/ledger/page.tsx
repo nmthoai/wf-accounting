@@ -1,33 +1,19 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Plus } from "lucide-react";
 import Link from "next/link";
 import { requirePageSession } from "@/lib/session";
 import { isPnl, isMoneyIn, toVnd, fmtMoney, fmtVnd, vnToday } from "@/lib/money";
 import { RowActions, PostThrough } from "@/components/ledger/ledger-actions";
-import { DOC_BADGE, DOC_OPEN } from "@/lib/review";
+import { DOC_OPEN } from "@/lib/review";
 import { fmtDate } from "@/lib/format";
-
-const badge: Record<string, string> = {
-  INCOME: "bg-green-100 text-green-700",
-  EXPENSE: "bg-red-100 text-red-700",
-  CAPITAL_IN: "bg-violet-100 text-violet-700",
-  LOAN_IN: "bg-sky-100 text-sky-700",
-  LOAN_REPAY: "bg-sky-100 text-sky-700",
-  OTHER_IN: "bg-amber-100 text-amber-700",
-  OTHER_OUT: "bg-amber-100 text-amber-700",
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  DRAFT: "bg-amber-100 text-amber-700",
-  REJECTED: "bg-red-100 text-red-700",
-  REVIEWED: "bg-blue-50 text-blue-700",
-  POSTED: "bg-slate-200 text-slate-700",
-};
+import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/wf/page-header";
+import { Chip, DOC_TONE, ENTRY_STATUS_TONE, ENTRY_TYPE_TONE } from "@/components/wf/ledger-ui";
 
 // Entries cancelled by a reversal (and the reversals) need no further review.
 const LIVE: Prisma.TransactionWhereInput = { reversalOfId: null, reversedBy: { is: null } };
@@ -47,7 +33,7 @@ function lastMonthEnd() {
   return new Date(Date.UTC(y, m - 1, 0)).toISOString().slice(0, 10);
 }
 
-const taxTone = (s: string, good: string) => (s === "PENDING" ? "text-amber-700" : s === good ? "text-green-700" : "text-muted-foreground");
+const taxTone = (s: string, good: string) => (s === "PENDING" ? "text-warn" : s === good ? "text-pos" : "text-muted-foreground");
 
 export default async function LedgerPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const sp = await searchParams;
@@ -87,152 +73,170 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
     for (const r of rows) if (!rejections.has(r.entityId) && r.reason) rejections.set(r.entityId, r.reason);
   }
 
-  return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">{tl("page.title")}</h1>
-          <p className="text-muted-foreground mt-1">{tl("page.subtitle")}</p>
-        </div>
-        <Link href="/entry">
-          <Button>{tl("page.newEntry")}</Button>
-        </Link>
-      </div>
+  const views = [
+    [null, tl("tabs.all")],
+    ["drafts", tl("tabs.drafts", { count: draftCount })],
+    ["rejected", tl("tabs.rejected", { count: rejectedCount })],
+    ["docs", tl("tabs.docs", { count: docsCount })],
+    ["tax", tl("tabs.tax", { count: taxCount })],
+  ] as const;
 
-      <div className="flex justify-between items-center gap-3 flex-wrap">
-        <div className="flex bg-muted p-1 rounded-lg text-sm w-fit flex-wrap">
-          {([[null, tl("tabs.all")], ["drafts", tl("tabs.drafts", { count: draftCount })], ["rejected", tl("tabs.rejected", { count: rejectedCount })], ["docs", tl("tabs.docs", { count: docsCount })], ["tax", tl("tabs.tax", { count: taxCount })]] as const).map(([v, text]) => (
-            <Link key={text} href={v ? `/ledger?view=${v}` : "/ledger"}
-              className={`px-3 py-1 rounded-md font-medium transition-all ${view === v ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{text}</Link>
+  return (
+    <div>
+      <PageHeader
+        section="ledger"
+        title={tl("page.title")}
+        description={tl("page.subtitle")}
+        actions={<Button render={<Link href="/entry" />} nativeButton={false}><Plus />{tl("page.newEntry")}</Button>}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="wf-seg" role="group" aria-label={tl("tabs.label")}>
+          {views.map(([v, text]) => (
+            <Link key={v ?? "all"} href={v ? `/ledger?view=${v}` : "/ledger"} aria-current={view === v ? "page" : undefined}>{text}</Link>
           ))}
         </div>
         {isAdmin && <PostThrough defaultDate={lastMonthEnd()} reviewedCount={reviewedCount} />}
       </div>
 
-      <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead>{tl("table.date")}</TableHead>
-                <TableHead>{tl("table.type")}</TableHead>
-                <TableHead>{tl("table.account")}</TableHead>
-                <TableHead>{tl("table.category")}</TableHead>
-                <TableHead>{tl("table.description")}</TableHead>
-                <TableHead>{tl("table.invoiceNumber")}</TableHead>
-                <TableHead>{tl("table.evidence")}</TableHead>
-                <TableHead className="text-right">{tl("table.amountVnd")}</TableHead>
-                <TableHead className="w-[110px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium whitespace-nowrap">{fmtDate(t.date, locale)}</TableCell>
+      {/* Below 2xl the account and invoice number fold under the date and the
+          description, so the amount and the actions stay in view. */}
+      <Card className="mt-5">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{tl("table.date")}</TableHead>
+              <TableHead>{tl("table.type")}</TableHead>
+              <TableHead className="hidden 2xl:table-cell">{tl("table.account")}</TableHead>
+              <TableHead>{tl("table.category")}</TableHead>
+              <TableHead>{tl("table.description")}</TableHead>
+              <TableHead className="hidden 2xl:table-cell">{tl("table.invoiceNumber")}</TableHead>
+              <TableHead>{tl("table.evidence")}</TableHead>
+              <TableHead className="text-right">{tl("table.amountVnd")}</TableHead>
+              <TableHead><span className="sr-only">{tl("table.actions")}</span></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {transactions.map((t) => {
+              const moneyIn = isMoneyIn(t);
+              const statusText = t.reversalOfId ? tl("row.reversal", { status: label(`status.${t.status}`, t.status) })
+                : t.reversedBy ? tl("row.reversed", { status: label(`status.${t.status}`, t.status) })
+                : label(`status.${t.status}`, t.status);
+              const account = t.account?.name ?? <span className="text-warn">{tl("row.noAccount")}</span>;
+              const unmatched = t.type === "INCOME" && t.allocations.length === 0;
+              const hasEvidence = isPnl(t.type) || !!t.bankLineId || t.attachments.length > 0;
+              return (
+                <TableRow
+                  key={t.id}
+                  className={cn("[&>td]:py-3 [&>td]:align-top", t.status === "DRAFT" && "bg-warn/4", t.status === "REJECTED" && "bg-neg/4")}
+                >
                   <TableCell>
-                    <div className="flex flex-col gap-1 items-start">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badge[t.type] ?? "bg-slate-200 text-slate-700"}`}>
-                        {label(`type.${t.type}`, t.type)}
-                      </span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${STATUS_BADGE[t.status] ?? ""}`}>
-                        {t.reversalOfId ? tl("row.reversal", { status: label(`status.${t.status}`, t.status) })
-                          : t.reversedBy ? tl("row.reversed", { status: label(`status.${t.status}`, t.status) })
-                          : label(`status.${t.status}`, t.status)}
-                      </span>
+                    <span className="wf-num text-foreground">{fmtDate(t.date, locale)}</span>
+                    <span className="block text-[12px] text-muted-foreground 2xl:hidden">{account}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col items-start gap-1.5">
+                      <Chip tone={ENTRY_TYPE_TONE[t.type] ?? "neutral"}>{label(`type.${t.type}`, t.type)}</Chip>
+                      <Chip tone={ENTRY_STATUS_TONE[t.status] ?? "neutral"} mono dot>{statusText}</Chip>
                       {rejections.has(t.id) && (
-                        <span className="text-[11px] text-red-700 max-w-[14rem]">{tl("row.rejectedReason", { reason: rejections.get(t.id)! })}</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">{t.account?.name ?? <span className="text-amber-700">{tl("row.noAccount")}</span>}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span>{isPnl(t.type) ? (t.category?.name || tl("row.uncategorized")) : <span className="text-muted-foreground">—</span>}</span>
-                      {t.project && <span className="text-xs text-muted-foreground">{t.project.name}</span>}
-                    </div>
-                  </TableCell>
-                  <TableCell className="max-w-[200px]">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate" title={t.description || ""}>{t.description}</span>
-                      {t.allocations.map((a) => (
-                        <span key={a.id} className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700"
-                          title={a.kind === "FEE" ? tl("row.feeTitle") : tl("row.settlesTitle")}>
-                          {tl(a.kind === "FEE" ? "row.feeLink" : "row.settlesLink", { ref: a.invoice.number || (a.invoice.direction === "PAYABLE" ? tl("row.bill") : tl("row.invoice")) })}
-                        </span>
-                      ))}
-                      {t.type === "INCOME" && t.allocations.length === 0 && (
-                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700" title={tl("row.notMatchedTitle")}>
-                          {tl("row.notMatched")}
+                        <span className="max-w-[14rem] text-[12px] leading-snug whitespace-normal text-neg">
+                          {tl("row.rejectedReason", { reason: rejections.get(t.id)! })}
                         </span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{t.invoiceNumber || "-"}</TableCell>
+                  <TableCell className="hidden 2xl:table-cell">{account}</TableCell>
+                  <TableCell className="min-w-[8rem] whitespace-normal">
+                    {isPnl(t.type)
+                      ? <span className="text-foreground">{t.category?.name || tl("row.uncategorized")}</span>
+                      : <span className="text-muted-foreground">—</span>}
+                    {t.project && <span className="block text-[12px] text-muted-foreground">{t.project.name}</span>}
+                  </TableCell>
+                  <TableCell className="min-w-[12rem] whitespace-normal">
+                    <span className="text-foreground [overflow-wrap:anywhere]">{t.description}</span>
+                    {(t.allocations.length > 0 || unmatched) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {t.allocations.map((a) => (
+                          <Chip key={a.id} tone="info" title={a.kind === "FEE" ? tl("row.feeTitle") : tl("row.settlesTitle")}>
+                            {tl(a.kind === "FEE" ? "row.feeLink" : "row.settlesLink", { ref: a.invoice.number || (a.invoice.direction === "PAYABLE" ? tl("row.bill") : tl("row.invoice")) })}
+                          </Chip>
+                        ))}
+                        {unmatched && <Chip tone="warn" title={tl("row.notMatchedTitle")}>{tl("row.notMatched")}</Chip>}
+                      </div>
+                    )}
+                    {t.invoiceNumber && (
+                      <span className="mt-1 block text-[12px] text-muted-foreground 2xl:hidden">
+                        {tl("table.invoiceNumber")} <span className="wf-num">{t.invoiceNumber}</span>
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden 2xl:table-cell">
+                    {t.invoiceNumber ? <span className="wf-num">{t.invoiceNumber}</span> : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1 items-start">
-                      {t.attachments.length > 0 ? (
-                        <div className="flex gap-2">
-                          {t.attachments.map(a => (
-                            <a key={a.id} href={`/api/uploads/${a.filePath.split('/').pop()}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700" title={a.fileName}>
-                              <Paperclip className="h-4 w-4" />
+                    {hasEvidence ? (
+                      <div className="flex flex-col items-start gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {isPnl(t.type) && (
+                            <Chip tone={DOC_TONE[t.docStatus] ?? "neutral"} title={t.reviewNote ?? undefined}>
+                              {label(`review.doc.${t.docStatus}`, t.docStatus)}
+                            </Chip>
+                          )}
+                          {t.bankLineId && <Chip tone="info" title={tl("row.onStatementTitle")}>{tl("row.onStatement")}</Chip>}
+                          {t.attachments.map((a) => (
+                            <a key={a.id} href={`/api/uploads/${a.filePath.split("/").pop()}`} target="_blank" rel="noreferrer"
+                              className="text-primary transition-colors duration-150 hover:text-primary-hover" title={a.fileName} aria-label={a.fileName}>
+                              <Paperclip className="size-4" aria-hidden="true" />
                             </a>
                           ))}
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                      {t.bankLineId && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap bg-green-50 text-green-700 border border-green-200" title={tl("row.onStatementTitle")}>
-                          {tl("row.onStatement")}
-                        </span>
-                      )}
-                      {isPnl(t.type) && (
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${DOC_BADGE[t.docStatus] ?? ""}`} title={t.reviewNote ?? undefined}>
-                          {label(`review.doc.${t.docStatus}`, t.docStatus)}
-                        </span>
-                      )}
-                      {t.type === "EXPENSE" && (
-                        <span className="text-[10px] whitespace-nowrap">
-                          <span className={taxTone(t.citStatus, "DEDUCTIBLE")} title={tl("row.citTitle")}>{tl("row.cit", { status: label(`review.cit.${t.citStatus}`, t.citStatus) })}</span>
-                          <span className="text-muted-foreground"> · </span>
-                          <span className={taxTone(t.vatStatus, "CLAIMABLE")} title={tl("row.vatTitle")}>
-                            {t.vatStatus === "CLAIMABLE" && t.vatAmount
-                              ? tl("row.vatWithAmount", { status: label(`review.vat.${t.vatStatus}`, t.vatStatus), amount: fmtMoney(t.vatAmount, t.currency) })
-                              : tl("row.vat", { status: label(`review.vat.${t.vatStatus}`, t.vatStatus) })}
-                          </span>
-                        </span>
-                      )}
-                    </div>
+                        {t.type === "EXPENSE" && (
+                          <div className="text-[12px] leading-snug">
+                            <span className={cn("block", taxTone(t.citStatus, "DEDUCTIBLE"))} title={tl("row.citTitle")}>
+                              {tl("row.cit", { status: label(`review.cit.${t.citStatus}`, t.citStatus) })}
+                            </span>
+                            <span className={cn("block", taxTone(t.vatStatus, "CLAIMABLE"))} title={tl("row.vatTitle")}>
+                              {t.vatStatus === "CLAIMABLE" && t.vatAmount
+                                ? tl("row.vatWithAmount", { status: label(`review.vat.${t.vatStatus}`, t.vatStatus), amount: fmtMoney(t.vatAmount, t.currency) })
+                                : tl("row.vat", { status: label(`review.vat.${t.vatStatus}`, t.vatStatus) })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    <div className="flex flex-col items-end">
-                      <span className={`${isMoneyIn(t) ? "text-green-700" : ""} ${t.reversedBy ? "line-through text-muted-foreground" : ""}`}>
-                        {isMoneyIn(t) ? "+" : "−"}{fmtMoney(Math.abs(t.amount), t.currency)}
-                      </span>
-                      {t.currency !== "VND" && (
-                        <span className="text-xs text-muted-foreground font-normal whitespace-nowrap">
-                          {fmtVnd(Math.abs(toVnd(t)))} · @{new Intl.NumberFormat("vi-VN").format(Math.round(t.exchangeRate * 100) / 100)}
+                  <TableCell className="text-right">
+                    <span className={cn("wf-figure", moneyIn && "text-pos", t.reversedBy && "text-muted-foreground line-through")}>
+                      {moneyIn ? "+" : "−"}{fmtMoney(Math.abs(t.amount), t.currency)}
+                    </span>
+                    {t.currency !== "VND" && (
+                      <>
+                        <span className="block text-[12px] text-muted-foreground">{fmtVnd(Math.abs(toVnd(t)))}</span>
+                        <span className="block text-[12px] text-muted-foreground">
+                          @{new Intl.NumberFormat("vi-VN").format(Math.round(t.exchangeRate * 100) / 100)}
                           {t.rateSource && ` ${label(`rateSource.${t.rateSource}`, t.rateSource)}`}
                         </span>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </TableCell>
                   <TableCell>
                     {/* Income/expense open in the entry form; transfers, capital and loans on the Accounts page. */}
                     <RowActions id={t.id} href={isPnl(t.type) ? `/entry/${t.id}` : "/accounts"} status={t.status} isAdmin={isAdmin} />
                   </TableCell>
                 </TableRow>
-              ))}
-              {transactions.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    {view ? tl("page.emptyView") : tl("page.empty")}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+              );
+            })}
+            {transactions.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+                  {view ? tl("page.emptyView") : tl("page.empty")}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </div>
   );

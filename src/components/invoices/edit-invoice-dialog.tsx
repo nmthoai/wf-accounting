@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Pencil, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CircleAlert, Pencil, Loader2 } from "lucide-react";
+import { Notice } from "@/components/wf/ledger-ui";
 import { updateInvoice } from "@/app/actions/invoices";
 import { notify } from "@/components/ui/toast";
 
@@ -67,76 +68,83 @@ export function EditInvoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" title={tc("actions.edit")} />}>
-        <Pencil className="h-4 w-4" />
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" aria-label={tc("actions.edit")} title={tc("actions.edit")} />}>
+        <Pencil />
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>{isReceivable ? t("edit.titleInvoice") : t("edit.titleBill")}</DialogTitle></DialogHeader>
-        <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2 pt-2">
-          <div className="space-y-2">
-            <Label>{isReceivable ? t("form.client") : t("form.vendor")}</Label>
+        <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor={`party-${invoice.id}`}>{isReceivable ? t("form.client") : t("form.vendor")}</Label>
             <Select value={partyId} onValueChange={(v) => setPartyId(v === "none" ? "" : v || "")}>
-              <SelectTrigger>{partyId ? <span>{parties.find(p => p.id === partyId)?.name}</span> : <span className="text-muted-foreground">{isReceivable ? t("form.selectClient") : t("form.selectVendor")}</span>}</SelectTrigger>
+              <SelectTrigger id={`party-${invoice.id}`} className="w-full">{partyId ? <span>{parties.find(p => p.id === partyId)?.name}</span> : <span className="text-muted-foreground">{isReceivable ? t("form.selectClient") : t("form.selectVendor")}</span>}</SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">{t("form.none")}</SelectItem>
                 {parties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>{t("form.project")}</Label>
+          <div className="grid gap-2">
+            <Label htmlFor={`proj-${invoice.id}`}>{t("form.project")}</Label>
             <Select value={projectId} onValueChange={(v) => setProjectId(v === "none" ? "" : v || "")}>
-              <SelectTrigger>{projectId ? <span>{projects.find(p => p.id === projectId)?.name}</span> : <span className="text-muted-foreground">{t("form.noProject")}</span>}</SelectTrigger>
+              <SelectTrigger id={`proj-${invoice.id}`} className="w-full">{projectId ? <span>{projects.find(p => p.id === projectId)?.name}</span> : <span className="text-muted-foreground">{t("form.noProject")}</span>}</SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">{t("form.noProject")}</SelectItem>
                 {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>{t("form.category")}</Label>
+          <div className="grid gap-2">
+            <Label htmlFor={`cat-${invoice.id}`}>{t("form.category")}</Label>
             <Select value={categoryId} onValueChange={(v) => setCategoryId(v === "none" ? "" : v || "")}>
-              <SelectTrigger>{categoryId ? <span>{cats.find(c => c.id === categoryId)?.name}</span> : <span className="text-muted-foreground">{t("form.noCategory")}</span>}</SelectTrigger>
+              <SelectTrigger id={`cat-${invoice.id}`} className="w-full">{categoryId ? <span>{cats.find(c => c.id === categoryId)?.name}</span> : <span className="text-muted-foreground">{t("form.noCategory")}</span>}</SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">{t("form.noCategory")}</SelectItem>
                 {cats.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor={`num-${invoice.id}`}>{isReceivable ? t("edit.invoiceNumber") : t("edit.billNumber")}</Label>
             <Input id={`num-${invoice.id}`} name="number" defaultValue={invoice.number ?? ""} placeholder={t("form.numberPlaceholder")} />
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between gap-2">
               <Label htmlFor={`amt-${invoice.id}`}>{t("form.amount")}</Label>
-              <div className="flex bg-muted p-0.5 rounded text-xs font-medium">
-                <span onClick={() => setCurrency("VND")} className={`px-2 py-0.5 rounded-sm cursor-pointer ${currency === "VND" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>VND</span>
-                <span onClick={() => setCurrency("USD")} className={`px-2 py-0.5 rounded-sm cursor-pointer ${currency === "USD" ? "bg-white shadow-sm" : "text-muted-foreground"}`}>USD</span>
+              <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
+                {["VND", "USD"].map((c) => (
+                  <button key={c} type="button" aria-pressed={currency === c} onClick={() => setCurrency(c)}>{c}</button>
+                ))}
               </div>
             </div>
             <Input id={`amt-${invoice.id}`} name="amount" type="number" step="0.01" min="0" defaultValue={invoice.amount} required />
-            {currency === "USD" && <p className="text-xs text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
+            {currency === "USD" && <p className="wf-num text-[12px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor={`iss-${invoice.id}`}>{t("form.issueDate")}</Label>
             <Input id={`iss-${invoice.id}`} name="issueDate" type="date" defaultValue={invoice.issueDate} required />
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor={`due-${invoice.id}`}>{t("form.dueDate")}</Label>
             <Input id={`due-${invoice.id}`} name="dueDate" type="date" defaultValue={invoice.dueDate} required />
           </div>
-          <div className="space-y-2 md:col-span-2">
+          <div className="grid gap-2 sm:col-span-2">
             <Label htmlFor={`notes-${invoice.id}`}>{t("form.notes")}</Label>
             <Input id={`notes-${invoice.id}`} name="notes" defaultValue={invoice.notes ?? ""} placeholder={t("form.notesPlaceholder")} />
           </div>
           {(invoice.status === "PAID" || invoice.status === "PARTIAL") && (
-            <p className="text-xs text-amber-700 md:col-span-2">{t("edit.paidNote")}</p>
+            <Notice tone="warning" className="sm:col-span-2">{t("edit.paidNote")}</Notice>
           )}
-          {err && <p className="text-sm text-destructive md:col-span-2">{err}</p>}
-          <Button type="submit" disabled={saving} className="md:col-span-2">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t("edit.save")}
-          </Button>
+          {err && (
+            <p className="flex items-center gap-1.5 text-[12px] text-destructive sm:col-span-2" role="alert">
+              <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{err}
+            </p>
+          )}
+          <DialogFooter className="sm:col-span-2">
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="animate-spin" aria-hidden="true" />}{t("edit.save")}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

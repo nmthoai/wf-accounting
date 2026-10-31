@@ -19,6 +19,7 @@
     "rejected": "{count, plural, other {# bút toán bị từ chối}} chưa được tính cho đến khi được sửa"
   },
   "tabs": {
+    "label": "Chế độ xem",
     "open": "Cần đối chiếu ({count})",
     "all": "Tất cả ({count})",
     "imports": "Lần nhập ({count})"

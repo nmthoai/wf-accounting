@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { getTranslations, getLocale } from "next-intl/server";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/wf/page-header";
+import { Notice } from "@/components/wf/ledger-ui";
 import { vnTodayStart } from "@/lib/money";
 import { taxFlags, latestReturns, parseLines, addQuarters, quarterOf, quarterRange, noteIsStale, type Flag } from "@/lib/tax";
 import { TaxClient, type ReturnView, type FlagView } from "@/components/tax/tax-client";
@@ -14,9 +15,9 @@ export default async function TaxPage() {
   const t = await getTranslations("tax");
   if (session.user.role !== "ADMIN") {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
-        <Card><CardContent className="py-8 text-center text-muted-foreground">{t("page.ownerOnly")}</CardContent></Card>
+      <div>
+        <PageHeader section="tax" title={t("page.title")} />
+        <Notice tone="info">{t("page.ownerOnly")}</Notice>
       </div>
     );
   }

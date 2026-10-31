@@ -3,7 +3,8 @@
     "title": "Quản lý thu chi kế toán",
     "metaTitle": "Quản lý thu chi kế toán Workfactory",
     "metaDescription": "Công cụ kế toán của nền tảng Agentic AI",
-    "logoAlt": "Logo"
+    "logoAlt": "Logo",
+    "product": "Kế toán"
   },
   "nav": {
     "dashboard": "Tổng quan",
@@ -19,7 +20,19 @@
     "handover": "Bàn giao",
     "settings": "Cài đặt",
     "openSidebar": "Mở thanh bên",
-    "menu": "Menu điều hướng"
+    "menu": "Menu điều hướng",
+    "gini": "Gini",
+    "tagline": "Intelligence, Orchestrated.",
+    "groups": {
+      "overview": "Tổng quan",
+      "assistant": "Trợ lý",
+      "books": "Sổ sách",
+      "work": "Công việc",
+      "cash": "Tiền & chi phí",
+      "monthEnd": "Cuối kỳ",
+      "system": "Hệ thống",
+      "account": "Tài khoản"
+    }
   },
   "header": {
     "hello": "Xin chào, <b>{name}</b>",
@@ -130,5 +143,12 @@
   },
   "upload": {
     "tooBig": "Mỗi lần lưu chỉ được đính kèm tối đa {max} MB — các tệp này có tổng dung lượng {mb} MB. Hãy chia nhỏ và lưu làm nhiều lần."
+  },
+  "theme": {
+    "label": "Giao diện",
+    "system": "Theo hệ thống",
+    "light": "Sáng",
+    "dark": "Tối",
+    "motion": "Nền chuyển động"
   }
 }

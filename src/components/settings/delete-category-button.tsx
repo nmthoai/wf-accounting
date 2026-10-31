@@ -27,8 +27,8 @@ export function DeleteCategoryButton({ id, name }: { id: string; name: string })
     } finally { setBusy(false); }
   }
   return (
-    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" disabled={busy} onClick={remove} title={tc("actions.delete")}>
-      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+    <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" disabled={busy} onClick={remove} title={tc("actions.delete")} aria-label={tc("actions.delete")}>
+      {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Trash2 aria-hidden="true" />}
     </Button>
   );
 }

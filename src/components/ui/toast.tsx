@@ -67,19 +67,19 @@ function ToastList() {
         "data-ending-style:data-[swipe-direction=down]:[transform:translateY(calc(var(--toast-swipe-movement-y)+150%))] data-ending-style:data-[swipe-direction=right]:[transform:translateX(calc(var(--toast-swipe-movement-x)+150%))_translateY(var(--offset-y))]",
         "[transition:transform_0.5s_cubic-bezier(0.22,1,0.36,1),opacity_0.5s,height_0.15s]",
         // Looks like the app's dialogs.
-        "rounded-xl bg-popover text-popover-foreground text-sm shadow-lg ring-1 ring-foreground/10",
-        "data-[type=success]:border-l-4 data-[type=success]:border-l-green-600 data-[type=error]:border-l-4 data-[type=error]:border-l-destructive"
+        "rounded-xl border border-border-strong bg-popover text-popover-foreground text-[13.5px] shadow-float",
+        "data-[type=error]:border-destructive/70"
       )}
     >
       <Toast.Content className="flex h-full items-start gap-3 overflow-hidden p-3 pr-2 transition-opacity duration-[250ms] data-behind:opacity-0 data-expanded:opacity-100">
         {toast.type === "error" ? (
-          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
+          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-neg" aria-hidden="true" />
         ) : (
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" aria-hidden="true" />
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-pos" aria-hidden="true" />
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <Toast.Title className="font-medium leading-5" />
-          <Toast.Description className="text-muted-foreground" />
+          <Toast.Title className="font-semibold leading-5 text-foreground" />
+          <Toast.Description className="text-text-secondary" />
         </div>
         <Toast.Close
           aria-label={t("dismiss")}

@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { accountDelta, fmtMoney, isPnl, isBooked } from "@/lib/money";
 import { explained, tolerance } from "@/lib/bank-match";
 import { BankClient, type LineRow, type EntryOpt, type AccountSummary, type StatementRow } from "@/components/bank/bank-client";
+import { PageHeader } from "@/components/wf/page-header";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const DAY = 86_400_000;
@@ -120,11 +121,8 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
   }));
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{tb("page.title")}</h1>
-        <p className="text-muted-foreground mt-1">{tb("page.subtitle")}</p>
-      </div>
+    <div>
+      <PageHeader section="bank" title={tb("page.title")} description={tb("page.subtitle")} />
       <BankClient
         isAdmin={isAdmin}
         view={sp.view === "all" || sp.view === "imports" ? sp.view : "open"}

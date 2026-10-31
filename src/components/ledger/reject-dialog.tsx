@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { Loader2, X } from "lucide-react";
+import { CircleAlert, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { rejectEntries } from "@/app/actions/ledger";
 import { notify } from "@/components/ui/toast";
 
@@ -37,22 +37,30 @@ export function RejectDialog({ id, compact = false }: { id: string; compact?: bo
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setErr(""); }}>
       <DialogTrigger render={compact
-        ? <Button variant="ghost" size="icon" className="h-8 w-8 text-red-700 hover:bg-red-50" title={t("rowActions.reject")} />
-        : <Button size="sm" variant="outline" className="gap-1 text-red-700" />}>
-        <X className={compact ? "h-4 w-4" : "h-3.5 w-3.5"} />{!compact && ` ${t("buttons.reject")}`}
+        ? <Button variant="ghost" size="icon-sm" className="text-neg hover:bg-destructive/10 hover:text-neg" title={t("rowActions.reject")} aria-label={t("rowActions.reject")} />
+        : <Button size="sm" variant="destructive" />}>
+        <X aria-hidden="true" />{!compact && t("buttons.reject")}
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>{t("reject.title")}</DialogTitle></DialogHeader>
-        <form className="space-y-4 pt-2" onSubmit={(e) => { e.preventDefault(); if (reason.trim() && !busy) reject(); }}>
-          <p className="text-sm text-muted-foreground">{t("reject.body")}</p>
-          <div className="space-y-2">
+        <DialogHeader>
+          <DialogTitle>{t("reject.title")}</DialogTitle>
+          <DialogDescription>{t("reject.body")}</DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); if (reason.trim() && !busy) reject(); }}>
+          <div className="grid gap-2">
             <Label htmlFor={`reject-${id}`}>{t("reject.reason")}</Label>
             <Input id={`reject-${id}`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reject.reasonPlaceholder")} autoFocus />
           </div>
-          {err && <p className="text-sm text-destructive">{err}</p>}
-          <Button type="submit" variant="destructive" className="w-full" disabled={busy || !reason.trim()}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t("reject.submit")}
-          </Button>
+          {err && (
+            <p className="flex items-start gap-1.5 text-[12px] text-destructive">
+              <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />{err}
+            </p>
+          )}
+          <DialogFooter>
+            <Button type="submit" variant="destructive" disabled={busy || !reason.trim()}>
+              {busy && <Loader2 className="animate-spin" aria-hidden="true" />}{t("reject.submit")}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

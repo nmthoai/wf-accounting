@@ -53,6 +53,11 @@
     "title": "Thao tác nhanh",
     "logIncome": "Thêm khoản thu",
     "logExpense": "Thêm khoản chi",
-    "transfers": "Chuyển tiền, vốn góp và vay"
+    "transfers": "Chuyển tiền, vốn góp và vay",
+    "gini": "Gini",
+    "giniSub": "Trợ lý",
+    "logIncomeSub": "Tiền khách hàng trả",
+    "logExpenseSub": "Một khoản chi, đã trả hoặc còn nợ",
+    "transfersSub": "Giữa các tài khoản của bạn"
   }
 }

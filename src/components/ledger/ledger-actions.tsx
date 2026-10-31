@@ -23,24 +23,23 @@ export function RowActions({ id, href, status, isAdmin }: { id: string; href: st
     catch { notify.error(tc("errors.somethingWrong")); }
     finally { setBusy(false); }
   }
+  const openLabel = status === "POSTED" ? t("rowActions.openPosted") : tc("actions.edit");
   return (
     <div className="flex justify-end gap-1">
       {isAdmin && (status === "DRAFT" || status === "REJECTED") && (
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-green-700 hover:bg-green-50" title={t("rowActions.approve")} disabled={busy}
+        <Button variant="ghost" size="icon-sm" className="text-pos hover:text-pos" title={t("rowActions.approve")} aria-label={t("rowActions.approve")} disabled={busy}
           onClick={() => run(() => reviewEntries([id]), t("toast.approved"))}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Check aria-hidden="true" />}
         </Button>
       )}
       {isAdmin && status === "DRAFT" && <RejectDialog id={id} compact />}
-      <Link href={href} title={status === "POSTED" ? t("rowActions.openPosted") : tc("actions.edit")}>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
-          {status === "POSTED" ? <Lock className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-        </Button>
-      </Link>
+      <Button variant="ghost" size="icon-sm" render={<Link href={href} />} nativeButton={false} title={openLabel} aria-label={openLabel}>
+        {status === "POSTED" ? <Lock aria-hidden="true" /> : <Pencil aria-hidden="true" />}
+      </Button>
       {isAdmin && status !== "POSTED" && (
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" title={tc("actions.delete")} disabled={busy}
+        <Button variant="ghost" size="icon-sm" className="hover:bg-destructive/10 hover:text-destructive" title={tc("actions.delete")} aria-label={tc("actions.delete")} disabled={busy}
           onClick={() => { if (confirm(t("rowActions.confirmDelete"))) run(() => deleteTransaction(id), t("toast.deleted")); }}>
-          <Trash2 className="h-4 w-4" />
+          <Trash2 aria-hidden="true" />
         </Button>
       )}
     </div>
@@ -65,11 +64,11 @@ export function PostThrough({ defaultDate, reviewedCount }: { defaultDate: strin
     finally { setBusy(false); }
   }
   return (
-    <div className="flex items-center gap-2 text-sm flex-wrap">
-      <span className="text-muted-foreground">{t("postThrough.label")}</span>
-      <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-8 w-40" />
-      <Button size="sm" variant="outline" disabled={busy || !date || reviewedCount === 0} onClick={post} className="gap-1">
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-3.5 w-3.5" />} {t("buttons.post")}
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border-strong bg-card py-1 pr-1 pl-3.5">
+      <label htmlFor="post-through" className="wf-label">{t("postThrough.label")}</label>
+      <Input id="post-through" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-8 w-40 font-mono" />
+      <Button size="sm" variant="outline" disabled={busy || !date || reviewedCount === 0} onClick={post}>
+        {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Lock aria-hidden="true" />}{t("buttons.post")}
       </Button>
     </div>
   );

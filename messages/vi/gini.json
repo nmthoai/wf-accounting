@@ -1,0 +1,33 @@
+{
+  "page": {
+    "kicker": "Trợ lý",
+    "title": "Gini",
+    "titleSub": "Trợ lý kế toán AI",
+    "lead": "Hỏi bằng lời thường. Gini đọc sổ sách và lập báo cáo ngay cạnh khung chat.",
+    "trust": "Chỉ đọc bút toán đã duyệt và đã ghi sổ · không bao giờ sửa sổ sách"
+  },
+  "chat": {
+    "title": "Trò chuyện với Gini",
+    "greeting": "Chào {name}, mình là Gini. Mình lập báo cáo từ sổ sách của bạn: lãi lỗ, công nợ, tiền theo từng tài khoản, chứng từ còn thiếu, khoản chi lớn nhất và kiểm tra cuối kỳ. Bạn muốn xem gì?",
+    "who": "Gini",
+    "placeholder": "Hỏi Gini… ví dụ: Lãi lỗ tháng trước",
+    "label": "Câu hỏi của bạn",
+    "send": "Gửi",
+    "soon": "Gini chưa được kết nối với sổ sách — các kỹ năng báo cáo sẽ sớm có."
+  },
+  "suggest": {
+    "pnlThis": "Lãi lỗ tháng này",
+    "pnlLast": "Lãi lỗ tháng trước",
+    "owed": "Khoản nào đã quá hạn?",
+    "cash": "Tiền theo từng tài khoản",
+    "docs": "Còn thiếu chứng từ nào?",
+    "expenses": "Khoản chi lớn nhất tháng này",
+    "close": "Kiểm tra cuối kỳ"
+  },
+  "canvas": {
+    "title": "Khung báo cáo",
+    "emptyTitle": "Báo cáo sẽ hiện ở đây",
+    "emptyBody": "Hãy hỏi một báo cáo, Gini sẽ lập ngay trên khung này, mọi con số đều truy được về bút toán.",
+    "alt": "Gini, trợ lý kế toán của WorkFactory"
+  }
+}

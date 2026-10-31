@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,16 +16,19 @@ import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review
 import { uploadProblem } from "@/lib/upload-limit";
 import { notify, notifyResult } from "@/components/ui/toast";
 import { BookedRate } from "@/components/ledger/booked-rate";
+import { Chip, Notice } from "@/components/wf/ledger-ui";
+
+const hint = "text-[12px] text-muted-foreground";
 
 // One of the evidence/tax review statuses, as a dropdown.
 function StatusSelect({ id, label, options, value, onChange, disabled }: {
   id: string; label: string; options: Record<string, string>; value: string; onChange: (v: string) => void; disabled?: boolean;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="grid gap-2">
       <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={(v) => onChange(v || "PENDING")} disabled={disabled}>
-        <SelectTrigger id={id}><span>{options[value] ?? value}</span></SelectTrigger>
+        <SelectTrigger id={id} className="w-full"><span>{options[value] ?? value}</span></SelectTrigger>
         <SelectContent>
           {Object.entries(options).map(([k, text]) => <SelectItem key={k} value={k}>{text}</SelectItem>)}
         </SelectContent>
@@ -203,117 +206,116 @@ export function EntryForm({
     ? new Date(init.date).toISOString().split('T')[0]
     : vnToday();
 
+  const strong = (c: React.ReactNode) => <span className="font-semibold text-foreground">{c}</span>;
+
   return (
     <Card>
-      <CardContent className="pt-6">
-        <form onSubmit={onSubmit} className="space-y-6">
-          {bankLine && (
-            <p className="text-sm rounded-md border p-3 bg-muted/30">
-              {t.rich("form.fromBankLine", { label: bankLine.label, b: (c) => <span className="font-medium">{c}</span> })}
-            </p>
-          )}
-          {costItem && (
-            <p className="text-sm rounded-md border p-3 bg-muted/30">
-              {t.rich("form.fromCostItem", { label: costItem.label, b: (c) => <span className="font-medium">{c}</span> })}
-            </p>
-          )}
-          {correction && (
-            <p className="text-sm rounded-md border p-3 bg-muted/30">
-              {t.rich("form.correcting", { label: correction.label, b: (c) => <span className="font-medium">{c}</span> })}
-            </p>
-          )}
-          {/* Type Toggle */}
-          <fieldset disabled={locked} className="flex bg-muted p-1 rounded-lg min-w-0 border-0 m-0">
+      <form onSubmit={onSubmit}>
+        <div className="grid gap-5 p-5">
+          {bankLine && <Notice tone="info">{t.rich("form.fromBankLine", { label: bankLine.label, b: strong })}</Notice>}
+          {costItem && <Notice tone="info">{t.rich("form.fromCostItem", { label: costItem.label, b: strong })}</Notice>}
+          {correction && <Notice tone="info">{t.rich("form.correcting", { label: correction.label, b: strong })}</Notice>}
+
+          {/* Type toggle */}
+          <fieldset disabled={locked} aria-label={t("form.entryType")} className="wf-seg m-0 flex w-full min-w-0">
             <button
               type="button"
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${type === "EXPENSE" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              aria-pressed={type === "EXPENSE"}
+              className="h-9 flex-1 justify-center gap-2 disabled:cursor-not-allowed"
               onClick={() => {
                 setType("EXPENSE");
                 if (init?.type === "EXPENSE") setCategoryId(init?.categoryId || "");
                 else setCategoryId("");
               }}
             >
+              <span className="size-2 rounded-full bg-neg" aria-hidden="true" />
               {tc("type.EXPENSE")}
             </button>
             <button
               type="button"
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${type === "INCOME" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              aria-pressed={type === "INCOME"}
+              className="h-9 flex-1 justify-center gap-2 disabled:cursor-not-allowed"
               onClick={() => {
                 setType("INCOME");
                 if (init?.type === "INCOME") setCategoryId(init?.categoryId || "");
                 else setCategoryId("");
               }}
             >
+              <span className="size-2 rounded-full bg-pos" aria-hidden="true" />
               {tc("type.INCOME")}
             </button>
           </fieldset>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Posted entries keep their money and classification. */}
-            <fieldset disabled={locked} className="grid gap-6 md:grid-cols-2 md:col-span-2 min-w-0 border-0 p-0 m-0">
-            <div className="space-y-2 md:col-span-2">
+          {/* Posted entries keep their money and classification. */}
+          <fieldset disabled={locked} className="m-0 grid min-w-0 gap-5 border-0 p-0 md:grid-cols-2">
+            <div className="grid gap-2 md:col-span-2">
               <Label>{type === "INCOME" ? t("form.receivedInto") : t("form.paidFrom")}</Label>
-              <AccountSelect
-                accounts={accounts.filter((a) => a.isActive || a.id === accountId)}
-                value={accountId}
-                onChange={chooseAccount}
-                placeholder={t("form.accountPlaceholder")}
-              />
-              <p className="text-xs text-muted-foreground">{t("form.accountHint")}</p>
+              <div className="[&_[data-slot=select-trigger]]:w-full">
+                <AccountSelect
+                  accounts={accounts.filter((a) => a.isActive || a.id === accountId)}
+                  value={accountId}
+                  onChange={chooseAccount}
+                  placeholder={t("form.accountPlaceholder")}
+                />
+              </div>
+              <p className={hint}>{t("form.accountHint")}</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="date">{t("form.date")}</Label>
-              <Input id="date" name="date" type="date" required defaultValue={defaultDate} />
+            <div className="grid gap-2">
+              <div className="flex min-h-8 items-center">
+                <Label htmlFor="date">{t("form.date")}</Label>
+              </div>
+              <Input id="date" name="date" type="date" required defaultValue={defaultDate} className="font-mono" />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center mb-2">
+            <div className="grid gap-2">
+              <div className="flex min-h-8 items-center justify-between gap-3">
                 <Label htmlFor="amount">{t("form.amount")}</Label>
-                <div className="flex bg-muted p-0.5 rounded text-xs font-medium cursor-pointer">
+                <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
                   {CURRENCIES.map((c) => (
-                    <span key={c} onClick={() => chooseCurrency(c)}
-                      className={`px-2 py-0.5 rounded-sm transition-all ${currency === c ? "bg-white shadow-sm" : "text-muted-foreground"} ${usdAccount && c !== "USD" ? "opacity-40 cursor-not-allowed" : ""}`}>{c}</span>
+                    <button key={c} type="button" aria-pressed={currency === c} disabled={usdAccount && c !== "USD"} onClick={() => chooseCurrency(c)}
+                      className="h-6 disabled:cursor-not-allowed disabled:opacity-(--opacity-disabled)">{c}</button>
                   ))}
                 </div>
               </div>
-              <Input id="amount" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" defaultValue={init?.amount} />
+              <Input id="amount" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" defaultValue={init?.amount} className="font-mono" />
             </div>
 
             {currency !== "VND" && (
-              <div className="space-y-2 md:col-span-2 rounded-md border p-3 bg-muted/30">
-                <Label>{t("form.vndValue")}</Label>
+              <div className="grid gap-3 md:col-span-2">
+                <Label htmlFor={initialData && initialData.currency === currency ? undefined : rateMode === "BANK" ? "vndAmount" : rateMode === "MANUAL" ? "rate" : undefined}>
+                  {t("form.vndValue")}
+                </Label>
                 {initialData && initialData.currency === currency ? (
                   // Recorded: it keeps its booked VND value; only an explicit revaluation changes it.
                   <BookedRate entry={initialData} isAdmin={isAdmin} locked={locked} defaultUsdRate={defaultUsdRate} />
                 ) : (<>
-                <div className="flex bg-muted p-0.5 rounded text-xs font-medium w-fit">
-                  {([["BANK", t("form.rateBank")], ["MANUAL", t("form.rateManual")], ...(currency === "USD" ? [["DEFAULT", t("form.rateDefault", { rate: new Intl.NumberFormat("vi-VN").format(defaultUsdRate) })]] : [])] as [ "BANK" | "MANUAL" | "DEFAULT", string][]).map(([m, label]) => (
-                    <button key={m} type="button" onClick={() => setRateMode(m)}
-                      className={`px-2 py-1 rounded-sm ${rateMode === m ? "bg-white shadow-sm" : "text-muted-foreground"}`}>{label}</button>
-                  ))}
-                </div>
-                {rateMode === "BANK" && (
-                  <Input name="vndAmount" type="number" step="1" min="0" required placeholder={t("form.vndPlaceholder")}
-                    defaultValue={init?.vndAmount ?? ""} />
-                )}
-                {rateMode === "MANUAL" && (
-                  <Input name="rate" type="number" step="any" min="0" required placeholder={t("form.ratePlaceholder", { currency })}
-                    defaultValue={init?.rateSource === "MANUAL" ? init.exchangeRate : ""} />
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {rateMode === "BANK" ? t("form.rateBankHint")
-                    : rateMode === "MANUAL" ? t("form.rateManualHint")
-                    : t("form.rateDefaultHint")}
-                </p>
+                  <div className="wf-seg justify-self-start" role="group" aria-label={t("form.vndValue")}>
+                    {([["BANK", t("form.rateBank")], ["MANUAL", t("form.rateManual")], ...(currency === "USD" ? [["DEFAULT", t("form.rateDefault", { rate: new Intl.NumberFormat("vi-VN").format(defaultUsdRate) })]] : [])] as [ "BANK" | "MANUAL" | "DEFAULT", string][]).map(([m, label]) => (
+                      <button key={m} type="button" aria-pressed={rateMode === m} onClick={() => setRateMode(m)}>{label}</button>
+                    ))}
+                  </div>
+                  {rateMode === "BANK" && (
+                    <Input id="vndAmount" name="vndAmount" type="number" step="1" min="0" required placeholder={t("form.vndPlaceholder")}
+                      defaultValue={init?.vndAmount ?? ""} className="font-mono" />
+                  )}
+                  {rateMode === "MANUAL" && (
+                    <Input id="rate" name="rate" type="number" step="any" min="0" required placeholder={t("form.ratePlaceholder", { currency })}
+                      defaultValue={init?.rateSource === "MANUAL" ? init.exchangeRate : ""} className="font-mono" />
+                  )}
+                  <p className={hint}>
+                    {rateMode === "BANK" ? t("form.rateBankHint")
+                      : rateMode === "MANUAL" ? t("form.rateManualHint")
+                      : t("form.rateDefaultHint")}
+                  </p>
                 </>)}
               </div>
             )}
 
-            <div className={`space-y-2 md:col-span-2`}>
+            <div className="grid gap-2 md:col-span-2">
               <Label htmlFor="categoryId">{t("form.category")}</Label>
               <Select value={categoryId} onValueChange={(val) => setCategoryId(val || "")} required>
-                <SelectTrigger id="categoryId">
+                <SelectTrigger id="categoryId" className="w-full">
                   {selectedCategory ? (
                     <span className="flex-1 text-left">{selectedCategory.name}</span>
                   ) : (
@@ -329,10 +331,10 @@ export function EntryForm({
               </Select>
             </div>
 
-            <div className="space-y-2 md:col-span-2">
+            <div className="grid gap-2 md:col-span-2">
               <Label htmlFor="projectId">{t("form.project")}</Label>
               <Select value={projectId} onValueChange={(val) => setProjectId(val === "none" ? "" : (val || ""))}>
-                <SelectTrigger id="projectId">
+                <SelectTrigger id="projectId" className="w-full">
                   {projectId
                     ? <span className="flex-1 text-left">{projects.find(p => p.id === projectId)?.name || t("form.unknown")}</span>
                     : <span className="flex-1 text-left text-muted-foreground">{t("form.noProject")}</span>}
@@ -345,14 +347,14 @@ export function EntryForm({
                   {projects.length === 0 && <SelectItem value="empty" disabled>{t("form.noProjects")}</SelectItem>}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">{t("form.projectHint")}</p>
+              <p className={hint}>{t("form.projectHint")}</p>
             </div>
 
             {type === "EXPENSE" && (
-              <div className="space-y-2 md:col-span-2">
+              <div className="grid gap-2 md:col-span-2">
                 <Label htmlFor="vendorId">{t("form.vendor")}</Label>
                 <Select value={vendorId} onValueChange={(val) => setVendorId(val === "none" ? "" : (val || ""))}>
-                  <SelectTrigger id="vendorId">
+                  <SelectTrigger id="vendorId" className="w-full">
                     {vendorId
                       ? <span className="flex-1 text-left">{vendors.find(v => v.id === vendorId)?.name || t("form.unknown")}</span>
                       : <span className="flex-1 text-left text-muted-foreground">{t("form.noVendor")}</span>}
@@ -365,151 +367,143 @@ export function EntryForm({
                     {vendors.length === 0 && <SelectItem value="empty" disabled>{t("form.noVendors")}</SelectItem>}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">{t("form.vendorHint")}</p>
+                <p className={hint}>{t("form.vendorHint")}</p>
               </div>
             )}
 
-            <div className="space-y-2 md:col-span-2">
+            <div className="grid gap-2 md:col-span-2">
               <Label htmlFor="invoiceNumber">{t("form.invoiceNumber")}</Label>
               <Input id="invoiceNumber" name="invoiceNumber" placeholder={t("form.invoiceNumberPlaceholder")} defaultValue={init?.invoiceNumber || ""} />
             </div>
 
-            <div className="space-y-2 md:col-span-2">
+            <div className="grid gap-2 md:col-span-2">
               <Label htmlFor="description">{t("form.description")}</Label>
               <Input id="description" name="description" placeholder={t("form.descriptionPlaceholder")} required defaultValue={init?.description || ""} />
             </div>
+          </fieldset>
+        </div>
 
-            </fieldset>
+        <section className="grid gap-3 border-t border-border p-5">
+          <h2 className="wf-label">{t("form.attachments")}</h2>
 
-            <div className="space-y-2 md:col-span-2">
-              <Label>{t("form.attachments")}</Label>
-
-              {attachments.length > 0 && (
-                <div className="space-y-2">
-                  {attachments.map((a) => (
-                    <div key={a.id} className="flex items-center justify-between gap-2 bg-muted/50 p-2 rounded-md">
-                      <a
-                        href={`/api/uploads/${a.filePath.split('/').pop()}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 truncate"
-                        title={a.fileName}
-                      >
-                        <Paperclip className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{a.fileName}</span>
-                      </a>
-                      {!locked && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
-                          disabled={removingId === a.id}
-                          onClick={() => handleRemoveAttachment(a.id)}
-                          title={t("form.removeReceipt")}
-                        >
-                          {removingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {pendingFiles.length > 0 && (
-                <div className="space-y-2">
-                  {pendingFiles.map((f, idx) => (
-                    <div key={`${f.name}-${idx}`} className="flex items-center justify-between gap-2 bg-primary/5 border border-primary/20 p-2 rounded-md">
-                      <span className="flex items-center gap-2 text-sm text-foreground truncate" title={f.name}>
-                        <Paperclip className="h-4 w-4 shrink-0 text-primary" />
-                        <span className="truncate">{f.name}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">{t("form.toUpload")}</span>
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
-                        onClick={() => removePendingFile(idx)}
-                        title={tc("actions.remove")}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-2 flex justify-center rounded-lg border border-dashed border-border px-6 py-10 hover:bg-muted/50 transition-colors">
-                <div className="text-center">
-                  <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden="true" />
-                  <div className="mt-4 flex text-sm leading-6 text-muted-foreground justify-center">
-                    <label
-                      htmlFor="files"
-                      className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 hover:text-primary/80"
+          {(attachments.length > 0 || pendingFiles.length > 0) && (
+            <ul className="divide-y divide-border border-y border-border">
+              {attachments.map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-3 py-1.5">
+                  <a
+                    href={`/api/uploads/${a.filePath.split('/').pop()}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex min-w-0 items-center gap-2 text-primary transition-colors duration-150 hover:text-primary-hover"
+                    title={a.fileName}
+                  >
+                    <Paperclip className="size-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{a.fileName}</span>
+                  </a>
+                  {!locked && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="hover:bg-destructive/10 hover:text-destructive"
+                      disabled={removingId === a.id}
+                      onClick={() => handleRemoveAttachment(a.id)}
+                      title={t("form.removeReceipt")}
+                      aria-label={t("form.removeReceipt")}
                     >
-                      <span>{isEdit ? t("form.addMoreFiles") : t("form.uploadFiles")}</span>
-                      <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf,.zip,application/zip,application/x-zip-compressed" onChange={handleFilesChosen} />
-                    </label>
-                    <p className="pl-1">{t("form.orTakePhoto")}</p>
-                  </div>
-                  <p className="text-xs leading-5 text-muted-foreground mt-2">{t("form.fileTypes")}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 md:col-span-2 rounded-md border p-3 bg-muted/30">
-              <div>
-                <Label>{t("form.review")}</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {type === "EXPENSE"
-                    ? t("form.reviewHintExpense")
-                    : t("form.reviewHintIncome")}
-                </p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <StatusSelect id="docStatus" label={t("form.document")} options={reviewOptions("doc", DOC_STATUS)} value={docStatus} onChange={setDocStatus} />
-                {type === "EXPENSE" && (
-                  <>
-                    <StatusSelect id="purposeStatus" label={t("form.purpose")} options={reviewOptions("purpose", PURPOSE_STATUS)} value={purposeStatus} onChange={setPurposeStatus} disabled={!isAdmin} />
-                    <StatusSelect id="citStatus" label={t("form.cit")} options={reviewOptions("cit", CIT_STATUS)} value={citStatus} onChange={setCitStatus} disabled={!isAdmin} />
-                    <StatusSelect id="vatStatus" label={t("form.vat")} options={reviewOptions("vat", VAT_STATUS)} value={vatStatus} onChange={setVatStatus} disabled={!isAdmin} />
-                    <div className="space-y-2">
-                      <Label htmlFor="vatAmount">{t("form.vatAmount", { currency })}</Label>
-                      <Input id="vatAmount" name="vatAmount" type="number" step="any" min="0" placeholder={t("form.vatAmountPlaceholder")} defaultValue={init?.vatAmount ?? ""} />
-                    </div>
-                  </>
-                )}
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="reviewNote">{t("form.reviewNote")}</Label>
-                  <Input id="reviewNote" name="reviewNote" placeholder={t("form.reviewNotePlaceholder")} defaultValue={init?.reviewNote || ""} />
-                </div>
-              </div>
-              {type === "EXPENSE" && !isAdmin && (
-                <p className="text-xs text-muted-foreground">{t("form.ownerDecides")}</p>
-              )}
-            </div>
-          </div>
-
-          {isEdit && (
-            <div className="space-y-2">
-              <Label htmlFor="reason">{t("form.reason")}</Label>
-              <Input id="reason" name="reason" placeholder={t("form.reasonPlaceholder")} />
-            </div>
+                      {removingId === a.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X aria-hidden="true" />}
+                    </Button>
+                  )}
+                </li>
+              ))}
+              {pendingFiles.map((f, idx) => (
+                <li key={`${f.name}-${idx}`} className="flex items-center justify-between gap-3 py-1.5">
+                  <span className="flex min-w-0 items-center gap-2 text-foreground" title={f.name}>
+                    <Paperclip className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="truncate">{f.name}</span>
+                    <Chip tone="info" className="shrink-0">{t("form.toUpload")}</Chip>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => removePendingFile(idx)}
+                    title={tc("actions.remove")}
+                    aria-label={tc("actions.remove")}
+                  >
+                    <X aria-hidden="true" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
           )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <label
+            htmlFor="files"
+            className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border-strong px-6 py-7 text-center transition-colors duration-150 hover:border-muted-foreground hover:bg-secondary/45 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring"
+          >
+            <UploadCloud className="size-6 text-muted-foreground" aria-hidden="true" />
+            <span className="text-muted-foreground">
+              <span className="font-semibold text-primary">{isEdit ? t("form.addMoreFiles") : t("form.uploadFiles")}</span> {t("form.orTakePhoto")}
+            </span>
+            <span className={hint}>{t("form.fileTypes")}</span>
+            <input id="files" name="files" type="file" multiple className="sr-only" accept="image/*,application/pdf,.zip,application/zip,application/x-zip-compressed" onChange={handleFilesChosen} />
+          </label>
+        </section>
+
+        <section className="grid gap-4 border-t border-border p-5">
+          <div className="grid gap-1.5">
+            <h2 className="wf-label">{t("form.review")}</h2>
+            <p className={hint}>
+              {type === "EXPENSE"
+                ? t("form.reviewHintExpense")
+                : t("form.reviewHintIncome")}
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <StatusSelect id="docStatus" label={t("form.document")} options={reviewOptions("doc", DOC_STATUS)} value={docStatus} onChange={setDocStatus} />
+            {type === "EXPENSE" && (
+              <>
+                <StatusSelect id="purposeStatus" label={t("form.purpose")} options={reviewOptions("purpose", PURPOSE_STATUS)} value={purposeStatus} onChange={setPurposeStatus} disabled={!isAdmin} />
+                <StatusSelect id="citStatus" label={t("form.cit")} options={reviewOptions("cit", CIT_STATUS)} value={citStatus} onChange={setCitStatus} disabled={!isAdmin} />
+                <StatusSelect id="vatStatus" label={t("form.vat")} options={reviewOptions("vat", VAT_STATUS)} value={vatStatus} onChange={setVatStatus} disabled={!isAdmin} />
+                <div className="grid gap-2">
+                  <Label htmlFor="vatAmount">{t("form.vatAmount", { currency })}</Label>
+                  <Input id="vatAmount" name="vatAmount" type="number" step="any" min="0" placeholder={t("form.vatAmountPlaceholder")} defaultValue={init?.vatAmount ?? ""} className="font-mono" />
+                </div>
+              </>
+            )}
+            <div className="grid gap-2 md:col-span-2">
+              <Label htmlFor="reviewNote">{t("form.reviewNote")}</Label>
+              <Input id="reviewNote" name="reviewNote" placeholder={t("form.reviewNotePlaceholder")} defaultValue={init?.reviewNote || ""} />
+            </div>
+          </div>
+          {type === "EXPENSE" && !isAdmin && (
+            <p className={hint}>{t("form.ownerDecides")}</p>
+          )}
+        </section>
+
+        {isEdit && (
+          <div className="grid gap-2 border-t border-border p-5">
+            <Label htmlFor="reason">{t("form.reason")}</Label>
+            <Input id="reason" name="reason" placeholder={t("form.reasonPlaceholder")} />
+          </div>
+        )}
+
+        <CardFooter className="justify-end">
+          <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="animate-spin" aria-hidden="true" />
                 {t("form.saving")}
               </>
             ) : (
               locked ? t("form.saveReview") : isEdit ? t("form.update") : t("form.save")
             )}
           </Button>
-        </form>
-      </CardContent>
+        </CardFooter>
+      </form>
     </Card>
   );
 }

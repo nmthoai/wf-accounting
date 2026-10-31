@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { computeBalances, cashPosition, isPnl, isBooked, type Totals } from "@/lib/money";
 import { AccountsClient, type MovementRow } from "@/components/accounts/accounts-client";
+import { PageHeader } from "@/components/wf/page-header";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
@@ -81,11 +82,8 @@ export default async function AccountsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary">{t("page.title")}</h1>
-        <p className="text-muted-foreground mt-1">{t("page.subtitle")}</p>
-      </div>
+    <div>
+      <PageHeader section="accounts" title={t("page.title")} description={t("page.subtitle")} />
       <AccountsClient
         isAdmin={session?.user?.role === "ADMIN"}
         position={{ ...position, capital }}

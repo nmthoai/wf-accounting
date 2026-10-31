@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { AuthShell } from "@/components/auth/auth-header";
 import { OnboardWizard } from "./onboard-wizard";
 
 export default async function OnboardPage() {
@@ -13,15 +15,16 @@ export default async function OnboardPage() {
   // Already fully onboarded → nothing to do here
   if (!user.mustChangePassword && user.twoFactorEnabled) redirect("/");
 
+  const t = await getTranslations("auth.onboard");
+
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
-        <OnboardWizard
-          username={user.username}
-          needsPasswordChange={user.mustChangePassword}
-          needs2FA={!user.twoFactorEnabled}
-        />
-      </div>
-    </div>
+    <AuthShell
+      lead={t.rich("signedInAs", {
+        username: user.username,
+        b: (chunks) => <span className="font-semibold text-foreground">{chunks}</span>,
+      })}
+    >
+      <OnboardWizard needsPasswordChange={user.mustChangePassword} needs2FA={!user.twoFactorEnabled} />
+    </AuthShell>
   );
 }

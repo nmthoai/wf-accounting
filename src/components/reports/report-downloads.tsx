@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { CircleAlert, Download, FileSpreadsheet } from "lucide-react";
+import { PanelHead } from "@/components/wf/ledger-ui";
 
-export function ReportDownloads({ defaultFrom, defaultTo }: { defaultFrom: string; defaultTo: string }) {
+export function ReportDownloads({ defaultFrom, defaultTo, className }: { defaultFrom: string; defaultTo: string; className?: string }) {
   const t = useTranslations("reports.downloads");
   const [from, setFrom] = useState(defaultFrom);
   const [to, setTo] = useState(defaultTo);
@@ -18,33 +18,35 @@ export function ReportDownloads({ defaultFrom, defaultTo }: { defaultFrom: strin
   const href = (type: "entries" | "invoices") =>
     `/api/reports/export?type=${type}&from=${from}&to=${to}`;
 
-  const linkCls = (variant: "default" | "outline") =>
-    cn(buttonVariants({ variant }), "gap-2", !valid && "pointer-events-none opacity-50");
+  // aria-disabled dims the link and stops clicks (see buttonVariants).
+  const linkCls = (variant: "default" | "outline") => buttonVariants({ variant });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5 text-primary" /> {t("title")}</CardTitle>
-        <CardDescription>{t("description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex gap-4 items-end flex-wrap">
-          <div className="space-y-2">
+    <Card className={className}>
+      <PanelHead title={<><FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />{t("title")}</>} />
+      <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{t("description")}</p>
+      <CardContent className="grid gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
             <Label htmlFor="from">{t("from")}</Label>
-            <Input id="from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="w-44" />
+            <Input id="from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="wf-num" aria-invalid={!valid || undefined} />
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             <Label htmlFor="to">{t("to")}</Label>
-            <Input id="to" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="w-44" />
+            <Input id="to" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="wf-num" aria-invalid={!valid || undefined} />
           </div>
         </div>
-        {!valid && <p className="text-sm text-destructive">{t("invalidRange")}</p>}
-        <div className="flex gap-3 flex-wrap">
+        {!valid && (
+          <p className="flex items-center gap-1.5 text-[12px] text-destructive" role="alert">
+            <CircleAlert className="size-3.5 shrink-0" aria-hidden="true" />{t("invalidRange")}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-3">
           <a href={valid ? href("entries") : undefined} download aria-disabled={!valid} className={linkCls("default")}>
-            <Download className="h-4 w-4" /> {t("entries")}
+            <Download aria-hidden="true" />{t("entries")}
           </a>
           <a href={valid ? href("invoices") : undefined} download aria-disabled={!valid} className={linkCls("outline")}>
-            <Download className="h-4 w-4" /> {t("invoices")}
+            <Download aria-hidden="true" />{t("invoices")}
           </a>
         </div>
       </CardContent>

@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PeriodPicker } from "@/components/reports/period-picker";
 import { TrendChart } from "@/components/reports/trend-chart";
 import { PnlTable } from "@/components/reports/pnl-table";
 import { ReportDownloads } from "@/components/reports/report-downloads";
-import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
 import { toVnd, fmtMoney, totalsList, BOOKED, vnToday, type Totals } from "@/lib/money";
@@ -14,6 +14,9 @@ import { DOC_OPEN, CIT_STATUS } from "@/lib/review";
 import { fmtMonth } from "@/lib/format";
 import { intlLocale } from "@/i18n/config";
 import { MONTH, addMonths, monthsBetween, monthStart, buildPnl } from "@/lib/pnl";
+import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/wf/page-header";
+import { Bar, Chip, DOC_TONE, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
 
 // Months the report accepts: typed years outside this range fall back to the default.
 const MIN_MONTH = "2000-01";
@@ -21,28 +24,35 @@ const MIN_MONTH = "2000-01";
 // P&L counts income and expenses only — transfers, capital and loans are not
 // profit — and only reviewed or posted entries; drafts wait for review.
 const PNL = { type: { in: ["INCOME", "EXPENSE"] }, ...BOOKED };
-const fmt = (n: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+const fmt = (n: number) => fmtMoney(n, "VND");
 
-// One breakdown: each row's amount and share of the total, then the total.
-function Lines({ rows, total, color, emptyText, totalText }: {
-  rows: [string, number][]; total: number; color: string; emptyText: string; totalText: string;
+// One breakdown: each row's amount and share of the total as a bar, then the total.
+function Lines({ rows, total, tone, emptyText, totalText }: {
+  rows: [string, number][]; total: number; tone?: "pos" | "neg"; emptyText: string; totalText: string;
 }) {
   return (
-    <div className="space-y-2">
-      {rows.map(([name, amt]) => (
-        <div key={name} className="flex items-center justify-between text-sm">
-          <span>{name}</span>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">{total > 0 ? Math.round((amt / total) * 100) : 0}%</span>
-            <span className={`font-medium ${color}`}>{fmt(amt)}</span>
-          </div>
-        </div>
-      ))}
-      {rows.length === 0 && <p className="text-sm text-muted-foreground">{emptyText}</p>}
-      <div className="border-t pt-2 flex items-center justify-between text-sm font-semibold">
-        <span>{totalText}</span><span className={color}>{fmt(total)}</span>
-      </div>
-    </div>
+    <ul className="wf-rows">
+      {rows.map(([name, amt]) => {
+        const pct = total > 0 ? Math.round((amt / total) * 100) : 0;
+        return (
+          <li key={name} className="block">
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate text-foreground">{name}</span>
+              <span className="flex shrink-0 items-baseline gap-3">
+                <span className="wf-num text-[12px] text-muted-foreground">{pct}%</span>
+                <span className="wf-figure">{fmt(amt)}</span>
+              </span>
+            </div>
+            <Bar pct={pct} tone={tone} />
+          </li>
+        );
+      })}
+      {rows.length === 0 && <li className="text-muted-foreground">{emptyText}</li>}
+      <li className="border-t-2 border-border-strong font-semibold text-foreground">
+        <span>{totalText}</span>
+        <span className={cn("wf-figure", tone === "pos" && "text-pos", tone === "neg" && "text-neg")}>{fmt(total)}</span>
+      </li>
+    </ul>
   );
 }
 
@@ -114,91 +124,69 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const short = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString(intlLocale(locale), { timeZone: "UTC", month: "short", year: "2-digit" });
   const labels = months.map(short);
   const period = months.length === 1 ? fmtMonth(from, locale) : tr("period.range", { from: fmtMonth(from, locale), to: fmtMonth(to, locale) });
+  const categoryRows = (s: typeof pnl.revenue) => s.categories.map((c) => [c.name, c.total] as [string, number]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">{tr("page.title")}</h1>
-          <p className="text-muted-foreground mt-1">{tr("page.subtitle", { month: period })}</p>
-          {drafts > 0 && (
-            <Link href="/ledger?view=drafts" className="inline-block mt-2 text-xs px-2 py-1 rounded bg-amber-100 text-amber-800 hover:underline">
-              {tr("page.draftsNotIncluded", { count: drafts })}
-            </Link>
-          )}
-          {rejected > 0 && (
-            <Link href="/ledger?view=rejected" className="inline-block mt-2 ml-2 text-xs px-2 py-1 rounded bg-red-100 text-red-800 hover:underline">
-              {tr("page.rejectedNotIncluded", { count: rejected })}
-            </Link>
-          )}
-        </div>
-        <PeriodPicker from={from} to={to} thisMonth={thisMonth} earliest={firstMonth} latest={lastMonth} min={MIN_MONTH} max={maxMonth} />
-      </div>
+    <div>
+      <PageHeader
+        section="reports"
+        title={tr("page.title")}
+        description={tr("page.subtitle", { month: period })}
+        meta={(drafts > 0 || rejected > 0) && (
+          <>
+            {drafts > 0 && (
+              <Link href="/ledger?view=drafts" className="wf-chip wf-chip--warn wf-chip--dot">{tr("page.draftsNotIncluded", { count: drafts })}</Link>
+            )}
+            {rejected > 0 && (
+              <Link href="/ledger?view=rejected" className="wf-chip wf-chip--neg wf-chip--dot">{tr("page.rejectedNotIncluded", { count: rejected })}</Link>
+            )}
+          </>
+        )}
+        actions={<PeriodPicker from={from} to={to} thisMonth={thisMonth} earliest={firstMonth} latest={lastMonth} min={MIN_MONTH} max={maxMonth} />}
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: "var(--chart-revenue)" }} />{tr("cards.income")}</CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
+      <StatStrip className="lg:grid-cols-3">
+        <Stat label={tr("cards.income")} icon={ArrowDownLeft} tone="pos"
+          sub={months.length > 1 && tr("cards.perMonth", { amount: fmt(perMonth(totalIncome)) })}>
+          {fmt(totalIncome)}
+        </Stat>
+        <Stat label={tr("cards.expenses")} icon={ArrowUpRight} tone="neg"
+          sub={months.length > 1 && tr("cards.perMonth", { amount: fmt(perMonth(totalExpense)) })}>
+          {fmt(totalExpense)}
+        </Stat>
+        <Stat label={tr("cards.netProfit")} icon={TrendingUp} tone={net >= 0 ? "info" : "neg"} emphasis
+          sub={comparable
+            ? <span className={delta >= 0 ? "text-pos" : "text-neg"}>{tr("cards.vsPrevious", { arrow: delta >= 0 ? "▲" : "▼", amount: fmt(Math.abs(delta)), count: months.length })}</span>
+            : tr("cards.noEarlier")}>
+          {fmt(net)}
+        </Stat>
+      </StatStrip>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        <Card className="lg:col-span-6">
+          <PanelHead title={<><ArrowDownLeft className="size-4 shrink-0 text-pos" aria-hidden="true" />{tr("byCategory.income")}</>} />
+          <Lines rows={categoryRows(pnl.revenue)} total={totalIncome} tone="pos" emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
+        </Card>
+        <Card className="lg:col-span-6">
+          <PanelHead title={<><ArrowUpRight className="size-4 shrink-0 text-neg" aria-hidden="true" />{tr("byCategory.expenses")}</>} />
+          <Lines rows={categoryRows(pnl.cost)} total={totalExpense} tone="neg" emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
+        </Card>
+
+        <Card className="lg:col-span-12">
+          <PanelHead title={tr("trend.title")} />
+          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{tr("trend.subtitle")}</p>
           <CardContent>
-            <div className="text-2xl font-bold">{fmt(totalIncome)}</div>
-            {months.length > 1 && <p className="text-xs text-muted-foreground mt-1">{tr("cards.perMonth", { amount: fmt(perMonth(totalIncome)) })}</p>}
+            <TrendChart labels={labels} revenue={pnl.revenue.perMonth} cost={pnl.cost.perMonth} net={pnl.net} locale={locale} />
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: "var(--chart-cost)" }} />{tr("cards.expenses")}</CardTitle>
-            <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{fmt(totalExpense)}</div>
-            {months.length > 1 && <p className="text-xs text-muted-foreground mt-1">{tr("cards.perMonth", { amount: fmt(perMonth(totalExpense)) })}</p>}
-          </CardContent>
-        </Card>
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{tr("cards.netProfit")}</CardTitle>
-            <TrendingUp className="h-4 w-4 opacity-75" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{fmt(net)}</div>
-            <p className="text-xs opacity-75 mt-1">
-              {comparable
-                ? tr("cards.vsPrevious", { arrow: delta >= 0 ? "▲" : "▼", amount: fmt(Math.abs(delta)), count: months.length })
-                : tr("cards.noEarlier")}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{tr("trend.title")}</CardTitle>
-          <p className="text-sm text-muted-foreground">{tr("trend.subtitle")}</p>
-        </CardHeader>
-        <CardContent>
-          <TrendChart labels={labels} revenue={pnl.revenue.perMonth} cost={pnl.cost.perMonth} net={pnl.net} locale={locale} />
-        </CardContent>
-      </Card>
+        <PnlTable pnl={pnl} labels={labels} className="lg:col-span-12" />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{tr("detail.title")}</CardTitle>
-          <p className="text-sm text-muted-foreground">{tr("detail.subtitle")}</p>
-          {pnl.provisional > 0 && <p className="text-xs text-amber-800">{tr("detail.provisionalNote", { count: pnl.provisional })}</p>}
-        </CardHeader>
-        <CardContent className="p-0">
-          <PnlTable pnl={pnl} labels={labels} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>{tr("byProject.title")}</CardTitle></CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <Card className="lg:col-span-12">
+          <PanelHead title={tr("byProject.title")} count={projectRows.length} />
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
+              <TableRow>
                 <TableHead>{tr("byProject.project")}</TableHead>
                 <TableHead className="text-right">{tr("byProject.income")}</TableHead>
                 <TableHead className="text-right">{tr("byProject.expenses")}</TableHead>
@@ -208,58 +196,67 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             <TableBody>
               {projectRows.map((p) => (
                 <TableRow key={p.name}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell className="text-right">{fmt(p.inc)}</TableCell>
+                  <TableCell className="font-semibold text-foreground">{p.name}</TableCell>
+                  <TableCell className="text-right text-pos">{fmt(p.inc)}</TableCell>
                   <TableCell className="text-right">{fmt(p.exp)}</TableCell>
-                  <TableCell className={`text-right font-semibold ${p.net >= 0 ? "text-primary" : "text-red-600"}`}>{fmt(p.net)}</TableCell>
+                  <TableCell className={cn("text-right font-semibold", p.net >= 0 ? "text-primary" : "text-neg")}>{fmt(p.net)}</TableCell>
                 </TableRow>
               ))}
               {projectRows.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">{tr("byProject.empty")}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">{tr("byProject.empty")}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{tr("tax.title")}</CardTitle>
-          <p className="text-sm text-muted-foreground">{tr("tax.intro")}</p>
-        </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <p className="text-sm font-medium">{tr("tax.citTitle")}</p>
-            <Lines rows={cit} total={totalExpense} color="text-foreground" emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">{tr("tax.inputVat")}</p>
-              <div className="flex items-center justify-between text-sm">
-                <span>{tr("tax.claimable")}</span>
-                <span className="font-medium">{totalsList(vatClaimable).map(([c, v]) => fmtMoney(v, c)).join(" + ") || fmt(0)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span>{tr("tax.vatPending")}</span>
-                <span className={`font-medium ${vatPending ? "text-amber-700" : ""}`}>{vatPending}</span>
-              </div>
+        <Card className="lg:col-span-8">
+          <PanelHead title={tr("tax.title")} />
+          <p className="border-b border-border px-5 py-3 text-[13px] text-muted-foreground">{tr("tax.intro")}</p>
+          <div className="grid flex-1 md:grid-cols-2 md:divide-x md:divide-border">
+            <section aria-labelledby="tax-cit">
+              <p id="tax-cit" className="wf-label px-5 pt-4 pb-1">{tr("tax.citTitle")}</p>
+              <Lines rows={cit} total={totalExpense} emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
+            </section>
+            <div className="border-t border-border md:border-t-0">
+              <section aria-labelledby="tax-vat">
+                <p id="tax-vat" className="wf-label px-5 pt-4 pb-1">{tr("tax.inputVat")}</p>
+                <ul className="wf-rows">
+                  <li>
+                    <span className="text-foreground">{tr("tax.claimable")}</span>
+                    <span className="wf-figure">{totalsList(vatClaimable).map(([c, v]) => fmtMoney(v, c)).join(" + ") || fmt(0)}</span>
+                  </li>
+                  <li>
+                    <span className="text-foreground">{tr("tax.vatPending")}</span>
+                    <span className={cn("wf-figure", vatPending > 0 && "text-warn")}>{vatPending}</span>
+                  </li>
+                </ul>
+              </section>
+              <section aria-labelledby="tax-docs" className="border-t border-border">
+                <p id="tax-docs" className="wf-label px-5 pt-4 pb-1">{tr("tax.docsTitle")}</p>
+                <ul className="wf-rows">
+                  {docsOpen.map((d) => (
+                    <li key={d.label}>
+                      <span className="flex min-w-0 flex-wrap items-center gap-2">
+                        <Chip tone={DOC_TONE[d.key] ?? "neutral"}>{d.label}</Chip>
+                        <span className="text-[12px] text-muted-foreground">{tr("tax.entryCount", { count: d.count })}</span>
+                      </span>
+                      <span className={cn("wf-figure", d.key === "MISSING" && "text-neg")}>{fmt(d.vnd)}</span>
+                    </li>
+                  ))}
+                  {docsOpen.length === 0 && <li className="text-muted-foreground">{tr("tax.allDocs")}</li>}
+                  {docsOpen.length > 0 && (
+                    <li>
+                      <Link href="/ledger?view=docs" className="text-[13px] font-semibold text-primary hover:underline">{tr("tax.openLedger")}</Link>
+                    </li>
+                  )}
+                </ul>
+              </section>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium">{tr("tax.docsTitle")}</p>
-              {docsOpen.map((d) => (
-                <div key={d.label} className="flex items-center justify-between text-sm">
-                  <span>{d.label} <span className="text-xs text-muted-foreground">· {tr("tax.entryCount", { count: d.count })}</span></span>
-                  <span className={`font-medium ${d.key === "MISSING" ? "text-red-600" : "text-amber-700"}`}>{fmt(d.vnd)}</span>
-                </div>
-              ))}
-              {docsOpen.length === 0 && <p className="text-sm text-muted-foreground">{tr("tax.allDocs")}</p>}
-              {docsOpen.length > 0 && <Link href="/ledger?view=docs" className="text-xs text-primary hover:underline">{tr("tax.openLedger")}</Link>}
-            </div>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
 
-      <ReportDownloads key={`${from}_${to}`} defaultFrom={`${from}-01`} defaultTo={new Date(+end - 86400000).toISOString().slice(0, 10)} />
+        <ReportDownloads key={`${from}_${to}`} defaultFrom={`${from}-01`} defaultTo={new Date(+end - 86400000).toISOString().slice(0, 10)} className="lg:col-span-4" />
+      </div>
     </div>
   );
 }
