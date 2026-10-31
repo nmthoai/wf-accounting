@@ -4,7 +4,8 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { persistUploads } from "@/lib/uploads";
-import { getT } from "@/i18n/server";
+import { getT, type Translate } from "@/i18n/server";
+import { findSameName } from "@/lib/unique-name";
 
 async function requireUser() {
   const session = await getSession();
@@ -17,16 +18,33 @@ const parseDate = (v: FormDataEntryValue | null) => {
   return s ? new Date(s) : null;
 };
 
+const ymd = (d: Date) => d.toISOString().slice(0, 10);
+
+// The owner's rules for a project being saved: an end date on or after the start
+// date, and a name no other project uses (see src/lib/unique-name.ts). Returns the
+// reason to show in the form, or null when the project can be saved.
+async function projectProblem(t: Translate, name: string, startDate: Date | null, endDate: Date | null, selfId?: string) {
+  if (startDate && endDate && endDate < startDate) {
+    return t("errors.endBeforeStart", { start: ymd(startDate), end: ymd(endDate) });
+  }
+  const clash = findSameName(await prisma.project.findMany({ select: { id: true, name: true } }), name, selfId);
+  return clash ? t("errors.nameTaken", { name: clash.name }) : null;
+}
+
 export async function createProject(formData: FormData) {
   await requireUser();
   const t = await getT("projects");
   const name = (formData.get("name") as string)?.trim();
   const clientId = (formData.get("clientId") as string) || null;
   const notes = (formData.get("notes") as string)?.trim() || null;
+  const startDate = parseDate(formData.get("startDate"));
+  const endDate = parseDate(formData.get("endDate"));
   if (!name) return { success: false, message: t("errors.nameRequired") };
+  const problem = await projectProblem(t, name, startDate, endDate);
+  if (problem) return { success: false, message: problem };
 
   await prisma.project.create({
-    data: { name, clientId: clientId || null, notes, status: "ACTIVE" },
+    data: { name, clientId: clientId || null, notes, status: "ACTIVE", startDate, endDate },
   });
   revalidatePath("/projects");
   revalidatePath("/entry");
@@ -43,6 +61,8 @@ export async function updateProject(id: string, formData: FormData) {
   const startDate = parseDate(formData.get("startDate"));
   const endDate = parseDate(formData.get("endDate"));
   if (!name) return { success: false, message: t("errors.nameRequired") };
+  const problem = await projectProblem(t, name, startDate, endDate, id);
+  if (problem) return { success: false, message: problem };
 
   await prisma.project.update({
     where: { id },

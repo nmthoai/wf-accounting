@@ -35,7 +35,8 @@ export function PeriodPicker({ from, to, thisMonth, earliest, latest, min, max }
 
   return (
     <div className="flex w-full flex-col items-start gap-2 lg:w-auto lg:items-end">
-      <div className="wf-seg" role="group" aria-label={t("presets")}>
+      {/* One row from xl, where the header has room; it never loses just its last button. */}
+      <div className="wf-seg xl:flex-nowrap" role="group" aria-label={t("presets")}>
         {presets.map(([label, f, tt]) => (
           <button key={label} type="button" aria-pressed={f === from && tt === to} onClick={() => go(f, tt)}>
             {label}

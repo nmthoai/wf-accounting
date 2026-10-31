@@ -4,11 +4,19 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getT } from "@/i18n/server";
+import { findSameName } from "@/lib/unique-name";
 
 async function requireUser() {
   const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   return session;
+}
+
+// No two clients share a name (trimmed, case-insensitive; see src/lib/unique-name.ts).
+// Returns the reason to show in the form, or null when the name is free.
+async function nameTaken(name: string, selfId?: string) {
+  const clash = findSameName(await prisma.client.findMany({ select: { id: true, name: true } }), name, selfId);
+  return clash ? (await getT("contacts"))("errors.clientNameTaken", { name: clash.name }) : null;
 }
 
 export async function createClient(formData: FormData) {
@@ -21,6 +29,8 @@ export async function createClient(formData: FormData) {
     const t = await getT("contacts");
     return { success: false, message: t("errors.clientNameRequired") };
   }
+  const taken = await nameTaken(name);
+  if (taken) return { success: false, message: taken };
 
   await prisma.client.create({ data: { name, email, phone, notes } });
   revalidatePath("/clients");
@@ -38,6 +48,8 @@ export async function updateClient(id: string, formData: FormData) {
     const t = await getT("contacts");
     return { success: false, message: t("errors.clientNameRequired") };
   }
+  const taken = await nameTaken(name, id);
+  if (taken) return { success: false, message: taken };
 
   await prisma.client.update({ where: { id }, data: { name, email, phone, notes } });
   revalidatePath("/clients");

@@ -130,7 +130,7 @@ const entry = async (description: string, values: Record<string, string | number
 };
 const reload = (id: string) => S.prisma.transaction.findUniqueOrThrow({ where: { id } });
 async function invoice(number: string, values: Record<string, string | number | File | File[]>) {
-  const res = await I.createInvoice(fd({ direction: "RECEIVABLE", number, issueDate: "2026-08-01", dueDate: "2026-08-31", ...values }));
+  const res = await I.createInvoice(fd({ direction: "RECEIVABLE", number, clientId: S.client.id, issueDate: "2026-08-01", dueDate: "2026-08-31", ...values }));
   assert.equal(res.success, true, res.message);
   return S.prisma.invoice.findFirstOrThrow({ where: { number } });
 }

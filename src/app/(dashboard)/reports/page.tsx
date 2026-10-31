@@ -9,7 +9,8 @@ import { ReportDownloads } from "@/components/reports/report-downloads";
 import { TrendingUp, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
-import { toVnd, fmtMoney, totalsList, BOOKED, vnToday, type Totals } from "@/lib/money";
+import { toVnd, valueIn, fmtMoney, totalsList, BOOKED, vnToday, type Totals } from "@/lib/money";
+import { getView } from "@/lib/view";
 import { DOC_OPEN, CIT_STATUS } from "@/lib/review";
 import { fmtMonth } from "@/lib/format";
 import { intlLocale } from "@/i18n/config";
@@ -17,6 +18,7 @@ import { MONTH, addMonths, monthsBetween, monthStart, buildPnl } from "@/lib/pnl
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/wf/page-header";
 import { Bar, Chip, DOC_TONE, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
+import { ViewNote } from "@/components/wf/view-note";
 
 // Months the report accepts: typed years outside this range fall back to the default.
 const MIN_MONTH = "2000-01";
@@ -24,6 +26,7 @@ const MIN_MONTH = "2000-01";
 // P&L counts income and expenses only — transfers, capital and loans are not
 // profit — and only reviewed or posted entries; drafts wait for review.
 const PNL = { type: { in: ["INCOME", "EXPENSE"] }, ...BOOKED };
+// The tax review stays in VND whatever the view: it is what the tax firm works from.
 const fmt = (n: number) => fmtMoney(n, "VND");
 
 // One breakdown: each row's amount and share of the total as a bar, then the total.
@@ -36,9 +39,10 @@ function Lines({ rows, total, tone, emptyText, totalText }: {
         const pct = total > 0 ? Math.round((amt / total) * 100) : 0;
         return (
           <li key={name} className="block">
-            <div className="flex items-center justify-between gap-3">
-              <span className="min-w-0 truncate text-foreground">{name}</span>
-              <span className="flex shrink-0 items-baseline gap-3">
+            {/* In a narrow panel the figures drop under the label rather than cut it. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="min-w-0 truncate text-foreground" title={name}>{name}</span>
+              <span className="ml-auto flex shrink-0 items-baseline gap-3">
                 <span className="wf-num text-[13.5px] text-muted-foreground">{pct}%</span>
                 <span className="wf-figure">{fmt(amt)}</span>
               </span>
@@ -57,11 +61,14 @@ function Lines({ rows, total, tone, emptyText, totalText }: {
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; month?: string }> }) {
-  await requirePageSession(); // second line behind the proxy
+  const session = await requirePageSession(); // second line behind the proxy
   const tr = await getTranslations("reports");
   const tc = await getTranslations("common");
   const locale = await getLocale();
   const sp = await searchParams;
+  const view = await getView(session.user.id);
+  const value = (t: Parameters<typeof valueIn>[1]) => valueIn(view, t);
+  const fmtV = (n: number) => fmtMoney(n, view.currency);
   const thisMonth = vnToday().slice(0, 7);
   // ?from=&to= months; an old ?month= link shows that one month; default: the last six months.
   const maxMonth = addMonths(thisMonth, 12);
@@ -77,7 +84,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   const [txns, prevTxns, drafts, rejected, firstEntry, lastEntry] = await Promise.all([
     prisma.transaction.findMany({ where: { ...PNL, date: { gte: start, lt: end } }, include: { category: true, project: true }, orderBy: { date: "asc" } }),
-    prisma.transaction.findMany({ where: { ...PNL, date: { gte: prevStart, lt: start } }, select: { type: true, amount: true, exchangeRate: true, vndAmount: true } }),
+    prisma.transaction.findMany({ where: { ...PNL, date: { gte: prevStart, lt: start } }, select: { type: true, amount: true, currency: true, exchangeRate: true, vndAmount: true } }),
     prisma.transaction.count({ where: { type: { in: ["INCOME", "EXPENSE"] }, status: "DRAFT", date: { gte: start, lt: end } } }),
     prisma.transaction.count({ where: { type: { in: ["INCOME", "EXPENSE"] }, status: "REJECTED", date: { gte: start, lt: end } } }),
     prisma.transaction.findFirst({ where: PNL, orderBy: { date: "asc" }, select: { date: true } }),
@@ -86,11 +93,11 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const firstMonth = firstEntry ? firstEntry.date.toISOString().slice(0, 7) : thisMonth;
   const lastMonth = lastEntry ? lastEntry.date.toISOString().slice(0, 7) : thisMonth;
 
-  const pnl = buildPnl(txns, months, tr("uncategorized"));
+  const pnl = buildPnl(txns, months, tr("uncategorized"), value);
   const totalIncome = pnl.revenue.total, totalExpense = pnl.cost.total, net = pnl.netTotal;
   const prevNet =
-    prevTxns.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0) -
-    prevTxns.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
+    prevTxns.filter((t) => t.type === "INCOME").reduce((a, t) => a + value(t), 0) -
+    prevTxns.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + value(t), 0);
   const delta = net - prevNet;
   // Only compare with months the books fully cover; before that the "growth" is just the start of the books.
   const comparable = !!firstEntry && monthStart(firstMonth) <= prevStart;
@@ -101,7 +108,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   for (const t of txns) {
     const key = t.projectId ?? "__none__";
     const row = projMap.get(key) ?? { name: t.project?.name ?? tr("noProject"), inc: 0, exp: 0 };
-    if (t.type === "INCOME") row.inc += toVnd(t); else row.exp += toVnd(t);
+    if (t.type === "INCOME") row.inc += value(t); else row.exp += value(t);
     projMap.set(key, row);
   }
   const projectRows = [...projMap.values()].map((p) => ({ ...p, net: p.inc - p.exp })).sort((a, b) => b.net - a.net);
@@ -109,6 +116,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   // Tax review — kept apart from the P&L: an expense is in the books once
   // recorded, but deductible or VAT-claimable only once reviewed.
   const expenses = txns.filter((t) => t.type === "EXPENSE");
+  // The CIT lines' total in VND: the P&L's own cost total in the VND view, summed again otherwise.
+  const expenseVnd = view.currency === "VND" ? totalExpense : expenses.reduce((a, t) => a + toVnd(t), 0);
   // A reversal and the entry it cancels net to zero and need no further review.
   const cancelled = new Set(txns.flatMap((t) => (t.reversalOfId ? [t.reversalOfId, t.id] : [])));
   const live = (t: { id: string }) => !cancelled.has(t.id);
@@ -131,8 +140,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         section="reports"
         title={tr("page.title")}
         description={tr("page.subtitle", { month: period })}
-        meta={(drafts > 0 || rejected > 0) && (
+        meta={(view.currency !== "VND" || drafts > 0 || rejected > 0) && (
           <>
+            <ViewNote view={view} />
             {drafts > 0 && (
               <Link href="/ledger?view=drafts" className="wf-chip wf-chip--warn wf-chip--dot">{tr("page.draftsNotIncluded", { count: drafts })}</Link>
             )}
@@ -146,31 +156,31 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
       <StatStrip className="lg:grid-cols-3">
         <Stat label={tr("cards.income")} icon={ArrowDownLeft} tone="pos"
-          sub={months.length > 1 && tr("cards.perMonth", { amount: fmt(perMonth(totalIncome)) })}>
-          {fmt(totalIncome)}
+          sub={months.length > 1 && tr("cards.perMonth", { amount: fmtV(perMonth(totalIncome)) })}>
+          {fmtV(totalIncome)}
         </Stat>
         <Stat label={tr("cards.expenses")} icon={ArrowUpRight} tone="neg"
-          sub={months.length > 1 && tr("cards.perMonth", { amount: fmt(perMonth(totalExpense)) })}>
-          {fmt(totalExpense)}
+          sub={months.length > 1 && tr("cards.perMonth", { amount: fmtV(perMonth(totalExpense)) })}>
+          {fmtV(totalExpense)}
         </Stat>
         <Stat label={tr("cards.netProfit")} icon={TrendingUp} tone={net >= 0 ? "info" : "neg"} emphasis
           sub={comparable
-            ? <span className={delta >= 0 ? "text-pos" : "text-neg"}>{tr("cards.vsPrevious", { arrow: delta >= 0 ? "▲" : "▼", amount: fmt(Math.abs(delta)), count: months.length })}</span>
+            ? <span className={delta >= 0 ? "text-pos" : "text-neg"}>{tr("cards.vsPrevious", { arrow: delta >= 0 ? "▲" : "▼", amount: fmtV(Math.abs(delta)), count: months.length })}</span>
             : tr("cards.noEarlier")}>
-          {fmt(net)}
+          {fmtV(net)}
         </Stat>
       </StatStrip>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-12">
           <PanelHead title={tr("trend.title")} />
-          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{tr("trend.subtitle")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{tr("trend.subtitle", { currency: view.currency })}</p>
           <CardContent>
-            <TrendChart labels={labels} revenue={pnl.revenue.perMonth} cost={pnl.cost.perMonth} net={pnl.net} locale={locale} />
+            <TrendChart labels={labels} revenue={pnl.revenue.perMonth} cost={pnl.cost.perMonth} net={pnl.net} currency={view.currency} locale={locale} />
           </CardContent>
         </Card>
 
-        <PnlTable pnl={pnl} labels={labels} className="lg:col-span-12" />
+        <PnlTable pnl={pnl} labels={labels} currency={view.currency} className="lg:col-span-12" />
 
         <Card className="lg:col-span-12">
           <PanelHead title={tr("byProject.title")} count={projectRows.length} />
@@ -187,9 +197,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               {projectRows.map((p) => (
                 <TableRow key={p.name}>
                   <TableCell className="font-semibold text-foreground">{p.name}</TableCell>
-                  <TableCell className="text-right text-pos">{fmt(p.inc)}</TableCell>
-                  <TableCell className="text-right">{fmt(p.exp)}</TableCell>
-                  <TableCell className={cn("text-right font-semibold", p.net >= 0 ? "text-primary" : "text-neg")}>{fmt(p.net)}</TableCell>
+                  <TableCell className="text-right text-pos">{fmtV(p.inc)}</TableCell>
+                  <TableCell className="text-right">{fmtV(p.exp)}</TableCell>
+                  <TableCell className={cn("text-right font-semibold", p.net >= 0 ? "text-primary" : "text-neg")}>{fmtV(p.net)}</TableCell>
                 </TableRow>
               ))}
               {projectRows.length === 0 && (
@@ -205,7 +215,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <div className="grid flex-1 md:grid-cols-2 md:divide-x md:divide-border">
             <section aria-labelledby="tax-cit">
               <p id="tax-cit" className="wf-label px-5 pt-4 pb-1">{tr("tax.citTitle")}</p>
-              <Lines rows={cit} total={totalExpense} emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
+              <Lines rows={cit} total={expenseVnd} emptyText={tr("lines.empty")} totalText={tr("lines.total")} />
             </section>
             <div className="border-t border-border md:border-t-0">
               <section aria-labelledby="tax-vat">
@@ -225,12 +235,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                 <p id="tax-docs" className="wf-label px-5 pt-4 pb-1">{tr("tax.docsTitle")}</p>
                 <ul className="wf-rows">
                   {docsOpen.map((d) => (
-                    <li key={d.label}>
+                    // In a narrow panel the amount takes its own line instead of overlapping the chip.
+                    <li key={d.label} className="flex-wrap">
                       <span className="flex min-w-0 flex-wrap items-center gap-2">
                         <Chip tone={DOC_TONE[d.key] ?? "neutral"}>{d.label}</Chip>
                         <span className="text-[13.5px] text-muted-foreground">{tr("tax.entryCount", { count: d.count })}</span>
                       </span>
-                      <span className={cn("wf-figure", d.key === "MISSING" && "text-neg")}>{fmt(d.vnd)}</span>
+                      <span className={cn("wf-figure ml-auto", d.key === "MISSING" && "text-neg")}>{fmt(d.vnd)}</span>
                     </li>
                   ))}
                   {docsOpen.length === 0 && <li className="text-muted-foreground">{tr("tax.allDocs")}</li>}

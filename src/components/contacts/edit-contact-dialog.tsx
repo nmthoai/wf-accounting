@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CircleAlert, Pencil, Loader2 } from "lucide-react";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 
 type Contact = { id: string; name: string; email: string | null; phone: string | null };
 
@@ -39,7 +39,7 @@ export function EditContactDialog({
       setOpen(false);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setSaving(false);
     }
@@ -58,11 +58,11 @@ export function EditContactDialog({
             <Input id={`n-${contact.id}`} name="name" defaultValue={contact.name} required />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor={`e-${contact.id}`}>{t("form.email")}</Label>
+            <Label htmlFor={`e-${contact.id}`}>{t("form.emailOptional")}</Label>
             <Input id={`e-${contact.id}`} name="email" type="email" defaultValue={contact.email ?? ""} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor={`p-${contact.id}`}>{t("form.phone")}</Label>
+            <Label htmlFor={`p-${contact.id}`}>{t("form.phoneOptional")}</Label>
             <Input id={`p-${contact.id}`} name="phone" type="tel" defaultValue={contact.phone ?? ""} placeholder="+84 …" />
           </div>
           {err && (

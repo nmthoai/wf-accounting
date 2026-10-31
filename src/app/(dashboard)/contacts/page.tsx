@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/wf/page-header";
 import { toVnd, BOOKED } from "@/lib/money";
 
 export default async function ContactsPage() {
-  await requirePageSession(); // second line behind the proxy
+  const session = await requirePageSession(); // second line behind the proxy
   const t = await getTranslations("contacts");
   const [clients, vendors, projects, incomeTx] = await Promise.all([
     prisma.client.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { projects: true, invoices: true } } } }),
@@ -38,7 +38,7 @@ export default async function ContactsPage() {
   return (
     <div>
       <PageHeader section="contacts" title={t("page.title")} description={t("page.subtitle")} />
-      <ContactsClient clients={clientRows} vendors={vendorRows} />
+      <ContactsClient clients={clientRows} vendors={vendorRows} isAdmin={session.user.role === "ADMIN"} />
     </div>
   );
 }

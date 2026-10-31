@@ -4,21 +4,24 @@ import { Card } from "@/components/ui/card";
 import { ArrowDownLeft, ArrowLeftRight, ArrowRight, ArrowUpRight, Wallet, TrendingUp, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { computeBalances, cashPosition, totalsList, settlement, isMoneyIn, isPnl, isBooked, toVnd, fmtMoney, BOOKED_ALLOCATIONS, type Totals , vnTodayStart } from "@/lib/money";
+import { computeBalances, cashPosition, totalsList, settlement, isMoneyIn, isPnl, isBooked, valueIn, fmtMoney, BOOKED_ALLOCATIONS, type Totals , vnTodayStart } from "@/lib/money";
 import { getTranslations, getLocale } from "next-intl/server";
 import { fmtDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/wf/page-header";
 import { Chip, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
 import { GiniBadge } from "@/components/gini/gini-avatar";
+import { ViewNote } from "@/components/wf/view-note";
+import { getView } from "@/lib/view";
 
 export default async function DashboardPage() {
-  await requirePageSession(); // second line behind the proxy
+  const session = await requirePageSession(); // second line behind the proxy
   // `tr`, not `t`: the transaction loops below already use `t`.
   const tr = await getTranslations("dashboard");
   const tc = await getTranslations("common");
   const locale = await getLocale();
-  const [transactions, accounts, openInvoices, projectList] = await Promise.all([
+  const [view, transactions, accounts, openInvoices, projectList] = await Promise.all([
+    getView(session.user.id),
     prisma.transaction.findMany({ orderBy: { date: "desc" }, include: { category: true } }),
     prisma.account.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.invoice.findMany({
@@ -37,12 +40,12 @@ export default async function DashboardPage() {
   const cancelled = new Set(transactions.map((t) => t.reversalOfId).filter(Boolean));
   const counted = (t: { id: string; reversalOfId: string | null }) => !t.reversalOfId && !cancelled.has(t.id);
 
-  // All-time performance (in VND) — income and expenses only; transfers,
-  // capital and loans move money but are not profit.
+  // All-time performance in the user's view currency — income and expenses
+  // only; transfers, capital and loans move money but are not profit.
   const income = booked.filter(t => t.type === "INCOME");
   const expense = booked.filter(t => t.type === "EXPENSE");
-  const totalIncome = income.reduce((acc, t) => acc + toVnd(t), 0);
-  const totalExpense = expense.reduce((acc, t) => acc + toVnd(t), 0);
+  const totalIncome = income.reduce((acc, t) => acc + valueIn(view, t), 0);
+  const totalExpense = expense.reduce((acc, t) => acc + valueIn(view, t), 0);
   const netSurplus = totalIncome - totalExpense; // profit / surplus
 
   // Cash = real balances per account (opening + every movement since), kept per
@@ -57,7 +60,8 @@ export default async function DashboardPage() {
   const recentTransactions = transactions.slice(0, 5);
 
   // Coming payments: what's still open on each invoice (gross − payments − evidenced
-  // fees), totalled per currency. AR = clients owe me, AP = I owe vendors.
+  // fees), totalled per currency (plus a converted total in the USD view).
+  // AR = clients owe me, AP = I owe vendors.
   const now = vnTodayStart(); // overdue from the day after the due date
   const comingItem = (i: typeof openInvoices[number]) => ({
     id: i.id,
@@ -65,26 +69,34 @@ export default async function DashboardPage() {
     sub: [i.number, i.project?.name, i.status === "PARTIAL" ? tr("coming.partPaid") : null].filter(Boolean).join(" · "),
     amount: settlement(i.amount, i.allocations).difference,
     currency: i.currency,
+    exchangeRate: i.exchangeRate,
     due: fmtDate(i.dueDate, locale),
     overdue: i.dueDate < now,
   });
   const totalOf = (items: ReturnType<typeof comingItem>[]) => {
     const t: Totals = {};
     for (const i of items) t[i.currency] = (t[i.currency] ?? 0) + i.amount;
-    return totalsList(t).map(([c, v]) => fmtMoney(v, c)).join(" · ") || fmtMoney(0, "VND");
+    const lines = totalsList(t);
+    const text = lines.map(([c, v]) => fmtMoney(v, c)).join(" · ") || fmtMoney(0, view.currency);
+    // In the USD view, amounts not already all in USD also get one converted
+    // total — an estimate at the Settings rate.
+    if (view.currency === "VND" || lines.length === 0 || (lines.length === 1 && lines[0][0] === view.currency)) return text;
+    const total = items.reduce((s, i) => s + valueIn(view, i), 0);
+    return `${text} · ${tr("coming.viewTotal", { amount: fmtMoney(total, view.currency) })}`;
   };
   const comingOut = openInvoices.filter((i) => i.direction === "PAYABLE").map(comingItem);
   const comingIn = openInvoices.filter((i) => i.direction === "RECEIVABLE").map(comingItem);
   const apOutstanding = totalOf(comingOut);
   const arOutstanding = totalOf(comingIn);
 
-  // Top projects by net profit — grouped from the transactions already fetched (no extra query).
+  // Top projects by net profit, in the view currency — grouped from the
+  // transactions already fetched (no extra query).
   const projName = new Map(projectList.map((p) => [p.id, p.name]));
   const projAgg = new Map<string, { inc: number; exp: number; n: number }>();
   for (const t of booked) {
     if (!t.projectId || !isPnl(t.type)) continue;
     const a = projAgg.get(t.projectId) ?? { inc: 0, exp: 0, n: 0 };
-    if (t.type === "INCOME") a.inc += toVnd(t); else a.exp += toVnd(t);
+    if (t.type === "INCOME") a.inc += valueIn(view, t); else a.exp += valueIn(view, t);
     a.n++;
     projAgg.set(t.projectId, a);
   }
@@ -96,7 +108,8 @@ export default async function DashboardPage() {
   const cashSubtitle = accounts.length > 0
     ? tr("cards.cashSubtitle", { count: accounts.filter((a) => a.type === "BANK" || a.type === "CASH").length })
     : tr("cards.cashNoAccounts");
-  const vnd = (v: number) => fmtMoney(v, "VND");
+  // Summary figures follow the view; cash, accounts and invoices stay in their own currency.
+  const money = (v: number) => fmtMoney(v, view.currency);
 
   const comingRows = (items: ReturnType<typeof comingItem>[]) => items.slice(0, 4).map((i) => (
     <li key={i.id}>
@@ -118,8 +131,9 @@ export default async function DashboardPage() {
         section="dashboard"
         title={tr("page.title")}
         description={tr("page.subtitle")}
-        meta={(drafts > 0 || rejected > 0) && (
+        meta={(drafts > 0 || rejected > 0 || view.currency !== "VND") && (
           <>
+            <ViewNote view={view} />
             {drafts > 0 && (
               <Link href="/ledger?view=drafts" className="wf-chip wf-chip--warn wf-chip--dot">{tr("page.draftsWaiting", { count: drafts })}</Link>
             )}
@@ -135,17 +149,17 @@ export default async function DashboardPage() {
 
       <StatStrip className="lg:grid-cols-4">
         <Stat label={tr("cards.cashTitle")} icon={Wallet} emphasis sub={cashSubtitle}>
-          {liquid.length === 0 && vnd(0)}
+          {liquid.length === 0 && fmtMoney(0, "VND")}
           {liquid.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>))}
         </Stat>
         <Stat label={tr("cards.netSurplusTitle")} icon={TrendingUp} tone={netSurplus >= 0 ? "pos" : "neg"} sub={tr("cards.netSurplusSubtitle")}>
-          {vnd(netSurplus)}
+          {money(netSurplus)}
         </Stat>
         <Stat label={tr("cards.totalIncomeTitle")} icon={ArrowDownLeft} tone="pos" sub={tr("cards.entries", { count: income.filter(counted).length })}>
-          {vnd(totalIncome)}
+          {money(totalIncome)}
         </Stat>
         <Stat label={tr("cards.totalExpensesTitle")} icon={ArrowUpRight} tone="neg" sub={tr("cards.entries", { count: expense.filter(counted).length })}>
-          {vnd(totalExpense)}
+          {money(totalExpense)}
         </Stat>
       </StatStrip>
 
@@ -286,7 +300,7 @@ export default async function DashboardPage() {
               {topProjects.map((p) => (
                 <li key={p.id}>
                   <Link href={`/projects/${p.id}`} className="min-w-0 truncate text-foreground hover:text-primary">{p.name}</Link>
-                  <span className={cn("wf-figure", p.net >= 0 ? "text-primary" : "text-neg")}>{vnd(p.net)}</span>
+                  <span className={cn("wf-figure", p.net >= 0 ? "text-primary" : "text-neg")}>{money(p.net)}</span>
                 </li>
               ))}
               {topProjects.length === 0 && <li className="text-muted-foreground">{tr("topProjects.empty")}</li>}

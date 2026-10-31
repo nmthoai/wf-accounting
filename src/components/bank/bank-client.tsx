@@ -15,7 +15,7 @@ import { AccountSelect, type AccountOpt } from "@/components/accounts/account-se
 import { previewStatement, importStatement, matchLine, unmatchEntry, deleteStatement } from "@/app/actions/bank";
 import { fmtMoney, EPS } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { Chip, Notice, type Tone } from "@/components/wf/ledger-ui";
 
 export type EntryOpt = { id: string; accountId: string; date: string; amount: number; label: string; href: string }; // amount: signed, account currency
@@ -42,9 +42,9 @@ const tol = (currency: string) => (currency === "VND" ? 0.5 : EPS);
 const signed = (n: number, c: string) => `${n < 0 ? "−" : "+"}${fmtMoney(Math.abs(n), c)}`;
 const STATUS_TONE: Record<LineRow["status"], Tone> = { MATCHED: "pos", PARTIAL: "warn", UNMATCHED: "neg" };
 
-async function act(fn: () => Promise<{ success: boolean; message?: string }>, refresh: () => void, done: string, somethingWrong: string) {
+async function act(fn: () => Promise<{ success: boolean; message?: string }>, refresh: () => void, done: string) {
   let res;
-  try { res = await fn(); } catch { notify.error(somethingWrong); return; }
+  try { res = await fn(); } catch { notifyFailure(); return; }
   notifyResult(res, done);
   refresh();
 }
@@ -60,7 +60,6 @@ function FormError({ children }: { children: React.ReactNode }) {
 // Upload a statement, check it adds up, then append its new lines.
 function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
   const t = useTranslations("bank");
-  const tc = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [accountId, setAccountId] = useState(accounts.find((a) => a.type === "BANK")?.id ?? "");
@@ -85,7 +84,7 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
       setOpening(res.preview.opening === null ? "" : String(res.preview.opening));
       setClosing(res.preview.closing === null ? "" : String(res.preview.closing));
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusy(false); }
   }
 
@@ -101,7 +100,7 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
       setPreview(null);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusy(false); }
   }
 
@@ -207,7 +206,6 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
 // Pick the ledger entries that make up a bank line (one or several).
 function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) {
   const t = useTranslations("bank");
-  const tc = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
@@ -228,7 +226,7 @@ function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) 
       setOpen(false); setPicked([]);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusy(false); }
   }
 
@@ -279,7 +277,6 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
   accounts: AccountOpt[]; summaries: AccountSummary[]; lines: LineRow[]; entries: EntryOpt[]; statements: StatementRow[];
 }) {
   const t = useTranslations("bank");
-  const tc = useTranslations("common");
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const openLines = lines.filter((l) => l.status !== "MATCHED");
@@ -288,7 +285,7 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
 
   async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string) {
     setBusyId(id);
-    try { await act(fn, () => router.refresh(), done, tc("errors.somethingWrong")); } finally { setBusyId(null); }
+    try { await act(fn, () => router.refresh(), done); } finally { setBusyId(null); }
   }
 
   return (
@@ -421,7 +418,7 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                       ))}
                       {l.suggestion && (
                         <span className="flex items-center gap-2 text-[13.5px]">
-                          <span className="max-w-[180px] truncate text-muted-foreground" title={`${l.suggestion.date} · ${l.suggestion.label}`}>{t("lines.suggested", { label: l.suggestion.label, date: l.suggestion.date })}</span>
+                          <span className="max-w-[260px] truncate text-muted-foreground" title={`${l.suggestion.date} · ${l.suggestion.label}`}>{t("lines.suggested", { label: l.suggestion.label, date: l.suggestion.date })}</span>
                           <Button size="xs" variant="outline" className="text-pos" disabled={busyId === l.id}
                             onClick={() => run(l.id, () => matchLine(l.id, [l.suggestion!.id]), t("match.toast.matched"))}>{t("lines.match")}</Button>
                         </span>
@@ -443,7 +440,8 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
               ))}
               {shown.length === 0 && (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                  {/* Left-aligned on phones, where the table scrolls sideways and a centred line would run off. */}
+                  <TableCell colSpan={6} className="py-10 text-left text-muted-foreground sm:text-center">
                     {lines.length === 0 ? t("lines.empty") : t("lines.allMatched")}
                   </TableCell>
                 </TableRow>

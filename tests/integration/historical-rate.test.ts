@@ -281,7 +281,7 @@ test("a receipt with a withheld bank fee: edits keep both values; the fee can't 
   const bankFees = await S.prisma.category.create({ data: { name: "Bank & FX Fees", type: "EXPENSE" } });
   await setDefault(26400);
   as.admin();
-  assert.equal((await I.createInvoice(fd({ direction: "RECEIVABLE", number: "E041-R", issueDate: "2026-09-01", dueDate: "2026-09-30", currency: "USD", amount: 1998.75, categoryId: S.income.id }))).success, true);
+  assert.equal((await I.createInvoice(fd({ direction: "RECEIVABLE", number: "E041-R", clientId: S.client.id, issueDate: "2026-09-01", dueDate: "2026-09-30", currency: "USD", amount: 1998.75, categoryId: S.income.id }))).success, true);
   const inv = await S.prisma.invoice.findFirstOrThrow({ where: { number: "E041-R" } });
   const paid = await I.recordPayment(inv.id, fd({
     amount: 1998.75, feeDeducted: 26, feeCategoryId: bankFees.id, paidDate: "2026-09-20", accountId: S.usd.id, rateMode: "DEFAULT", requestId: "rate-test-1",

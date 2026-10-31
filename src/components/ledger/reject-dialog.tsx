@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { rejectEntries } from "@/app/actions/ledger";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 
 // The owner's alternative to approving a draft: send it back to whoever
 // entered it, with the reason they need to correct it.
@@ -30,7 +30,7 @@ export function RejectDialog({ id, compact = false }: { id: string; compact?: bo
       notify.success(t("toast.rejected"));
       setOpen(false); setReason("");
       router.refresh();
-    } catch { notify.error(tc("errors.somethingWrong")); }
+    } catch { notifyFailure(); }
     finally { setBusy(false); }
   }
 

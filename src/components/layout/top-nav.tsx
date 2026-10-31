@@ -38,7 +38,7 @@ export function TopNav({
   const page = pathname === "/profile" ? t("header.profile") : section ? t(`nav.${section.key}`) : "";
 
   return (
-    <header className="wf-glass sticky top-0 z-10 flex h-(--size-topbar) shrink-0 items-center justify-between gap-3 border-b border-border px-4 sm:px-6 lg:px-8">
+    <header className="wf-glass sticky top-0 z-10 flex h-(--size-topbar) shrink-0 items-center justify-between gap-3 border-b border-border px-4 sm:px-6 lg:px-8 print:hidden">
       <div className="flex min-w-0 items-center gap-3">
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger className="wf-icon-btn lg:hidden" aria-label={t("nav.openSidebar")}>
@@ -60,7 +60,7 @@ export function TopNav({
         <p className="hidden min-w-0 items-center gap-2.5 sm:flex">
           <span className="wf-kicker text-muted-foreground">{group}</span>
           <span className="text-border-strong" aria-hidden="true">/</span>
-          <span className="truncate text-[17px] font-semibold text-foreground">{page}</span>
+          <span className="truncate text-[17px] font-semibold text-foreground" title={page}>{page}</span>
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export function TopNav({
             >
               {greeting.charAt(0)}
             </span>
-            <span className="hidden max-w-[14rem] truncate sm:inline">
+            <span className="hidden max-w-[14rem] truncate sm:inline" title={greeting}>
               {t.rich("header.hello", { name: greeting, b: (chunks) => <span className="font-semibold text-foreground">{chunks}</span> })}
             </span>
             <span className="sr-only sm:hidden">{t("header.profile")}</span>

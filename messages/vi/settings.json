@@ -1,7 +1,7 @@
 {
   "page": {
     "title": "Cài đặt",
-    "subtitle": "Quản lý khoản mục và số dư ngân hàng"
+    "subtitle": "Khoản mục, đơn giá và tỷ giá mặc định"
   },
   "fields": {
     "name": "Tên",
@@ -45,9 +45,10 @@
       "project": "dự án",
       "manday": "ngày công"
     },
-    "rateLine": "${rate} / {unit}",
+    "rateLine": "{rate} / {unit}",
     "empty": "Chưa thiết lập đơn giá nào.",
     "editTitle": "Sửa đơn giá",
+    "deleteConfirm": "Xóa đơn giá “{name}”?",
     "toast": {
       "added": "Đã thêm đơn giá",
       "saved": "Đã lưu đơn giá",
@@ -58,8 +59,6 @@
     "title": "Cài đặt chung",
     "description": "Giá trị mặc định của hệ thống",
     "current": "Tỷ giá hiện tại",
-    "lastUpdated": "Cập nhật lần cuối",
-    "never": "Chưa cập nhật",
     "newRate": "Đặt tỷ giá mới",
     "hint": "Tỷ giá này sẽ được tự động điền khi thêm bút toán bằng USD.",
     "submit": "Cập nhật tỷ giá",

@@ -1,7 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notifyResult, notifyFailure } from "@/components/ui/toast";
 
 // A plain server-action form that confirms (or reports) the result with a toast.
 export function ActionForm({
@@ -15,7 +14,6 @@ export function ActionForm({
   className?: string;
   children: React.ReactNode;
 }) {
-  const tc = useTranslations("common");
   return (
     <form
       className={className}
@@ -23,7 +21,7 @@ export function ActionForm({
         try {
           notifyResult(await action(formData), success);
         } catch {
-          notify.error(tc("errors.somethingWrong"));
+          notifyFailure();
         }
       }}
     >

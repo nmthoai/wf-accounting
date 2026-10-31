@@ -101,7 +101,7 @@
   "documents": {
     "add": "Thêm tài liệu",
     "upload": "Tải lên",
-    "hint": "PDF, Word, Excel hoặc hình ảnh. Lưu trữ riêng tư — chỉ xem được khi đã đăng nhập.",
+    "hint": "PDF, Word, Excel hoặc hình ảnh.",
     "confirmRemove": "Xóa tài liệu này? Thao tác này sẽ xóa tệp.",
     "couldNotUpload": "Không thể tải lên.",
     "couldNotRemove": "Không thể xóa tài liệu."
@@ -109,6 +109,8 @@
   "errors": {
     "couldNotCreate": "Không thể tạo dự án.",
     "nameRequired": "Tên dự án không được để trống.",
-    "hasLinked": "Đã có bút toán/hóa đơn gắn với dự án này. Hãy lưu trữ dự án thay vì xóa."
+    "hasLinked": "Đã có bút toán/hóa đơn gắn với dự án này. Hãy lưu trữ dự án thay vì xóa.",
+    "endBeforeStart": "Ngày kết thúc ({end}) đang trước ngày bắt đầu ({start}) — hãy chọn ngày kết thúc từ {start} trở đi, hoặc bỏ trống một trong hai ngày.",
+    "nameTaken": "Đã có dự án tên “{name}” — hãy dùng dự án đó, hoặc đặt cho dự án này một tên khác."
   }
 }

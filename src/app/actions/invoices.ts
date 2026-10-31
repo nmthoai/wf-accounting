@@ -8,7 +8,7 @@ import { defaultUsdRate, resolveFx } from "@/lib/fx";
 import { EPS, fmtMoney, settlement } from "@/lib/money";
 import { refreshInvoiceStatus } from "@/lib/invoice-status";
 import { diff, record, snapshot, type Change } from "@/lib/history";
-import { getT } from "@/i18n/server";
+import { getT, type Translate } from "@/i18n/server";
 
 async function requireUser() {
   const session = await getSession();
@@ -31,6 +31,27 @@ class Changed extends Error {}
 const linkNote = (inv: { number: string | null; direction: string }, kind: string, amount: number) =>
   `${inv.direction === "PAYABLE" ? "bill" : "invoice"} ${inv.number ?? "(no number)"} · ${kind} ${amount}`;
 
+// What every saved invoice/bill must have (create and edit): a client or vendor
+// that exists, and a due date on or after the issue date; an invoice also needs
+// its number. A bill may wait for the vendor's invoice (an accrual), so its
+// number is optional. Old rows are only held to this when they are saved again.
+// Returns the reason, or null.
+async function invoiceProblem(
+  t: Translate,
+  direction: string,
+  f: { number: string | null; partyId: string | null; issueStr: string; dueStr: string },
+) {
+  const payable = direction === "PAYABLE";
+  if (new Date(f.dueStr) < new Date(f.issueStr)) return t("errors.dueBeforeIssue", { due: f.dueStr, issue: f.issueStr });
+  if (!f.partyId) return payable ? t("errors.vendorRequired") : t("errors.clientRequired");
+  const exists = payable
+    ? await prisma.vendor.count({ where: { id: f.partyId } })
+    : await prisma.client.count({ where: { id: f.partyId } });
+  if (!exists) return t("errors.partyGone", { direction });
+  if (!f.number && !payable) return t("errors.invoiceNumberRequired");
+  return null;
+}
+
 // Create a receivable (client owes you) or payable (you owe a vendor).
 export async function createInvoice(formData: FormData) {
   await requireUser();
@@ -50,6 +71,8 @@ export async function createInvoice(formData: FormData) {
 
   if (isNaN(amount) || amount <= 0) return { success: false, message: t("errors.invalidAmount") };
   if (!issueStr || !dueStr) return { success: false, message: t("errors.datesRequired") };
+  const problem = await invoiceProblem(t, direction, { number, partyId: direction === "PAYABLE" ? vendorId : clientId, issueStr, dueStr });
+  if (problem) return { success: false, message: problem };
 
   let exchangeRate = 1.0;
   if (currency === "USD") {
@@ -107,11 +130,12 @@ export async function updateInvoice(id: string, formData: FormData) {
 
   if (isNaN(amount) || amount <= 0) return { success: false, message: t("errors.invalidAmount") };
   if (!issueStr || !dueStr) return { success: false, message: t("errors.datesRequired") };
+  const isReceivable = inv.direction === "RECEIVABLE";
+  const problem = await invoiceProblem(t, inv.direction, { number, partyId: isReceivable ? clientId : vendorId, issueStr, dueStr });
+  if (problem) return { success: false, message: problem };
   if (currency !== inv.currency && inv.allocations.length > 0) {
     return { success: false, message: t("errors.currencyLocked") };
   }
-
-  const isReceivable = inv.direction === "RECEIVABLE";
 
   // Recompute the rate only if the currency changed.
   let exchangeRate = inv.exchangeRate;

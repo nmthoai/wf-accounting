@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pencil, Loader2, CircleAlert } from "lucide-react";
 import { updateProject } from "@/app/actions/projects";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 
 type Project = {
   id: string; name: string; clientId: string | null; status: string;
@@ -26,6 +26,8 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
   const [err, setErr] = useState("");
   const [clientId, setClientId] = useState(project.clientId ?? "");
   const [status, setStatus] = useState(project.status);
+  // Only a hint: the browser won't offer an end date before the start; the server checks too.
+  const [startDate, setStartDate] = useState(project.startDate ?? "");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,14 +43,14 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
       notify.success(t("toast.saved"));
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setStartDate(project.startDate ?? ""); }}>
       <DialogTrigger render={<Button variant="outline" />}>
         <Pencil aria-hidden="true" />{tc("actions.edit")}
       </DialogTrigger>
@@ -61,9 +63,9 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label>{t("edit.client")}</Label>
+              <Label htmlFor="ep-client">{t("edit.client")}</Label>
               <Select value={clientId} onValueChange={(v) => setClientId(v === "none" ? "" : v || "")}>
-                <SelectTrigger className="w-full">{clientId ? <span className="truncate">{clients.find(c => c.id === clientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}</SelectTrigger>
+                <SelectTrigger id="ep-client" className="w-full">{clientId ? <span className="truncate">{clients.find(c => c.id === clientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}</SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("noClient")}</SelectItem>
                   {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -71,9 +73,9 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>{t("edit.status")}</Label>
+              <Label htmlFor="ep-status">{t("edit.status")}</Label>
               <Select value={status} onValueChange={(v) => setStatus(v || "ACTIVE")}>
-                <SelectTrigger className="w-full"><span>{t.has(`status.${status}`) ? t(`status.${status}`) : status}</span></SelectTrigger>
+                <SelectTrigger id="ep-status" className="w-full"><span>{t.has(`status.${status}`) ? t(`status.${status}`) : status}</span></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NOT_STARTED">{t("status.NOT_STARTED")}</SelectItem>
                   <SelectItem value="ACTIVE">{t("status.ACTIVE")}</SelectItem>
@@ -87,11 +89,11 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="startDate">{t("edit.startDate")}</Label>
-              <Input id="startDate" name="startDate" type="date" defaultValue={project.startDate ?? ""} className="wf-num" />
+              <Input id="startDate" name="startDate" type="date" defaultValue={project.startDate ?? ""} onChange={(e) => setStartDate(e.target.value)} className="wf-num" />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="endDate">{t("edit.endDate")}</Label>
-              <Input id="endDate" name="endDate" type="date" defaultValue={project.endDate ?? ""} className="wf-num" />
+              <Input id="endDate" name="endDate" type="date" defaultValue={project.endDate ?? ""} min={startDate || undefined} className="wf-num" />
             </div>
           </div>
           <div className="grid gap-2">

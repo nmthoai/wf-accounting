@@ -55,7 +55,7 @@ const get = (id: string) => S.prisma.transaction.findUniqueOrThrow({ where: { id
 const history = (entityId: string) => S.prisma.changeLog.count({ where: { entityId } });
 const invoice = async (number: string) => {
   as.admin();
-  assert.equal((await I.createInvoice(fd({ number, direction: "RECEIVABLE", currency: "VND", amount: 100000, issueDate: "2026-09-01", dueDate: "2026-09-30" }))).success, true);
+  assert.equal((await I.createInvoice(fd({ number, direction: "RECEIVABLE", clientId: S.client.id, currency: "VND", amount: 100000, issueDate: "2026-09-01", dueDate: "2026-09-30" }))).success, true);
   return S.prisma.invoice.findFirstOrThrow({ where: { number } });
 };
 
@@ -130,7 +130,7 @@ test("invoices: a link, void or edit whose history can't be written changes noth
   as.staff();
   assert.equal((await I.recordPayment(inv.id, fd({ amount: 100000, paidDate: "2026-09-10", accountId: S.vnd.id }))).success, true);
   const pay = await S.prisma.paymentAllocation.findFirstOrThrow({ where: { invoiceId: inv.id } });
-  await historyDown(() => I.updateInvoice(inv.id, fd({ number: "AT-1b", issueDate: "2026-09-01", dueDate: "2026-09-30", amount: 100000 })));
+  await historyDown(() => I.updateInvoice(inv.id, fd({ number: "AT-1b", clientId: S.client.id, issueDate: "2026-09-01", dueDate: "2026-09-30", amount: 100000 })));
   assert.equal((await S.prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } })).number, "AT-1");
   assert.equal((await get(pay.transactionId)).invoiceNumber, "AT-1");
 });
@@ -143,7 +143,7 @@ test("invoices: an edit doesn't overwrite a payment posted after the read", asyn
   as.staff();
   const restore = after(S.prisma.invoice, "findUnique", () => S.prisma.transaction.update({ where: { id: pay.transactionId }, data: { status: "POSTED" } }));
   try {
-    const res = await I.updateInvoice(inv.id, fd({ number: "AT-2b", projectId: "", issueDate: "2026-09-01", dueDate: "2026-09-30", amount: 100000 }));
+    const res = await I.updateInvoice(inv.id, fd({ number: "AT-2b", clientId: S.client.id, projectId: "", issueDate: "2026-09-01", dueDate: "2026-09-30", amount: 100000 }));
     assert.equal(res.success, false);
   } finally { restore(); }
   const p = await get(pay.transactionId);
@@ -152,7 +152,7 @@ test("invoices: an edit doesn't overwrite a payment posted after the read", asyn
   assert.equal((await S.prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } })).number, "AT-2");
 
   // Once posted, the next edit leaves the payment alone and goes through.
-  assert.equal((await I.updateInvoice(inv.id, fd({ number: "AT-2b", issueDate: "2026-09-01", dueDate: "2026-09-30", amount: 100000 }))).success, true);
+  assert.equal((await I.updateInvoice(inv.id, fd({ number: "AT-2b", clientId: S.client.id, issueDate: "2026-09-01", dueDate: "2026-09-30", amount: 100000 }))).success, true);
   assert.equal((await get(pay.transactionId)).invoiceNumber, "AT-2");
 });
 

@@ -25,8 +25,9 @@ export default async function GiniPage() {
           </div>
         </div>
         <div className="wf-page-header__actions">
-          <span className="wf-chip wf-chip--pos h-7 gap-2 px-3 text-[14px]">
-            <ShieldCheck className="size-3.5" aria-hidden="true" />
+          {/* Wraps instead of pushing a phone screen sideways. */}
+          <span className="wf-chip wf-chip--pos h-auto min-h-7 min-w-0 shrink gap-2 px-3 py-1 text-[14px] leading-snug whitespace-normal">
+            <ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
             {t("page.trust")}
           </span>
         </div>

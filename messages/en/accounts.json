@@ -25,7 +25,7 @@
   },
   "unclassified": {
     "title": "{count, plural, one {# movement need classifying} other {# movements need classifying}}",
-    "description": "Money moved but we don't know why yet — mark it as capital, a loan, or a repayment."
+    "description": "Money moved but we don't know why yet — mark it as capital, a loan or a repayment; bank interest as income; a fee or card charge as an expense."
   },
   "account": {
     "meta": "{type} · {currency}",
@@ -43,7 +43,8 @@
     "received": "Received {amount}",
     "repaid": "Repaid {amount}",
     "outstanding": "Outstanding {amount}",
-    "empty": "No loans recorded."
+    "empty": "No loans recorded.",
+    "deleteConfirm": "Delete the loan from {lender}?"
   },
   "movements": {
     "title": "Transfers, capital & loans",
@@ -68,7 +69,11 @@
     "transferRecorded": "Transfer recorded",
     "movementSaved": "Movement saved",
     "movementRecorded": "Movement recorded",
-    "loanAdded": "Loan added"
+    "loanAdded": "Loan added",
+    "loanSaved": "Loan saved",
+    "loanDeleted": "Loan deleted",
+    "classifiedIncome": "Classified as income — it's now in the ledger",
+    "classifiedExpense": "Classified as an expense — it's now in the ledger"
   },
   "form": {
     "name": "Name",
@@ -105,7 +110,7 @@
     "amountReceived": "Amount received ({currency})",
     "exactFigures": "Use the exact figures from the bank statement.",
     "rate": "Rate for this transfer: <b>{rate} VND/USD</b>",
-    "notePlaceholder": "e.g. USD → VND conversion",
+    "notePlaceholder": "e.g. USD → VND",
     "save": "Save transfer",
     "record": "Record transfer"
   },
@@ -119,7 +124,15 @@
     "amount": "Amount",
     "amountIn": "Amount ({currency})",
     "save": "Save movement",
-    "record": "Record"
+    "record": "Record",
+    "classifyTitle": "Classify movement",
+    "pnlHelpIncome": "Income — it moves to the ledger and counts in profit & loss. Its evidence and tax review start as pending.",
+    "pnlHelpExpense": "An expense — it moves to the ledger and counts in profit & loss. Its evidence and tax review start as pending.",
+    "category": "Category",
+    "chooseCategory": "Choose category",
+    "noIncomeCategories": "No income categories — add one in Settings → Categories",
+    "noExpenseCategories": "No expense categories — add one in Settings → Categories",
+    "interestNoCategory": "This looks like bank interest, but there is no income category for it. Add one named “Bank interest” in Settings → Categories, then classify this."
   },
   "loanDialog": {
     "title": "New loan",
@@ -127,7 +140,10 @@
     "lenderPlaceholder": "e.g. Owner — Thoai Nguyen",
     "notesPlaceholder": "Terms, interest, agreement reference…",
     "help": "Then record money received and repayments against it — the outstanding amount is calculated for you.",
-    "add": "Add loan"
+    "add": "Add loan",
+    "editTitle": "Edit loan",
+    "save": "Save loan",
+    "currencyFixed": "{count, plural, one {Fixed — # movement uses this loan.} other {Fixed — # movements use this loan.}}"
   },
   "select": {
     "placeholder": "Choose account",
@@ -150,7 +166,19 @@
     "chooseTwoAccounts": "Choose two different accounts.",
     "unknownAccount": "Unknown account.",
     "amountArrived": "Enter the {currency} amount that arrived.",
-    "transferNotFound": "Transfer not found."
+    "transferNotFound": "Transfer not found.",
+    "negativeOpening": "A {type} account can't have a negative opening balance — enter 0 or more. Only an owner account can be negative (the company owes the owner).",
+    "loanNotFound": "This loan no longer exists — reload the page.",
+    "loanCurrencyLocked": "{count, plural, one {# movement is recorded against this loan, so its currency stays {currency}.} other {# movements are recorded against this loan, so its currency stays {currency}.}} To use another currency, add a new loan.",
+    "loanInUse": "{count, plural, one {This loan can't be deleted: # movement is recorded against it.} other {This loan can't be deleted: # movements are recorded against it.}} Move them to another loan or delete them first.",
+    "alreadyClassified": "This movement is already classified — reload the page to see it.",
+    "incomeNeedsMoneyIn": "This money went out of the account, so it can't be income. Choose Expense (e.g. a fee or card charge), or a loan repayment.",
+    "expenseNeedsMoneyOut": "This money came into the account, so it can't be an expense. Choose Income (e.g. bank interest or a refund), capital or a loan.",
+    "chooseIncomeCategory": "Choose an income category (e.g. Bank interest). If none fits, add one in Settings → Categories.",
+    "chooseExpenseCategory": "Choose an expense category (e.g. Bank fees). If none fits, add one in Settings → Categories.",
+    "categoryIsExpense": "“{name}” is an expense category — choose an income category.",
+    "categoryIsIncome": "“{name}” is an income category — choose an expense category.",
+    "changedMeanwhile": "Someone changed this entry while you were editing it (reviewed, rejected or deleted it). Nothing was saved — reload the page to see it, then try again."
   },
   "fx": {
     "vndSettled": "Enter the VND amount actually settled.",

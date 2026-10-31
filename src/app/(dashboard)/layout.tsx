@@ -22,17 +22,17 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   });
 
   return (
-    <div className="relative z-10 flex h-screen overflow-hidden">
+    <div className="relative z-10 flex h-screen overflow-hidden print:h-auto print:overflow-visible">
       <IdleLogout />
       <AppSidebar isAdmin={session?.user?.role === "ADMIN"} />
-      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden print:overflow-visible">
         <TopNav
           greeting={me ? me.displayName || me.username : null}
           isAdmin={session?.user?.role === "ADMIN"}
           theme={theme}
           today={today}
         />
-        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 print:overflow-visible print:p-0">
           <div className="wf-rise">{children}</div>
         </main>
       </div>

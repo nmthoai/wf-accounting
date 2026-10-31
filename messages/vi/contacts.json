@@ -5,8 +5,6 @@
   },
   "form": {
     "name": "Tên",
-    "email": "Email",
-    "phone": "Điện thoại",
     "emailOptional": "Email (không bắt buộc)",
     "phoneOptional": "Điện thoại (không bắt buộc)"
   },
@@ -14,7 +12,7 @@
     "title": "Khách hàng",
     "description": "Công ty lập hóa đơn và thực hiện dự án cho các khách hàng này. Doanh thu là tổng các khoản thu đã nhận từ khách hàng.",
     "namePlaceholder": "Ví dụ: Acme Co",
-    "meta": "{contact} · {projects, plural, other {# dự án}} · {invoices, plural, other {# hóa đơn}}",
+    "meta": "{projects, plural, other {# dự án}} · {invoices, plural, other {# hóa đơn}}",
     "revenueTitle": "Doanh thu (đã thu tiền)",
     "confirmDelete": "Xóa khách hàng {name}?",
     "empty": "Chưa có khách hàng nào."
@@ -23,7 +21,7 @@
     "title": "Nhà cung cấp",
     "description": "Công ty thanh toán cho các nhà cung cấp này (ví dụ: nhà thầu phụ, dịch vụ). Số đã chi là tổng các khoản chi gắn với nhà cung cấp.",
     "namePlaceholder": "Ví dụ: ZDN",
-    "meta": "{contact} · {payments, plural, other {# lần thanh toán}}",
+    "meta": "{payments, plural, other {# lần thanh toán}}",
     "confirmDelete": "Xóa nhà cung cấp {name}?",
     "empty": "Chưa có nhà cung cấp nào."
   },
@@ -44,6 +42,8 @@
     "clientNameRequired": "Tên khách hàng không được để trống.",
     "clientHasLinks": "Gỡ các dự án/hóa đơn bán ra đang gắn với khách hàng này trước khi xóa.",
     "vendorNameRequired": "Tên nhà cung cấp không được để trống.",
-    "vendorHasLinks": "Gỡ các bút toán/hóa đơn mua vào đang gắn với nhà cung cấp này trước khi xóa."
+    "vendorHasLinks": "Gỡ các bút toán/hóa đơn mua vào đang gắn với nhà cung cấp này trước khi xóa.",
+    "clientNameTaken": "Đã có khách hàng tên “{name}” — hãy dùng khách hàng đó, hoặc đặt cho khách hàng này một tên khác.",
+    "vendorNameTaken": "Đã có nhà cung cấp tên “{name}” — hãy dùng nhà cung cấp đó, hoặc đặt cho nhà cung cấp này một tên khác."
   }
 }

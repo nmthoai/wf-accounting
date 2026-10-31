@@ -40,6 +40,7 @@
     "number": "#{number}",
     "billedTo": "billed to {name}",
     "paidBy": "Paid by {payer}",
+    "payerUnknown": "Payer not established",
     "renews": "renews {date}",
     "toLedgerTitle": "Review and add to the ledger (once)",
     "toLedger": "To ledger",

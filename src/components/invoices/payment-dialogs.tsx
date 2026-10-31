@@ -12,7 +12,7 @@ import { CircleAlert, CircleCheck, Link2, Loader2 } from "lucide-react";
 import { recordPayment, linkToInvoice } from "@/app/actions/invoices";
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { fmtMoney , vnToday } from "@/lib/money";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { uploadProblem } from "@/lib/upload-limit";
 
 type Inv = { id: string; number: string | null; direction: string; currency: string; difference: number };
@@ -41,12 +41,14 @@ function useSubmit(close: () => void, done: string) {
       notify.success(done);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setSaving(false);
     }
   }
-  return { saving, err, submit };
+  // An error from the last save goes once the user edits the form again.
+  const clearErr = () => { if (err) setErr(""); };
+  return { saving, err, submit, clearErr };
 }
 
 // A fresh id for each opening of the dialog: a double click or a retry of the
@@ -78,7 +80,7 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
   };
   const settled = parseFloat(amountText) || 0;
   const fee = receipt ? parseFloat(feeText) || 0 : 0;
-  const { saving, err, submit } = useSubmit(() => setOpen(false), t("toast.paymentRecorded"));
+  const { saving, err, submit, clearErr } = useSubmit(() => setOpen(false), t("toast.paymentRecorded"));
   // VND invoices settle through VND accounts; foreign ones through any account.
   const usable = accounts.filter((a) => a.isActive && (invoice.currency !== "VND" || a.currency === "VND"));
   const suggested = usable.find((a) => a.type === "BANK" && a.currency === invoice.currency) ?? usable.find((a) => a.type === "BANK");
@@ -110,14 +112,14 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
             })}
           </DialogDescription>
         </DialogHeader>
-        <form className="grid gap-4" onSubmit={(e) => {
+        <form className="grid gap-4" onChange={clearErr} onSubmit={(e) => {
           const tooBig = uploadProblem(new FormData(e.currentTarget).getAll("files") as File[], tc);
           if (tooBig) { e.preventDefault(); notify.error(tooBig); return; }
           submit(e, (fd) => recordPayment(invoice.id, fd), { accountId, rateMode: foreign ? mode : "", requestId, feeCategoryId: fee > 0 ? feeCategoryId : "" });
         }}>
-          <div className="grid gap-2 *:data-[slot=select-trigger]:w-full">
-            <Label>{invoice.direction === "PAYABLE" ? t("payment.paidFrom") : t("payment.receivedInto")}</Label>
-            <AccountSelect accounts={usable} value={accountId} onChange={setAccountId} />
+          <div className="grid gap-2">
+            <Label htmlFor="payment-account">{invoice.direction === "PAYABLE" ? t("payment.paidFrom") : t("payment.receivedInto")}</Label>
+            <AccountSelect id="payment-account" accounts={usable} value={accountId} onChange={(id) => { setAccountId(id); clearErr(); }} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
@@ -138,7 +140,7 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
               {fee > 0 && (
                 <div className="grid gap-2">
                   <Label htmlFor={`pc-${invoice.id}`}>{t("payment.feeCategory")}</Label>
-                  <Select value={feeCategoryId} onValueChange={(v) => setFeeCategoryId(v || "")}
+                  <Select value={feeCategoryId} onValueChange={(v) => { setFeeCategoryId(v || ""); clearErr(); }}
                     items={feeCategories.map((c) => ({ value: c.id, label: c.name }))}>
                     <SelectTrigger id={`pc-${invoice.id}`} className="w-full"><SelectValue placeholder={t("payment.feeCategoryPlaceholder")} /></SelectTrigger>
                     <SelectContent>
@@ -166,7 +168,7 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
               <Label htmlFor={mode === "DEFAULT" ? undefined : `pv-${invoice.id}`}>{t("payment.vndValue")}</Label>
               <div className="wf-seg justify-self-start" role="group" aria-label={t("payment.vndValue")}>
                 {modes.map(([m, text]) => (
-                  <button key={m} type="button" aria-pressed={mode === m} onClick={() => setRateMode(m)}>{text}</button>
+                  <button key={m} type="button" aria-pressed={mode === m} onClick={() => { setRateMode(m); clearErr(); }}>{text}</button>
                 ))}
               </div>
               {mode === "BANK" && <Input id={`pv-${invoice.id}`} name="vndAmount" type="number" step="1" min="0" required placeholder={t("payment.vndPlaceholder")} />}
@@ -198,7 +200,7 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<"PAYMENT" | "FEE">("PAYMENT");
   const [entryId, setEntryId] = useState("");
-  const { saving, err, submit } = useSubmit(() => setOpen(false), t("toast.linked", { kind, direction: invoice.direction }));
+  const { saving, err, submit, clearErr } = useSubmit(() => setOpen(false), t("toast.linked", { kind, direction: invoice.direction }));
 
   const wanted = kind === "FEE" ? "EXPENSE" : invoice.direction === "RECEIVABLE" ? "INCOME" : "EXPENSE";
   const choices = candidates.filter((c) => c.type === wanted && c.currency === invoice.currency && !c.linkedTo.includes(invoice.id));
@@ -212,11 +214,11 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>{t("link.title", { label: label(invoice, t) })}</DialogTitle></DialogHeader>
-        <form className="grid gap-4" onSubmit={(e) => submit(e, (fd) => linkToInvoice(invoice.id, fd), { kind, transactionId: entryId })}>
+        <form className="grid gap-4" onChange={clearErr} onSubmit={(e) => submit(e, (fd) => linkToInvoice(invoice.id, fd), { kind, transactionId: entryId })}>
           <div className="grid gap-2">
             <div className="wf-seg justify-self-start" role="group" aria-label={t("link.kind")}>
               {([["PAYMENT", t("kind.PAYMENT")], ["FEE", t("kind.FEE")]] as const).map(([k, text]) => (
-                <button key={k} type="button" aria-pressed={kind === k} onClick={() => { setKind(k); setEntryId(""); }}>{text}</button>
+                <button key={k} type="button" aria-pressed={kind === k} onClick={() => { setKind(k); setEntryId(""); clearErr(); }}>{text}</button>
               ))}
             </div>
             <p className="text-[13.5px] text-muted-foreground">
@@ -227,10 +229,10 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`le-${invoice.id}`}>{t("link.entry")}</Label>
-            <Select value={entryId} onValueChange={(v) => setEntryId(v || "")}>
+            <Select value={entryId} onValueChange={(v) => { setEntryId(v || ""); clearErr(); }}>
               <SelectTrigger id={`le-${invoice.id}`} className="w-full">
                 {entry
-                  ? <span className="truncate">{entry.date} · {t("link.free", { amount: fmtMoney(entry.free, entry.currency) })} · {entry.description ?? entry.accountName}</span>
+                  ? <span className="truncate" title={entry.description ?? entry.accountName}>{entry.date} · {t("link.free", { amount: fmtMoney(entry.free, entry.currency) })} · {entry.description ?? entry.accountName}</span>
                   : <span className="text-muted-foreground">{t("link.chooseEntry")}</span>}
               </SelectTrigger>
               <SelectContent>

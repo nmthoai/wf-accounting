@@ -5,8 +5,6 @@
   },
   "form": {
     "name": "Name",
-    "email": "Email",
-    "phone": "Phone",
     "emailOptional": "Email (optional)",
     "phoneOptional": "Phone (optional)"
   },
@@ -14,7 +12,7 @@
     "title": "Clients",
     "description": "Who you invoice and run projects for. Revenue is total income received from them.",
     "namePlaceholder": "e.g. Acme Co",
-    "meta": "{contact} · {projects, plural, one {# project} other {# projects}} · {invoices, plural, one {# invoice} other {# invoices}}",
+    "meta": "{projects, plural, one {# project} other {# projects}} · {invoices, plural, one {# invoice} other {# invoices}}",
     "revenueTitle": "Revenue received",
     "confirmDelete": "Delete client {name}?",
     "empty": "No clients yet."
@@ -23,7 +21,7 @@
     "title": "Vendors",
     "description": "Who you pay (e.g. subcontractors, services). Spend is total expenses tagged to them.",
     "namePlaceholder": "e.g. ZDN",
-    "meta": "{contact} · {payments, plural, one {# payment} other {# payments}}",
+    "meta": "{payments, plural, one {# payment} other {# payments}}",
     "confirmDelete": "Delete vendor {name}?",
     "empty": "No vendors yet."
   },
@@ -44,6 +42,8 @@
     "clientNameRequired": "Client name is required.",
     "clientHasLinks": "Detach projects/invoices before deleting this client.",
     "vendorNameRequired": "Vendor name is required.",
-    "vendorHasLinks": "Detach transactions/bills before deleting this vendor."
+    "vendorHasLinks": "Detach transactions/bills before deleting this vendor.",
+    "clientNameTaken": "A client called “{name}” already exists — use that client, or give this one a different name.",
+    "vendorNameTaken": "A vendor called “{name}” already exists — use that vendor, or give this one a different name."
   }
 }

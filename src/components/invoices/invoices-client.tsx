@@ -14,9 +14,9 @@ import { createInvoice, voidInvoice, deleteInvoice, unlinkAllocation } from "@/a
 import { uploadProblem } from "@/lib/upload-limit";
 import { EditInvoiceDialog } from "@/components/invoices/edit-invoice-dialog";
 import { RecordPaymentDialog, LinkEntryDialog, type Candidate } from "@/components/invoices/payment-dialogs";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import type { AccountOpt } from "@/components/accounts/account-select";
-import { EPS, fmtMoney, fmtVnd, totalsList, type Totals , vnToday } from "@/lib/money";
+import { EPS, fmtMoney, totalsList, type Totals , vnToday } from "@/lib/money";
 import { Chip, ENTRY_STATUS_TONE, INVOICE_STATUS_TONE, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
 import { cn } from "@/lib/utils";
 
@@ -31,21 +31,26 @@ type Invoice = {
 type Opt = { id: string; name: string };
 type Cat = { id: string; name: string; type: string };
 
-// One line per currency — currencies are never added together. The first is the
-// figure; any other currency sits under it, smaller.
-const statLines = (t: Totals) => {
+// One line per currency — the real amounts. The first is the figure; any other
+// currency sits under it, smaller. In the USD view a converted total follows
+// (`total`, already in the view currency) unless the one line is that currency.
+// Nothing outstanding reads as a zero in the user's summary currency.
+const statLines = (t: Totals, viewCurrency: string, total: number | null, label: (amount: string) => string) => {
   const lines = totalsList(t);
-  if (lines.length === 0) return fmtVnd(0);
-  return lines.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>));
+  if (lines.length === 0) return fmtMoney(0, viewCurrency);
+  const out = lines.map(([c, v], i) => (i === 0 ? <span key={c}>{fmtMoney(v, c)}</span> : <small key={c}>{fmtMoney(v, c)}</small>));
+  if (total !== null && !(lines.length === 1 && lines[0][0] === viewCurrency)) out.push(<small key="view">{label(fmtMoney(total, viewCurrency))}</small>);
+  return out;
 };
 const totalsText = (t: Totals) => totalsList(t).map(([c, v]) => fmtMoney(v, c)).join(" · ");
 
 export function InvoicesClient({
-  invoices, clients, vendors, projects, categories, accounts, candidates, defaultUsdRate, summary, isAdmin,
+  invoices, clients, vendors, projects, categories, accounts, candidates, defaultUsdRate, summary, viewCurrency, isAdmin,
 }: {
   invoices: Invoice[]; clients: Opt[]; vendors: Opt[]; projects: Opt[]; categories: Cat[]; accounts: AccountOpt[];
   candidates: Candidate[]; defaultUsdRate: number;
-  summary: { ar: Totals; ap: Totals; arOverdue: Totals; apOverdue: Totals };
+  summary: { ar: Totals; ap: Totals; arOverdue: Totals; apOverdue: Totals; inView: { ar: number; ap: number } | null };
+  viewCurrency: string; // the user's summary currency (VND or USD)
   isAdmin: boolean; // voiding and deleting are the owner's decisions
 }) {
   const t = useTranslations("invoices");
@@ -62,6 +67,8 @@ export function InvoicesClient({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [openOnly, setOpenOnly] = useState(false);
   const today = vnToday();
+  // The due date can't be before the issue date (the server refuses it too).
+  const [issueDate, setIssueDate] = useState(today);
   const parties = direction === "PAYABLE" ? vendors : clients;
   const [expanded, setExpanded] = useState<string | null>(null);
   const shown = openOnly ? invoices.filter((i) => i.status === "OPEN" || i.status === "PARTIAL") : invoices;
@@ -76,7 +83,7 @@ export function InvoicesClient({
       notifyResult(res, done);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setBusyId(null);
     }
@@ -100,11 +107,11 @@ export function InvoicesClient({
       const res = await createInvoice(fd);
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       form.reset();
-      setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setShowForm(false);
+      setIssueDate(today); setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setShowForm(false);
       notify.success(direction === "PAYABLE" ? t("toast.billCreated") : t("toast.invoiceCreated"));
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setCreating(false);
     }
@@ -130,10 +137,10 @@ export function InvoicesClient({
     <>
       <StatStrip className="lg:grid-cols-2">
         <Stat label={t("summary.owedToYou")} icon={ArrowDownLeft} tone="pos" sub={overdueSub(summary.arOverdue)}>
-          {statLines(summary.ar)}
+          {statLines(summary.ar, viewCurrency, summary.inView?.ar ?? null, (amount) => t("summary.viewTotal", { amount }))}
         </Stat>
         <Stat label={t("summary.youOwe")} icon={ArrowUpRight} tone="neg" sub={overdueSub(summary.apOverdue)}>
-          {statLines(summary.ap)}
+          {statLines(summary.ap, viewCurrency, summary.inView?.ap ?? null, (amount) => t("summary.viewTotal", { amount }))}
         </Stat>
       </StatStrip>
 
@@ -152,22 +159,21 @@ export function InvoicesClient({
         <Card className="mt-4">
           <PanelHead title={t("newButton")} />
           <CardContent>
-            <form onSubmit={handleCreate} className="grid gap-5 md:grid-cols-2">
+            <form onSubmit={handleCreate} className="grid items-start gap-5 md:grid-cols-2">
               <div className="wf-seg justify-self-start md:col-span-2" role="group" aria-label={t("form.direction")}>
-                <button type="button" aria-pressed={direction === "RECEIVABLE"} onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); setCategoryId(""); }}>
+                <button type="button" aria-pressed={direction === "RECEIVABLE"} onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); setCategoryId(""); setErr(""); }}>
                   {t("form.receivable")}
                 </button>
-                <button type="button" aria-pressed={direction === "PAYABLE"} onClick={() => { setDirection("PAYABLE"); setPartyId(""); setCategoryId(""); }}>
+                <button type="button" aria-pressed={direction === "PAYABLE"} onClick={() => { setDirection("PAYABLE"); setPartyId(""); setCategoryId(""); setErr(""); }}>
                   {t("form.payable")}
                 </button>
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="inv-party">{direction === "PAYABLE" ? t("form.vendor") : t("form.client")}</Label>
-                <Select value={partyId} onValueChange={(v) => setPartyId(v === "none" ? "" : v || "")}>
+                <Select value={partyId} onValueChange={(v) => setPartyId(v || "")} required>
                   <SelectTrigger id="inv-party" className="w-full">{partyId ? <span>{parties.find(p => p.id === partyId)?.name}</span> : <span className="text-muted-foreground">{direction === "PAYABLE" ? t("form.selectVendor") : t("form.selectClient")}</span>}</SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t("form.none")}</SelectItem>
                     {parties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                     {parties.length === 0 && <SelectItem value="empty" disabled>{t("form.addPartyFirst")}</SelectItem>}
                   </SelectContent>
@@ -195,30 +201,31 @@ export function InvoicesClient({
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="number">{t("form.number")}</Label>
-                <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} />
+                <Label htmlFor="number">{direction === "PAYABLE" ? t("edit.billNumber") : t("edit.invoiceNumber")}</Label>
+                <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} required={direction !== "PAYABLE"} />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="amount">{t("form.amount")}</Label>
-                  <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
+                <Label htmlFor="amount">{t("form.amount")}</Label>
+                {/* The currency sits beside the input, so the label row matches its neighbour's. */}
+                <div className="flex items-center gap-2">
+                  <Input id="amount" name="amount" type="number" step="0.01" min="0" placeholder="0.00" required className="flex-1" />
+                  <div className="wf-seg wf-seg--mono shrink-0" role="group" aria-label={t("form.currency")}>
                     {["VND", "USD"].map((c) => (
                       <button key={c} type="button" aria-pressed={currency === c} onClick={() => setCurrency(c)}>{c}</button>
                     ))}
                   </div>
                 </div>
-                <Input id="amount" name="amount" type="number" step="0.01" min="0" placeholder="0.00" required />
                 {currency === "USD" && <p className="wf-num text-[13.5px] text-muted-foreground">@ {new Intl.NumberFormat("vi-VN").format(defaultUsdRate)} ₫/USD</p>}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="issueDate">{t("form.issueDate")}</Label>
-                <Input id="issueDate" name="issueDate" type="date" defaultValue={today} required />
+                <Input id="issueDate" name="issueDate" type="date" defaultValue={today} onChange={(e) => setIssueDate(e.target.value)} required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="dueDate">{t("form.dueDate")}</Label>
-                <Input id="dueDate" name="dueDate" type="date" defaultValue={today} required />
+                <Input id="dueDate" name="dueDate" type="date" defaultValue={today} min={issueDate || undefined} required />
               </div>
-              <div className="grid gap-2 md:col-span-2">
+              <div className="grid gap-2">
                 <Label htmlFor="notes">{t("form.notes")}</Label>
                 <Input id="notes" name="notes" placeholder={t("form.notesPlaceholder")} />
               </div>
@@ -269,7 +276,7 @@ export function InvoicesClient({
                         </span>
                         <div className="min-w-0">
                           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span className="font-mono font-semibold text-foreground">{i.number || kind}</span>
+                            <span className="max-w-[10rem] truncate font-mono font-semibold text-foreground" title={i.number ?? undefined}>{i.number || kind}</span>
                             {statusChip(i)}
                             {i.attachment && (
                               <a href={`/api/uploads/${i.attachment.split('/').pop()}`} target="_blank" rel="noreferrer"
@@ -283,8 +290,8 @@ export function InvoicesClient({
                       </div>
                     </TableCell>
                     <TableCell data-col="party">
-                      <span className="block text-foreground">{i.party ?? "—"}</span>
-                      {sub && <span className="block max-w-[16rem] truncate text-[13.5px] text-muted-foreground">{sub}</span>}
+                      <span className="block max-w-[13rem] truncate text-foreground" title={i.party ?? undefined}>{i.party ?? "—"}</span>
+                      {sub && <span className="block max-w-[13rem] truncate text-[13.5px] text-muted-foreground" title={sub}>{sub}</span>}
                     </TableCell>
                     <TableCell data-col="due">
                       <span className={cn("wf-num block", i.overdue ? "font-semibold text-neg" : "text-text-secondary")}>{t("list.due", { date: i.dueDate })}</span>
@@ -300,9 +307,10 @@ export function InvoicesClient({
                           {i.fees > EPS && ` · ${t("list.fees", { amount: fmtMoney(i.fees, i.currency) })}`}
                         </span>
                       )}
+                      {/* What is still outstanding is ordinary, not a warning; only an overpayment is flagged. */}
                       {linked && i.difference > EPS && i.status !== "VOID" && (
-                        <span className="block text-[13.5px] font-medium text-warn" title={t("list.differenceTitle")}>
-                          {t("list.unmatchedDifference", { amount: fmtMoney(i.difference, i.currency) })}
+                        <span className="block text-[13.5px] text-muted-foreground">
+                          {payable ? t("list.stillToPay", { amount: fmtMoney(i.difference, i.currency) }) : t("list.stillToReceive", { amount: fmtMoney(i.difference, i.currency) })}
                         </span>
                       )}
                       {i.difference < -EPS && <span className="block text-[13.5px] font-medium text-neg">{t("list.overpaidBy", { amount: fmtMoney(-i.difference, i.currency) })}</span>}

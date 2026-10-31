@@ -16,7 +16,7 @@ import { CURRENCIES, fmtMoney, totalsList, type Totals } from "@/lib/money";
 import { DOC_STATUS } from "@/lib/review";
 import { PAYER, REIMBURSEMENT } from "@/lib/costs";
 import { uploadProblem } from "@/lib/upload-limit";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { Chip, DOC_TONE, Stat, StatStrip } from "@/components/wf/ledger-ui";
 
 export type CostRow = {
@@ -79,7 +79,7 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
       setOpen(false);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusy(false); }
   }
 
@@ -102,12 +102,15 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
               <Label htmlFor="ci-provider">{t("form.provider")}</Label>
               <Input id="ci-provider" name="provider" required defaultValue={item?.provider} placeholder={t("form.providerPlaceholder")} />
             </div>
+            {/* Both label rows as tall as the currency toggle, so the two inputs line up. */}
             <div className="grid gap-2">
-              <Label htmlFor="ci-date">{t("form.receiptDate")}</Label>
+              <div className="flex min-h-8 items-center">
+                <Label htmlFor="ci-date">{t("form.receiptDate")}</Label>
+              </div>
               <Input id="ci-date" name="receiptDate" type="date" required defaultValue={item?.receiptDate} />
             </div>
             <div className="grid gap-2">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex min-h-8 items-center justify-between gap-2">
                 <Label htmlFor="ci-amount">{t("form.amount")}</Label>
                 <div className="wf-seg wf-seg--mono" role="group" aria-label={t("form.currency")}>
                   {CURRENCIES.map((c) => (
@@ -182,10 +185,10 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
     try {
       const res = await fn();
       if (res.success) notify.success(done, detail);
-      else if (res.message) notify.error(res.message);
+      else notifyFailure(res.message);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally { setBusyId(null); }
   }
 
@@ -237,7 +240,7 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
                   {i.billingEntity ? ` · ${t("list.billedTo", { name: i.billingEntity })}` : ""}
                 </p>
                 <p className="text-[14.5px] text-text-secondary">
-                  {t("list.paidBy", { payer: t.has(`payer.${i.payer}`) ? t(`payer.${i.payer}`) : i.payer })}
+                  {i.payer === "UNKNOWN" ? t("list.payerUnknown") : t("list.paidBy", { payer: t.has(`payer.${i.payer}`) ? t(`payer.${i.payer}`) : i.payer })}
                   {i.payer !== "COMPANY" && (
                     <span className={i.reimbursement === "OWED" ? "text-warn" : "text-muted-foreground"}> · {t.has(`reimbursement.${i.reimbursement}`) ? t(`reimbursement.${i.reimbursement}`) : i.reimbursement}</span>
                   )}

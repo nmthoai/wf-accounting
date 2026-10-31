@@ -13,7 +13,7 @@ before(async () => {
   S = await seed();
 });
 const invoice = async (number: string, values: Record<string, string | number>) => {
-  const res = await I.createInvoice(fd({ number, issueDate: "2026-08-01", dueDate: "2026-08-31", ...values }));
+  const res = await I.createInvoice(fd({ number, clientId: S.client.id, issueDate: "2026-08-01", dueDate: "2026-08-31", ...values }));
   assert.equal(res.success, true, res.message);
   return S.prisma.invoice.findFirstOrThrow({ where: { number } });
 };

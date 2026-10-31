@@ -16,7 +16,7 @@
     },
     "cards": {
       "entries": "Entries",
-      "entriesDetail": "{posted} posted · {reviewed} reviewed · {drafts} drafts",
+      "entriesDetail": "{posted} posted · {reviewed} reviewed · {drafts, plural, one {# draft} other {# drafts}}",
       "net": "Income − expenses",
       "netDetail": "{income} in · {expense} out",
       "questions": "Open questions",
@@ -35,7 +35,8 @@
       "description": "Also listed in the workbook's “{sheet}” sheet.",
       "more": "…and {count} more in the package.",
       "none": "Nothing open for this month."
-    }
+    },
+    "futureMonth": "{month} hasn't started yet, so there's nothing to hand over. Showing {current} instead — the current month, still in progress, so its package may not be complete yet."
   },
   "questions": {
     "area": {
@@ -49,16 +50,17 @@
       "costRegister": "Cost register"
     },
     "draft": "Draft — excluded from this package's figures until the owner reviews it.",
-    "notPosted": "Reviewed but not yet posted (locked).",
+    "notPosted": "Reviewed but not yet posted, so not locked yet — posting locks it.",
     "tax": "CIT: {cit}; input VAT: {vat}.",
     "unmatchedBank": "On a bank account but not matched to any bank statement line yet.",
     "reverses": "Reverses a posted entry: {note}",
     "bankLine": "{status}: {party}",
     "noStatement": "No bank statement imported for this month.",
     "invoiceItem": "{kind} {number}",
-    "invoiceDifference": "Gross {gross}, received {received}, evidenced fees {fees} — unmatched difference {difference}.",
     "costPending": "Receipt pending review — not in the ledger yet.",
-    "rejected": "Rejected and sent back for correction — excluded from this package's figures until it is corrected and reviewed."
+    "rejected": "Rejected and sent back for correction — excluded from this package's figures until it is corrected and reviewed.",
+    "invoiceStillOpen": "Gross {gross}, received {received}, evidenced fees {fees} — {direction, select, PAYABLE {still to pay} other {still to receive}} {difference}.",
+    "invoiceOverpaid": "Gross {gross}, received {received}, evidenced fees {fees} — overpaid by {difference}."
   },
   "lineStatus": {
     "matched": "Matched",
@@ -166,5 +168,8 @@
     "from": "From",
     "to": "To",
     "reason": "Reason"
+  },
+  "errors": {
+    "futureMonth": "{month} hasn't started yet, so there's nothing to hand over. Download {current} (the current month, still in progress) or an earlier month."
   }
 }

@@ -1,22 +1,26 @@
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/session";
 import { ProjectsClient } from "@/components/projects/projects-client";
-import { toVnd, settlement, totalsList, fmtMoney, BOOKED, BOOKED_ALLOCATIONS, type Totals } from "@/lib/money";
+import { valueIn, settlement, totalsList, fmtMoney, BOOKED, BOOKED_ALLOCATIONS, type Totals } from "@/lib/money";
+import { getView } from "@/lib/view";
 import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/wf/page-header";
+import { ViewNote } from "@/components/wf/view-note";
 
 export default async function ProjectsPage() {
-  await requirePageSession(); // second line behind the proxy
+  const session = await requirePageSession(); // second line behind the proxy
   const t = await getTranslations("projects");
-  const [projects, clients, openInvoices] = await Promise.all([
+  const [projects, clients, openInvoices, view] = await Promise.all([
     prisma.project.findMany({ orderBy: { createdAt: "desc" }, include: { client: true, transactions: { where: BOOKED }, _count: { select: { attachments: true } } } }), // drafts wait for review
     prisma.client.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.invoice.findMany({ where: { status: { in: ["OPEN", "PARTIAL"] } }, select: { projectId: true, amount: true, currency: true, allocations: BOOKED_ALLOCATIONS } }),
+    getView(session.user.id),
   ]);
 
   const projectRows = projects.map((p) => {
-    const income = p.transactions.filter((t) => t.type === "INCOME").reduce((a, t) => a + toVnd(t), 0);
-    const expense = p.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + toVnd(t), 0);
+    // In the user's summary currency (VND, or the USD view).
+    const income = p.transactions.filter((t) => t.type === "INCOME").reduce((a, t) => a + valueIn(view, t), 0);
+    const expense = p.transactions.filter((t) => t.type === "EXPENSE").reduce((a, t) => a + valueIn(view, t), 0);
     const open = openInvoices.filter((i) => i.projectId === p.id);
     // Still open per currency (never converted).
     const openTotals: Totals = {};
@@ -32,8 +36,8 @@ export default async function ProjectsPage() {
 
   return (
     <div>
-      <PageHeader section="projects" title={t("page.title")} description={t("page.subtitle")} />
-      <ProjectsClient projects={projectRows} clients={clients} />
+      <PageHeader section="projects" title={t("page.title")} description={t("page.subtitle")} meta={view.currency === "USD" && <ViewNote view={view} />} />
+      <ProjectsClient projects={projectRows} clients={clients} isAdmin={session.user.role === "ADMIN"} currency={view.currency} />
     </div>
   );
 }

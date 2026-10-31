@@ -69,6 +69,13 @@
     "couldNotSave": "Không thể lưu.",
     "notFound": "Không tìm thấy."
   },
+  "session": {
+    "endedTitle": "Bạn đã bị đăng xuất",
+    "endedBody": "Phiên đăng nhập đã kết thúc nên thao tác này chưa được lưu. Nội dung bạn nhập vẫn còn ở đây — hãy đăng nhập lại ở một thẻ mới, rồi quay lại và lưu.",
+    "signIn": "Đăng nhập",
+    "unreachableTitle": "Không kết nối được với ứng dụng",
+    "unreachableBody": "Thao tác này chưa được lưu — mất kết nối mạng hoặc máy chủ đang gặp sự cố. Nội dung bạn nhập vẫn còn ở đây; hãy kiểm tra kết nối rồi thử lại."
+  },
   "type": {
     "INCOME": "Thu",
     "EXPENSE": "Chi",
@@ -150,5 +157,9 @@
     "light": "Sáng",
     "dark": "Tối",
     "motion": "Nền chuyển động"
+  },
+  "view": {
+    "usdNote": "Xem bằng USD · {rate} ₫/USD",
+    "usdHint": "Khoản ghi bằng USD giữ đúng số USD; số tiền VND quy đổi theo tỷ giá hiện tại trong Cài đặt ({rate} ₫/USD), chỉ là số ước tính. Đổi lại trong Hồ sơ."
   }
 }

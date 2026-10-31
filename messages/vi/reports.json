@@ -125,7 +125,7 @@
   },
   "trend": {
     "title": "Xu hướng theo tháng",
-    "subtitle": "Doanh thu và chi phí mỗi tháng, quy đổi VND, kèm đường lãi lỗ. Rê chuột hoặc dùng phím Tab vào một tháng để xem số liệu.",
+    "subtitle": "Doanh thu và chi phí mỗi tháng, quy đổi {currency}, kèm đường lãi lỗ. Rê chuột hoặc dùng phím Tab vào một tháng để xem số liệu.",
     "revenue": "Doanh thu",
     "cost": "Chi phí",
     "net": "Lãi (lỗ)",
@@ -134,7 +134,7 @@
   },
   "detail": {
     "title": "Chi tiết theo tháng",
-    "subtitle": "Từng khoản mục doanh thu và chi phí theo tháng, quy đổi VND. Mở một khoản mục để xem các bút toán; bấm vào bút toán để mở.",
+    "subtitle": "Từng khoản mục doanh thu và chi phí theo tháng, quy đổi {currency}. Mở một khoản mục để xem các bút toán; bấm vào bút toán để mở.",
     "provisionalNote": "{count, plural, other {# bút toán ngoại tệ}} đang quy đổi theo tỷ giá mặc định hoặc nhập tay, chưa phải số VND thực tế — được đánh dấu “tạm tính” bên dưới cho đến khi đánh giá lại tỷ giá.",
     "revenue": "Doanh thu",
     "cost": "Chi phí",

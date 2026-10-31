@@ -125,7 +125,7 @@
   },
   "trend": {
     "title": "Monthly trend",
-    "subtitle": "Revenue and costs per month in VND, with the profit line. Hover or tab to a month for its figures.",
+    "subtitle": "Revenue and costs per month in {currency}, with the profit line. Hover or tab to a month for its figures.",
     "revenue": "Revenue",
     "cost": "Costs",
     "net": "Profit (loss)",
@@ -134,7 +134,7 @@
   },
   "detail": {
     "title": "Month by month",
-    "subtitle": "Every revenue and cost category per month in VND. Open a category to see its entries; click an entry to open it.",
+    "subtitle": "Every revenue and cost category per month in {currency}. Open a category to see its entries; click an entry to open it.",
     "provisionalNote": "{count, plural, one {# foreign-currency entry is} other {# foreign-currency entries are}} valued at a default or manual rate, not the VND actually settled — marked “provisional” below until revalued.",
     "revenue": "Revenue",
     "cost": "Costs",

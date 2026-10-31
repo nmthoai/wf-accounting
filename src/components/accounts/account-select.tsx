@@ -6,16 +6,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 export type AccountOpt = { id: string; name: string; currency: string; type: string; isActive: boolean };
 
 export function AccountSelect({
-  accounts, value, onChange, placeholder,
+  id, accounts, value, onChange, placeholder, className, required,
 }: {
-  accounts: AccountOpt[]; value: string; onChange: (id: string) => void; placeholder?: string;
+  id?: string; accounts: AccountOpt[]; value: string; onChange: (id: string) => void; placeholder?: string; className?: string; required?: boolean;
 }) {
   const t = useTranslations("accounts");
   const sel = accounts.find((a) => a.id === value);
+  const shown = sel ? `${sel.name} · ${sel.currency}` : placeholder ?? t("select.placeholder");
   return (
-    <Select value={value} onValueChange={(v) => onChange(v || "")}>
-      <SelectTrigger>
-        {sel ? <span>{sel.name} · {sel.currency}</span> : <span className="text-muted-foreground">{placeholder ?? t("select.placeholder")}</span>}
+    <Select value={value} onValueChange={(v) => onChange(v || "")} required={required}>
+      <SelectTrigger id={id} className={className}>
+        <span className={sel ? "min-w-0 truncate" : "min-w-0 truncate text-muted-foreground"} title={shown}>{shown}</span>
       </SelectTrigger>
       <SelectContent>
         {accounts.map((a) => (

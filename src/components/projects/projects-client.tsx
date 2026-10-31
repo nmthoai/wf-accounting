@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Loader2, FolderPlus, Paperclip, CircleAlert } from "lucide-react";
 import { createProject, deleteProject, setProjectStatus } from "@/app/actions/projects";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { fmtMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { Chip, PanelHead, PROJECT_STATUS_TONE } from "@/components/wf/ledger-ui";
@@ -24,12 +24,16 @@ type ProjectRow = {
 };
 type ClientOpt = { id: string; name: string };
 
-const vnd = (n: number) => fmtMoney(n, "VND");
-
-export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; clients: ClientOpt[] }) {
+// Income, expenses and net come in the viewer's summary currency.
+export function ProjectsClient({ projects, clients, isAdmin, currency }: {
+  projects: ProjectRow[]; clients: ClientOpt[];
+  isAdmin: boolean; // deleting a project is the owner's decision
+  currency: string;
+}) {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
   const router = useRouter();
+  const money = (n: number) => fmtMoney(n, currency);
   const [addingProject, setAddingProject] = useState(false);
   const [projectClientId, setProjectClientId] = useState("");
   const [err, setErr] = useState("");
@@ -40,10 +44,10 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
     try {
       const res = await fn();
       if (res.success) notify.success(done, detail);
-      else if (res.message) notify.error(res.message);
+      else notifyFailure(res.message);
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setBusyId(null);
     }
@@ -64,7 +68,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
       setProjectClientId("");
       router.refresh();
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setAddingProject(false);
     }
@@ -87,9 +91,9 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
               <Input id="name" name="name" placeholder={t("list.namePlaceholder")} required />
             </div>
             <div className="grid gap-2">
-              <Label>{t("list.client")}</Label>
+              <Label htmlFor="np-client">{t("list.client")}</Label>
               <Select value={projectClientId} onValueChange={(v) => setProjectClientId(v === "none" ? "" : v || "")}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="np-client" className="w-full">
                   {projectClientId ? <span className="truncate">{clients.find(c => c.id === projectClientId)?.name}</span> : <span className="text-muted-foreground">{t("noClient")}</span>}
                 </SelectTrigger>
                 <SelectContent>
@@ -129,7 +133,7 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
             {projects.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="py-3">
-                  <Link href={`/projects/${p.id}`} className="font-semibold text-foreground hover:text-primary">{p.name}</Link>
+                  <Link href={`/projects/${p.id}`} className="block max-w-[12rem] truncate font-semibold text-foreground hover:text-primary" title={p.name}>{p.name}</Link>
                   <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     {statusChip(p.status)}
                     {p.openCount > 0 && (
@@ -147,12 +151,12 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                   </span>
                 </TableCell>
                 <TableCell className="py-3">
-                  <span className={cn("block", p.clientName ? "text-foreground" : "text-muted-foreground")}>{p.clientName || t("noClient")}</span>
+                  <span className={cn("block max-w-[10rem] truncate", p.clientName ? "text-foreground" : "text-muted-foreground")} title={p.clientName ?? undefined}>{p.clientName || t("noClient")}</span>
                   <span className="block text-[13.5px] text-muted-foreground">{t("list.txnCount", { count: p.txnCount })}</span>
                 </TableCell>
-                <TableCell className="text-right text-pos">{vnd(p.income)}</TableCell>
-                <TableCell className="text-right">{p.expense ? "−" : ""}{vnd(p.expense)}</TableCell>
-                <TableCell className={cn("text-right font-semibold", p.net >= 0 ? "text-primary" : "text-neg")}>{vnd(p.net)}</TableCell>
+                <TableCell className="text-right text-pos">{money(p.income)}</TableCell>
+                <TableCell className="text-right">{p.expense ? "−" : ""}{money(p.expense)}</TableCell>
+                <TableCell className={cn("text-right font-semibold", p.net >= 0 ? "text-primary" : "text-neg")}>{money(p.net)}</TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1.5">
                     {p.status !== "ARCHIVED" ? (
@@ -166,11 +170,13 @@ export function ProjectsClient({ projects, clients }: { projects: ProjectRow[]; 
                         {t("list.reactivate")}
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive" disabled={busyId === p.id}
-                      aria-label={t("list.deleteLabel", { name: p.name })}
-                      onClick={() => { if (confirm(t("list.confirmDelete", { name: p.name }))) run(p.id, () => deleteProject(p.id), t("toast.deleted"), p.name); }}>
-                      <Trash2 aria-hidden="true" />
-                    </Button>
+                    {isAdmin && (
+                      <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive" disabled={busyId === p.id}
+                        aria-label={t("list.deleteLabel", { name: p.name })}
+                        onClick={() => { if (confirm(t("list.confirmDelete", { name: p.name }))) run(p.id, () => deleteProject(p.id), t("toast.deleted"), p.name); }}>
+                        <Trash2 aria-hidden="true" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

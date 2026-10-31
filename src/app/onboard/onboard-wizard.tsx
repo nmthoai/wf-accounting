@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
 import QRCode from "qrcode";
 import {
@@ -9,6 +10,7 @@ import {
   generate2FASecret,
   verifyAndEnable2FA,
   finishOnboarding,
+  signOutAction,
 } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { notify } from "@/components/ui/toast";
 import { Notice } from "@/components/wf/ledger-ui";
-import { Loader2 } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 
 type Step = "password" | "twofa";
 
@@ -222,7 +224,22 @@ export function OnboardWizard({
             </form>
           </>
         )}
+
+        {/* Leave from any step, e.g. to finish setup later or as someone else. */}
+        <form action={signOutAction} className="mt-6 flex justify-center border-t border-border pt-4">
+          <SignOutButton label={t("signOut")} />
+        </form>
       </CardContent>
     </Card>
+  );
+}
+
+function SignOutButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant="ghost" disabled={pending} className="text-text-secondary">
+      {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <LogOut aria-hidden="true" />}
+      {label}
+    </Button>
   );
 }

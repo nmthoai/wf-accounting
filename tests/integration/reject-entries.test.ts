@@ -79,7 +79,7 @@ async function pnl(where: object) {
 
 async function receivable(number: string, amount: number) {
   as.admin();
-  const res = await I.createInvoice(fd({ direction: "RECEIVABLE", number, issueDate: "2026-07-01", dueDate: "2026-07-31", currency: "VND", amount, categoryId: S.income.id }));
+  const res = await I.createInvoice(fd({ direction: "RECEIVABLE", number, clientId: S.client.id, issueDate: "2026-07-01", dueDate: "2026-07-31", currency: "VND", amount, categoryId: S.income.id }));
   assert.equal(res.success, true, res.message);
   return S.prisma.invoice.findFirstOrThrow({ where: { number } });
 }
@@ -410,6 +410,7 @@ test("the handover lists a rejected entry as an open question and leaves it out 
     detail: "Rejected and sent back for correction — excluded from this package's figures until it is corrected and reviewed.",
     amount: "400000 VND",
     ref: t.id,
+    key: t.id,
   }]);
   const vi = H.questions(d, "vi").find((q) => q.ref === t.id);
   assert.ok(vi && vi.detail !== mine[0].detail && !vi.detail.includes("questions.rejected"), `Vietnamese text: ${vi?.detail}`);

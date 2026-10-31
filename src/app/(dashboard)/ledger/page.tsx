@@ -167,12 +167,13 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
                     )}
                     {t.invoiceNumber && (
                       <span className="mt-1 block text-[13.5px] text-muted-foreground @min-[92rem]:hidden">
-                        {tl("table.invoiceNumber")} <span className="wf-num [overflow-wrap:anywhere]">{t.invoiceNumber}</span>
+                        {tl("table.invoiceNumber")} <span className="wf-num whitespace-normal [overflow-wrap:anywhere]">{t.invoiceNumber}</span>
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="hidden max-w-[10rem] whitespace-normal @min-[92rem]:table-cell">
-                    {t.invoiceNumber ? <span className="wf-num [overflow-wrap:anywhere]">{t.invoiceNumber}</span> : <span className="text-muted-foreground">—</span>}
+                  <TableCell className="hidden @min-[92rem]:table-cell">
+                    {/* One long number must not widen the column for every row. */}
+                    {t.invoiceNumber ? <span className="wf-num block max-w-[9rem] truncate" title={t.invoiceNumber}>{t.invoiceNumber}</span> : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell data-col="evidence">
                     {hasEvidence ? (

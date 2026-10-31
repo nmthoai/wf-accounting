@@ -10,7 +10,7 @@ export async function createCategory(formData: FormData) {
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
   const t = await getT("settings");
 
-  const name = formData.get("name") as string;
+  const name = (formData.get("name") as string)?.trim();
   const type = formData.get("type") as string; // "INCOME" or "EXPENSE"
   const description = formData.get("description") as string;
 
@@ -92,7 +92,7 @@ export async function createUnitRate(formData: FormData) {
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
   const t = await getT("settings");
 
-  const description = formData.get("description") as string;
+  const description = (formData.get("description") as string)?.trim();
   const rate = parseFloat(formData.get("rate") as string);
   const unit = formData.get("unit") as string;
 

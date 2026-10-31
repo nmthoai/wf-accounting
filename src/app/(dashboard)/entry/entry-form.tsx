@@ -14,7 +14,7 @@ import { AccountSelect, type AccountOpt } from "@/components/accounts/account-se
 import { CURRENCIES, vnToday } from "@/lib/money";
 import { DOC_STATUS, PURPOSE_STATUS, CIT_STATUS, VAT_STATUS } from "@/lib/review";
 import { uploadProblem } from "@/lib/upload-limit";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { BookedRate } from "@/components/ledger/booked-rate";
 import { Chip, Notice } from "@/components/wf/ledger-ui";
 
@@ -52,6 +52,7 @@ type EntryValues = {
 type RecordedEntry = EntryValues & {
   id: string; currency: string; amount: number; exchangeRate: number; vndAmount: number | null; rateSource: string | null;
   transferId?: string | null; deductedFromId?: string | null; deductedFee?: { amount: number } | null;
+  reversalOfId?: string | null; reversedBy?: { id: string } | null;
 };
 
 export function EntryForm({
@@ -108,8 +109,15 @@ export function EntryForm({
 
   function chooseAccount(id: string) {
     setAccountId(id);
-    // A USD account only holds USD.
-    if (accounts.find((a) => a.id === id)?.currency === "USD") setCurrency("USD");
+    // A USD account only holds USD. Otherwise the currency follows the account
+    // only while no amount is typed, so a typed amount never changes currency
+    // without the user seeing it (a VND account can take USD by choice).
+    const c = accounts.find((a) => a.id === id)?.currency;
+    if (!c || !CURRENCIES.includes(c)) return;
+    const typed = !!(document.getElementById("amount") as HTMLInputElement | null)?.value;
+    if (c !== "USD" && typed) return;
+    setCurrency(c);
+    if (c !== "USD" && rateMode === "DEFAULT") setRateMode("BANK");
   }
 
   function chooseCurrency(c: string) {
@@ -155,7 +163,7 @@ export function EntryForm({
       if (!notifyResult(res, t("toast.receiptRemoved"), t("toast.receiptRemoveFailed"))) return;
       setAttachments((prev) => prev.filter((a) => a.id !== id));
     } catch {
-      notify.error(tc("errors.somethingWrong"));
+      notifyFailure();
     } finally {
       setRemovingId(null);
     }
@@ -196,7 +204,7 @@ export function EntryForm({
         router.push(bankLine ? "/bank" : costItem ? "/costs" : "/ledger");
       }
     } catch {
-      notify.error(t("toast.somethingWrong"));
+      notifyFailure(undefined, t("toast.somethingWrong"));
     } finally {
       setIsSubmitting(false);
     }
@@ -249,13 +257,15 @@ export function EntryForm({
           {/* Posted entries keep their money and classification. */}
           <fieldset disabled={locked} className="m-0 grid min-w-0 grid-cols-1 gap-5 border-0 p-0 md:grid-cols-2">
             <div className="grid min-w-0 grid-cols-1 gap-2 md:col-span-2">
-              <Label>{type === "INCOME" ? t("form.receivedInto") : t("form.paidFrom")}</Label>
-              <div className="[&_[data-slot=select-trigger]]:w-full">
+              <Label htmlFor="accountId">{type === "INCOME" ? t("form.receivedInto") : t("form.paidFrom")}</Label>
+              <div className="min-w-0 [&_[data-slot=select-trigger]]:w-full">
                 <AccountSelect
+                  id="accountId"
                   accounts={accounts.filter((a) => a.isActive || a.id === accountId)}
                   value={accountId}
                   onChange={chooseAccount}
                   placeholder={t("form.accountPlaceholder")}
+                  required
                 />
               </div>
               <p className={hint}>{t("form.accountHint")}</p>
@@ -278,7 +288,8 @@ export function EntryForm({
                   ))}
                 </div>
               </div>
-              <Input id="amount" name="amount" type="number" step="0.01" min="0" required placeholder="0.00" defaultValue={init?.amount} className="font-mono" />
+              {/* A reversal's amount is negative (and locked). */}
+              <Input id="amount" name="amount" type="number" step="0.01" min={(init?.amount ?? 0) < 0 ? undefined : "0"} required placeholder="0.00" defaultValue={init?.amount} className="font-mono" />
             </div>
 
             {currency !== "VND" && (

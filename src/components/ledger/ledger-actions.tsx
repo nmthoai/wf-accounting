@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Loader2, Lock, Pencil, Trash2 } from "lucide-react";
 import { deleteTransaction, postEntries, reviewEntries } from "@/app/actions/ledger";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { RejectDialog } from "@/components/ledger/reject-dialog";
 
 // Per-row actions: open, approve or reject a draft (admin), delete if not posted (admin).
@@ -22,11 +22,11 @@ export function RowActions({ id, href, status, isAdmin }: { id: string; href: st
     setBusy(true);
     try {
       const res = await fn();
-      if (res && !res.success) notify.error(res.message || tc("errors.somethingWrong"));
+      if (res && !res.success) notifyFailure(res.message);
       else notify.success(done);
       router.refresh();
     }
-    catch { notify.error(tc("errors.somethingWrong")); }
+    catch { notifyFailure(); }
     finally { setBusy(false); }
   }
   const openLabel = status === "POSTED" ? t("rowActions.openPosted") : tc("actions.edit");
@@ -55,7 +55,6 @@ export function RowActions({ id, href, status, isAdmin }: { id: string; href: st
 // Month-end close: lock every reviewed entry dated up to the chosen day.
 export function PostThrough({ defaultDate, reviewedCount }: { defaultDate: string; reviewedCount: number }) {
   const t = useTranslations("ledger");
-  const tc = useTranslations("common");
   const router = useRouter();
   const [date, setDate] = useState(defaultDate);
   const [busy, setBusy] = useState(false);
@@ -66,14 +65,15 @@ export function PostThrough({ defaultDate, reviewedCount }: { defaultDate: strin
       const res = await postEntries(null, date);
       notifyResult(res, t("postThrough.done", { count: res.count }), t("postThrough.failed"));
       router.refresh();
-    } catch { notify.error(tc("errors.somethingWrong")); }
+    } catch { notifyFailure(); }
     finally { setBusy(false); }
   }
+  // Compact controls: as tall as the view tabs beside it.
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border-strong bg-card py-1 pr-1 pl-3.5">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border-strong bg-card py-0.5 pr-0.5 pl-3.5">
       <label htmlFor="post-through" className="wf-label">{t("postThrough.label")}</label>
-      <Input id="post-through" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-8 w-40 font-mono" />
-      <Button size="sm" variant="outline" disabled={busy || !date || reviewedCount === 0} onClick={post}>
+      <Input id="post-through" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-7 w-40 font-mono" />
+      <Button size="xs" variant="outline" disabled={busy || !date || reviewedCount === 0} onClick={post}>
         {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Lock aria-hidden="true" />}{t("buttons.post")}
       </Button>
     </div>

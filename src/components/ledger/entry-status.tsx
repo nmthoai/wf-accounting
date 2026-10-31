@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Check, CircleAlert, Loader2, Lock, Undo2 } from "lucide-react";
 import { postEntries, reverseEntry, reviewEntries } from "@/app/actions/ledger";
-import { notify } from "@/components/ui/toast";
+import { notify, notifyFailure } from "@/components/ui/toast";
 import { RejectDialog } from "@/components/ledger/reject-dialog";
 import { Notice } from "@/components/wf/ledger-ui";
 
@@ -25,7 +25,6 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
   rejection?: { reason: string; by: string | null } | null; // why the owner sent it back
 }) {
   const t = useTranslations("ledger");
-  const tc = useTranslations("common");
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
@@ -37,9 +36,9 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
     try {
       const res = await fn();
       if (res.success) notify.success(done);
-      else if (res.message) notify.error(res.message);
+      else notifyFailure(res.message);
       router.refresh();
-    } catch { notify.error(tc("errors.somethingWrong")); }
+    } catch { notifyFailure(); }
     finally { setBusy(false); }
   }
 
@@ -53,7 +52,7 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
       // A receipt with a withheld fee is corrected by recording the payment
       // again on its invoice; anything else is re-entered here.
       router.push(withFee ? "/invoices" : `/entry?reenter=${id}`);
-    } catch { notify.error(tc("errors.somethingWrong")); }
+    } catch { notifyFailure(); }
     finally { setBusy(false); }
   }
 
@@ -102,20 +101,23 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
                     <DialogDescription>{t("reverse.body")}</DialogDescription>
                     {withFee && <p className="text-[15px] text-text-secondary">{t("reverse.withFee")}</p>}
                   </DialogHeader>
-                  <div className="grid gap-2">
-                    <Label htmlFor="reverse-reason">{t("reverse.reason")}</Label>
-                    <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reverse.reasonPlaceholder")} />
-                  </div>
-                  {err && (
-                    <p className="flex items-start gap-1.5 text-[13.5px] text-destructive">
-                      <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />{err}
-                    </p>
-                  )}
-                  <DialogFooter>
-                    <Button disabled={busy || !reason.trim()} onClick={reverse}>
-                      {busy && <Loader2 className="animate-spin" aria-hidden="true" />}{t("reverse.submit")}
-                    </Button>
-                  </DialogFooter>
+                  {/* A form, like the Reject dialog, so Enter in the reason submits. */}
+                  <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); if (reason.trim() && !busy) reverse(); }}>
+                    <div className="grid gap-2">
+                      <Label htmlFor="reverse-reason">{t("reverse.reason")}</Label>
+                      <Input id="reverse-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reverse.reasonPlaceholder")} />
+                    </div>
+                    {err && (
+                      <p className="flex items-start gap-1.5 text-[13.5px] text-destructive">
+                        <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />{err}
+                      </p>
+                    )}
+                    <DialogFooter>
+                      <Button type="submit" disabled={busy || !reason.trim()}>
+                        {busy && <Loader2 className="animate-spin" aria-hidden="true" />}{t("reverse.submit")}
+                      </Button>
+                    </DialogFooter>
+                  </form>
                 </DialogContent>
               </Dialog>
             )}
