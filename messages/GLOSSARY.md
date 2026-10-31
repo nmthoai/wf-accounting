@@ -292,6 +292,21 @@ The Vietnamese interface (messages/vi/*.json) uses these terms. Drafted from VAS
 | Open questions | Vấn đề cần làm rõ | Cần làm rõ | Common usage. Sheet name: 'Cần làm rõ'. |
 | Workbook / sheet / Read me | Tệp Excel / Trang tính / Đọc trước | Tệp Excel / Trang tính / Đọc trước | 'Trang tính' is the term in Vietnamese Excel. 'Đọc trước' says what the tab is for, where 'Hướng dẫn' is generic. Avoid 'thuyết minh', which means the notes to the financial statements. |
 
+## Tax declarations (added 2026-10-31)
+
+| English | Vietnamese | Short | Notes |
+|---|---|---|---|
+| Tax (nav) / Tax declarations (page title) | Thuế / Tờ khai thuế | Thuế | The page records the declarations the outsourced accountant ('kế toán dịch vụ') filed, kept apart from the books and only compared with them (gap analysis); it never prepares one. Owner only. |
+| Declaration (a filed form) | Tờ khai | Tờ khai | 'Tờ khai thuế GTGT' (01/GTGT), 'Tờ khai khấu trừ thuế TNCN' (05/KK-TNCN), as headed on the forms. |
+| Record a declaration | Ghi nhận tờ khai | Ghi nhận | 'Ghi nhận', not 'kê khai' or 'nộp': the owner records what was filed. |
+| Line (on a declaration) | Chỉ tiêu | Chỉ tiêu | As printed: 'chỉ tiêu [34]'. Line labels follow the TT80/2021 form wording. |
+| Original / Supplement no. | Lần đầu / Bổ sung lần thứ | Lần đầu / Bổ sung | Fields [02]/[03] on the forms. |
+| Submission code | Mã giao dịch nộp | Mã nộp | The code in the portal's file name (L00…). |
+| Flags / To look at | Cần lưu ý | Cần lưu ý | Questions, not conclusions. Severity: Quan trọng / Cần kiểm tra / Thông tin. |
+| Mark as known / Known / Reopen | Đánh dấu đã biết / Đã biết / Mở lại | Đã biết | The flag stays on record with the owner's note ('Ghi chú'). |
+| Books vs declarations | Sổ sách và tờ khai | Sổ sách – tờ khai | 'Doanh thu trên sổ sách' against 'Đã kê khai [34]'; 'Chênh lệch' shown, never offset. |
+| Delete file | Xóa tệp | Xóa tệp | Deleting a declaration's file is permanent; the history keeps a note. |
+
 ## Users & security
 
 | English | Vietnamese | Short | Notes |

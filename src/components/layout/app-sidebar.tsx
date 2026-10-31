@@ -14,7 +14,8 @@ import {
   Landmark,
   ReceiptText,
   PackageCheck,
-  BarChart3
+  BarChart3,
+  Scale
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
@@ -30,11 +31,15 @@ export const navigation = [
   { key: "bank", href: "/bank", icon: Landmark },
   { key: "costs", href: "/costs", icon: ReceiptText },
   { key: "reports", href: "/reports", icon: BarChart3 },
+  { key: "tax", href: "/tax", icon: Scale, ownerOnly: true },
   { key: "handover", href: "/handover", icon: PackageCheck },
   { key: "settings", href: "/settings", icon: Settings },
 ];
 
-export function AppSidebar() {
+// Owner-only pages (Tax) are left out for everyone else.
+export const visibleNavigation = (isAdmin: boolean) => navigation.filter((item) => isAdmin || !("ownerOnly" in item && item.ownerOnly));
+
+export function AppSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const t = useTranslations("common.nav");
   const tApp = useTranslations("common.app");
@@ -49,7 +54,7 @@ export function AppSidebar() {
       </div>
       <div className="flex flex-1 flex-col overflow-y-auto">
         <nav className="flex-1 space-y-1 px-4 py-6">
-          {navigation.map((item) => {
+          {visibleNavigation(isAdmin).map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

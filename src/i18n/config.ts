@@ -7,7 +7,7 @@ export const isLocale = (v: unknown): v is Locale => v === "en" || v === "vi";
 
 export const NAMESPACES = [
   "common", "auth", "dashboard", "ledger", "invoices", "projects", "contacts",
-  "accounts", "bank", "costs", "reports", "handover", "settings", "profile",
+  "accounts", "bank", "costs", "reports", "tax", "handover", "settings", "profile",
 ] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 

@@ -48,3 +48,6 @@ next-env.d.ts
 
 # bank reconciliations (bank data — never commit; the repo is public)
 /reconciliation/
+
+# app data: the database and uploaded files, tax declarations included (never commit; the repo is public)
+/data/

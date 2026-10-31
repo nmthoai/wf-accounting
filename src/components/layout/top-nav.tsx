@@ -10,11 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navigation } from "./app-sidebar";
+import { visibleNavigation } from "./app-sidebar";
 import { signOutAction } from "@/app/actions/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
-export function TopNav({ greeting }: { greeting: string | null }) {
+export function TopNav({ greeting, isAdmin = false }: { greeting: string | null; isAdmin?: boolean }) {
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
   const t = useTranslations("common");
@@ -37,7 +37,7 @@ export function TopNav({ greeting }: { greeting: string | null }) {
             </div>
             <div className="flex flex-1 flex-col overflow-y-auto">
               <nav className="flex-1 space-y-1 px-4 py-6">
-                {navigation.map((item) => {
+                {visibleNavigation(isAdmin).map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link

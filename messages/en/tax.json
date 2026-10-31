@@ -1,0 +1,205 @@
+{
+  "page": {
+    "title": "Tax declarations",
+    "subtitle": "What your accountant declared each quarter, kept apart from the books and compared with them — for your own tracking.",
+    "ownerOnly": "Only the owner can see the tax declarations.",
+    "disclaimer": "Your own record of the declarations your accountant filed, typed from the filed PDFs. It is kept apart from your entries, invoices and their files, and is only compared with the books, quarter by quarter, to show gaps. It is not a declaration and not a statement of compliance — the flags are questions, not conclusions. Only you can see this page.",
+    "addReturn": "Record a declaration"
+  },
+  "flags": {
+    "title": "To look at ({count})",
+    "subtitle": "Gaps between the declarations and the books. When you've looked at one, mark it as known with your note — it stays here, set apart.",
+    "none": "Nothing to look at.",
+    "known": "Known ({count})",
+    "markKnown": "Mark as known",
+    "reopen": "Reopen",
+    "reopenConfirm": "Reopen this flag? Your note comes off it; the history keeps it.",
+    "editNote": "Edit note",
+    "noteTitle": "Mark as known",
+    "noteLabel": "Your note",
+    "notePlaceholder": "Why it stands — e.g. your decision and when to look again",
+    "saveNote": "Save",
+    "by": "{user}, {date}",
+    "toastNoted": "Marked as known",
+    "toastReopened": "Flag reopened",
+    "changed": "The figure has moved since your note (it was {was}) — worth another look.",
+    "provisionalPart": "{amount} of the books' figure is at a provisional exchange rate, so the difference may still move.",
+    "recordIt": "Record it",
+    "severity": {
+      "high": "Important",
+      "medium": "To check",
+      "info": "For info"
+    },
+    "kinds": {
+      "notDeclared": {
+        "title": "{period}: the books show {amount} more sales than the VAT declaration",
+        "body": "Sales booked in {period} are above total sales declared in [34] — see Books vs declarations below. Part may be timing or exchange rates; whether the rest belongs on a declaration is a question for you and your accountant. (WF-TTT-03, WF-REC-04)"
+      },
+      "declaredMore": {
+        "title": "{period}: the VAT declaration shows {amount} more sales than the books",
+        "body": "Usually exchange rates (the declaration uses the rate on each invoice date) or an invoice issued in a different quarter from the money. Worth a look if it keeps growing."
+      },
+      "missingReturn": {
+        "title": "{period}: no {form} recorded here",
+        "body": "If one was filed, record it with its PDF so the quarter is complete. If none was needed, mark it as known with a note."
+      },
+      "creditChain": {
+        "title": "{period}: [22] doesn't match the credit carried from last quarter",
+        "body": "[22] here is {actual}, but the previous quarter carried {expected} forward in [43]. A typing slip, a supplementary declaration not recorded here, or a difference adjusted through [37]/[38]?"
+      },
+      "math": {
+        "title": "{form} {period}: line [{code}] doesn't add up",
+        "body": "The form's own arithmetic gives {expected}; the record says {actual}. Check the figure against the filed PDF."
+      },
+      "bhxhNoStaff": {
+        "title": "{period}: social insurance paid, but no employees on the PIT declaration",
+        "body": "Social insurance (BHXH) contributions paid from the bank this quarter: {amount}. The 05/KK-TNCN declaration shows 0 employees — who is insured, and is a salary paid? (WF-TTT-05)"
+      },
+      "bhxhMonthMissing": {
+        "title": "{month}: no BHXH contribution found",
+        "body": "Social insurance is paid every month, but no BHXH contribution for {month} is in the imported bank statements. If it was paid, import that month's statement; if not, ask your accountant — a late contribution can draw interest. (WF-TTT-05)"
+      },
+      "filedLate": {
+        "title": "{form} {period}: filed after the due date",
+        "body": "Filed {days, plural, one {# day} other {# days}} after the due date recorded here ({date}). Is a late-filing penalty expected? Your accountant will know."
+      },
+      "notFiled": {
+        "title": "{form} {period}: due {date}, not marked as filed",
+        "body": "The due date recorded here passed {days, plural, one {# day} other {# days}} ago and no filing date is recorded. If it was filed, add the date and the PDF; if not, ask your accountant."
+      }
+    }
+  },
+  "returns": {
+    "title": "Declarations by quarter",
+    "subtitle": "Key lines of the latest filing for each quarter. Open a declaration to see every line and its files.",
+    "quarter": "Quarter",
+    "sales": "Sales",
+    "purchases": "Purchases",
+    "inputVat": "Input VAT",
+    "payable": "VAT payable",
+    "credit": "Credit carried",
+    "filed": "Filed",
+    "employees": "Employees",
+    "income": "Taxable income",
+    "withheld": "PIT withheld",
+    "notRecorded": "not recorded",
+    "edit": "Open {form} {period}",
+    "none": "No declarations recorded yet.",
+    "supplements": "{count, plural, one {# earlier filing} other {# earlier filings}}",
+    "supplement": "supplement {n}",
+    "original": "original",
+    "due": "due {date}"
+  },
+  "compare": {
+    "title": "Books vs declarations",
+    "subtitle": "Sales booked in each quarter (income reviewed or posted, in VND) against total sales declared in [34]. Totals only — no entry is linked to a declaration.",
+    "books": "Sales in the books",
+    "declared": "Declared [34]",
+    "difference": "Difference",
+    "outside": "of which outside the bank",
+    "provisional": "at a provisional rate",
+    "none": "Record a VAT declaration to compare it with the books.",
+    "note": "Differences are shown, never offset. The books are cash-basis at each entry's rate; the declaration follows invoice dates and the invoice-date exchange rate."
+  },
+  "forms": {
+    "gtgt": "01/GTGT — VAT declaration",
+    "tncn": "05/KK-TNCN — PIT withheld"
+  },
+  "form": {
+    "titleAdd": "Record a filed declaration",
+    "titleEdit": "{form} · {period}",
+    "form": "Form",
+    "year": "Year",
+    "quarter": "Quarter",
+    "quarterN": "Q{n}",
+    "supplement": "Supplement no.",
+    "supplementHint": "0 for the original filing",
+    "filedDate": "Date filed",
+    "dueDate": "Due date",
+    "dueHint": "As your accountant gives it",
+    "template": "Form version",
+    "submissionRef": "Submission code",
+    "submissionRefPlaceholder": "e.g. L00…",
+    "preparedBy": "Prepared by",
+    "figures": "Figures as printed on the declaration",
+    "figuresHint": "Whole đồng (or people), no decimals. Leave blank for 0. Only [36] can be negative — type it in brackets or with a minus.",
+    "valueColumn": "Value of goods and services (before VAT)",
+    "vatColumn": "VAT",
+    "notes": "Notes",
+    "files": "Files: the filed PDF, the XML, your accountant's lists",
+    "filesHint": "PDF, XML, Excel, ZIP or images. Kept with the declaration only; only you can open them.",
+    "delete": "Delete",
+    "deleteConfirm": "Delete the {form} declaration for {period}? Its files are deleted too; the history keeps a note.",
+    "removeFile": "Delete {name}",
+    "removeFileConfirm": "Delete {name}? The file is deleted for good; the history keeps a note.",
+    "submitAdd": "Save declaration"
+  },
+  "lines": {
+    "gtgt": {
+      "22": "VAT credit brought forward",
+      "23": "Purchases (before VAT)",
+      "23a": "of which imports",
+      "24": "VAT on purchases",
+      "24a": "of which on imports",
+      "25": "Input VAT deductible this period",
+      "26": "Sales not subject to VAT",
+      "27": "Sales subject to VAT",
+      "28": "Output VAT on taxable sales",
+      "29": "Sales at 0%",
+      "30": "Sales at 5%",
+      "31": "VAT at 5%",
+      "32": "Sales at 10%",
+      "33": "VAT at 10%",
+      "32a": "Sales with no VAT calculated",
+      "34": "Total sales",
+      "35": "Total output VAT",
+      "36": "VAT arising this period ([35] − [25])",
+      "37": "Adjustment down of VAT credit from earlier periods",
+      "38": "Adjustment up of VAT credit from earlier periods",
+      "39a": "VAT credit taken over",
+      "40a": "VAT payable on business activity",
+      "40b": "Investment-project input VAT offset",
+      "40": "VAT payable this period",
+      "41": "VAT credit not used this period",
+      "42": "VAT refund requested",
+      "43": "VAT credit carried forward"
+    },
+    "tncn": {
+      "16": "Employees",
+      "17": "of which residents with a labour contract",
+      "18": "People with tax withheld",
+      "19": "Residents",
+      "20": "Non-residents",
+      "21": "Taxable income paid",
+      "22": "to residents",
+      "23": "to non-residents",
+      "24": "of which life / voluntary insurance premiums paid to insurers not established in Vietnam",
+      "25": "Exempt under oil and gas contracts",
+      "25_1": "Tax-exempt income under resolutions",
+      "26": "Taxable income subject to withholding",
+      "27": "residents",
+      "28": "non-residents",
+      "29": "PIT withheld",
+      "30": "from residents",
+      "31": "from non-residents",
+      "32": "of which PIT withheld on those insurance premiums"
+    }
+  },
+  "toast": {
+    "saved": "Declaration saved",
+    "added": "Declaration recorded",
+    "deleted": "Declaration deleted",
+    "fileRemoved": "File deleted"
+  },
+  "errors": {
+    "form": "Choose the form.",
+    "period": "Enter the year and quarter.",
+    "template": "Unknown form version.",
+    "supplement": "The supplement number is 0 (original) to 20.",
+    "figure": "Line [{code}]: whole numbers only (only [36] can be negative).",
+    "duplicate": "A {form} declaration for {period} with that supplement number is already recorded.",
+    "gone": "That record no longer exists — reload the page.",
+    "noteRequired": "Write a short note.",
+    "fileType": "{name}: only PDF, XML, Excel, ZIP or image files."
+  }
+}

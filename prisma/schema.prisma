@@ -289,6 +289,52 @@ model Attachment {
   createdAt     DateTime @default(now())
 }
 
+// A tax declaration as the company's accountant filed it: independent information,
+// kept apart from the books (no link to entries, invoices or their files) and only
+// compared with them. The app never prepares, computes or files a declaration.
+model TaxReturn {
+  id            String    @id @default(cuid())
+  form          String    // "01/GTGT" (VAT), "05/KK-TNCN" (PIT withheld)
+  period        String    // "2026-Q3"
+  template      String    @default("TT80/2021") // the form version its line codes follow
+  supplement    Int       @default(0)           // 0 = original (lần đầu); n = supplement n (bổ sung lần thứ n)
+  filedDate     DateTime?
+  dueDate       DateTime?                       // as the accountant gives it — not computed
+  submissionRef String?                         // the portal's submission code
+  preparedBy    String?
+  lines         String    @default("{}")        // JSON { "34": 120000000, "16": 2, … } — whole VND, or people
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  files         TaxReturnFile[]
+
+  @@unique([form, period, supplement])
+}
+
+// A declaration's own files (the filed PDF, the XML, the accountant's lists), stored in
+// their own folder apart from entry and invoice attachments; served to the owner only.
+model TaxReturnFile {
+  id          String    @id @default(cuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileType    String?
+  filePath    String    // bare key inside the declarations' folder
+  size        Int?
+  createdAt   DateTime  @default(now())
+}
+
+// The owner's note on a flag the Tax page raises: seen, and why it stands.
+model TaxFlagNote {
+  key       String   @id // e.g. "sales-gap:2026-Q2", "missing:01/GTGT:2026-Q3"
+  note      String
+  figure    Float?   // the flag's amount when noted; if it moves, the flag comes back
+  user      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Cloud services and costs paid by the owner, recorded from the receipt. Each
 // item stays pending until reviewed, then becomes one ledger expense — never
 // two. Evidence fields are kept as on the receipt once converted.
