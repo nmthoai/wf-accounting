@@ -166,7 +166,7 @@ export function questions(d: Data, locale: Locale = DEFAULT_LOCALE, amt: (n: num
       q.push({ area: th("questions.area.invoice"), item: th("questions.invoiceItem", { kind: tc(i.direction === "PAYABLE" ? "direction.PAYABLE" : "direction.RECEIVABLE"), number: i.number ?? "" }),
         // Money still to come is a part payment, not a puzzle; only an overpayment is flagged.
         detail: th(s.difference > 0 ? "questions.invoiceStillOpen" : "questions.invoiceOverpaid", {
-          direction: i.direction, gross: String(i.amount), received: String(s.received), fees: String(s.fees), difference: String(Math.round(Math.abs(s.difference) * 100) / 100),
+          direction: i.direction, gross: amt(i.amount, i.currency), received: amt(s.received, i.currency), fees: amt(s.fees, i.currency), difference: amt(Math.abs(s.difference), i.currency),
         }), amount: amt(s.difference, i.currency), ref: i.id, key: `invoice:${i.id}` });
     }
   }

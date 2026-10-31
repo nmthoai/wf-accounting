@@ -133,7 +133,7 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
             {projects.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="py-3">
-                  <Link href={`/projects/${p.id}`} className="block max-w-[16rem] truncate font-semibold text-foreground hover:text-primary" title={p.name}>{p.name}</Link>
+                  <Link href={`/projects/${p.id}`} className="block max-w-[12rem] truncate font-semibold text-foreground hover:text-primary" title={p.name}>{p.name}</Link>
                   <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     {statusChip(p.status)}
                     {p.openCount > 0 && (
@@ -151,7 +151,7 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
                   </span>
                 </TableCell>
                 <TableCell className="py-3">
-                  <span className={cn("block max-w-[14rem] truncate", p.clientName ? "text-foreground" : "text-muted-foreground")} title={p.clientName ?? undefined}>{p.clientName || t("noClient")}</span>
+                  <span className={cn("block max-w-[10rem] truncate", p.clientName ? "text-foreground" : "text-muted-foreground")} title={p.clientName ?? undefined}>{p.clientName || t("noClient")}</span>
                   <span className="block text-[12px] text-muted-foreground">{t("list.txnCount", { count: p.txnCount })}</span>
                 </TableCell>
                 <TableCell className="text-right text-pos">{money(p.income)}</TableCell>

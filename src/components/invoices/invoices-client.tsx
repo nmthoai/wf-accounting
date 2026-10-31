@@ -161,10 +161,10 @@ export function InvoicesClient({
           <CardContent>
             <form onSubmit={handleCreate} className="grid items-start gap-5 md:grid-cols-2">
               <div className="wf-seg justify-self-start md:col-span-2" role="group" aria-label={t("form.direction")}>
-                <button type="button" aria-pressed={direction === "RECEIVABLE"} onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); setCategoryId(""); }}>
+                <button type="button" aria-pressed={direction === "RECEIVABLE"} onClick={() => { setDirection("RECEIVABLE"); setPartyId(""); setCategoryId(""); setErr(""); }}>
                   {t("form.receivable")}
                 </button>
-                <button type="button" aria-pressed={direction === "PAYABLE"} onClick={() => { setDirection("PAYABLE"); setPartyId(""); setCategoryId(""); }}>
+                <button type="button" aria-pressed={direction === "PAYABLE"} onClick={() => { setDirection("PAYABLE"); setPartyId(""); setCategoryId(""); setErr(""); }}>
                   {t("form.payable")}
                 </button>
               </div>
