@@ -64,6 +64,7 @@ export function InvoicesClient({
   const [projectId, setProjectId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [currency, setCurrency] = useState("VND");
+  const [noInvoiceYet, setNoInvoiceYet] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [openOnly, setOpenOnly] = useState(false);
   const today = vnToday();
@@ -107,7 +108,7 @@ export function InvoicesClient({
       const res = await createInvoice(fd);
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       form.reset();
-      setIssueDate(today); setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setShowForm(false);
+      setIssueDate(today); setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setNoInvoiceYet(false); setShowForm(false);
       notify.success(direction === "PAYABLE" ? t("toast.billCreated") : t("toast.invoiceCreated"));
       router.refresh();
     } catch {
@@ -202,7 +203,11 @@ export function InvoicesClient({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="number">{direction === "PAYABLE" ? t("edit.billNumber") : t("edit.invoiceNumber")}</Label>
-                <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} required={direction !== "PAYABLE"} />
+                <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} required={!noInvoiceYet} disabled={noInvoiceYet} />
+                <label className="flex items-start gap-2 text-[14.5px] text-text-secondary">
+                  <input type="checkbox" name="noInvoiceYet" className="mt-0.5 size-4 shrink-0 accent-primary" checked={noInvoiceYet} onChange={(e) => setNoInvoiceYet(e.target.checked)} />
+                  {t("form.noInvoiceYet")}
+                </label>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="amount">{t("form.amount")}</Label>
@@ -278,6 +283,7 @@ export function InvoicesClient({
                           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span className="max-w-[10rem] truncate font-mono font-semibold text-foreground" title={i.number ?? undefined}>{i.number || kind}</span>
                             {statusChip(i)}
+                            {!i.number && i.status !== "VOID" && <Chip tone="warn" mono dot>{t("list.noInvoiceYet")}</Chip>}
                             {i.attachment && (
                               <a href={`/api/uploads/${i.attachment.split('/').pop()}`} target="_blank" rel="noreferrer"
                                 className="text-muted-foreground transition-colors duration-150 hover:text-primary" title={t("list.viewPdf")} aria-label={t("list.viewPdf")}>

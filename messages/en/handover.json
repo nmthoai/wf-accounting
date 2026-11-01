@@ -57,6 +57,8 @@
     "bankLine": "{status}: {party}",
     "noStatement": "No bank statement imported for this month.",
     "invoiceItem": "{kind} {number}",
+    "invoiceItemNoNumber": "{kind} without a number · {party} · issued {date}",
+    "noInvoiceYet": "No invoice yet — {direction, select, PAYABLE {the vendor's invoice hasn't arrived} other {the invoice hasn't been issued}}.",
     "costPending": "Receipt pending review — not in the ledger yet.",
     "rejected": "Rejected and sent back for correction — excluded from this package's figures until it is corrected and reviewed.",
     "invoiceStillOpen": "Gross {gross}, received {received}, evidenced fees {fees} — {direction, select, PAYABLE {still to pay} other {still to receive}} {difference}.",

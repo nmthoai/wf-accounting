@@ -41,6 +41,8 @@ export function EditInvoiceDialog({
   const [projectId, setProjectId] = useState(invoice.projectId ?? "");
   const [categoryId, setCategoryId] = useState(invoice.categoryId ?? "");
   const [currency, setCurrency] = useState(invoice.currency);
+  // A saved row without a number is one marked "no invoice yet".
+  const [noInvoiceYet, setNoInvoiceYet] = useState(!invoice.number);
   // The due date can't be before the issue date (the server refuses it too).
   const [issueDate, setIssueDate] = useState(invoice.issueDate);
   // Linked payments are in the invoice's currency; the server refuses a change until they are unlinked.
@@ -73,7 +75,7 @@ export function EditInvoiceDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setIssueDate(invoice.issueDate); }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) { setIssueDate(invoice.issueDate); setNoInvoiceYet(!invoice.number); } }}>
       <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" aria-label={tc("actions.edit")} title={tc("actions.edit")} />}>
         <Pencil />
       </DialogTrigger>
@@ -112,7 +114,11 @@ export function EditInvoiceDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`num-${invoice.id}`}>{isReceivable ? t("edit.invoiceNumber") : t("edit.billNumber")}</Label>
-            <Input id={`num-${invoice.id}`} name="number" defaultValue={invoice.number ?? ""} placeholder={t("form.numberPlaceholder")} required={isReceivable} />
+            <Input id={`num-${invoice.id}`} name="number" defaultValue={invoice.number ?? ""} placeholder={t("form.numberPlaceholder")} required={!noInvoiceYet} disabled={noInvoiceYet} />
+            <label className="flex items-start gap-2 text-[14.5px] text-text-secondary">
+              <input type="checkbox" name="noInvoiceYet" className="mt-0.5 size-4 shrink-0 accent-primary" checked={noInvoiceYet} onChange={(e) => setNoInvoiceYet(e.target.checked)} />
+              {t("form.noInvoiceYet")}
+            </label>
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`amt-${invoice.id}`}>{t("form.amount")}</Label>

@@ -57,6 +57,8 @@
     "bankLine": "{status}: {party}",
     "noStatement": "Chưa nhập sao kê ngân hàng cho tháng này.",
     "invoiceItem": "{kind} {number}",
+    "invoiceItemNoNumber": "{kind} chưa có số · {party} · ngày lập {date}",
+    "noInvoiceYet": "Chưa có hóa đơn — {direction, select, PAYABLE {chưa nhận được hóa đơn của nhà cung cấp} other {chưa xuất hóa đơn}}.",
     "costPending": "Chứng từ chờ hạch toán — chưa có trên sổ thu chi.",
     "rejected": "Bị từ chối và đã trả lại để sửa — không được tính vào số liệu của bộ hồ sơ này cho đến khi được sửa và duyệt.",
     "invoiceStillOpen": "Tổng tiền thanh toán {gross}, đã thanh toán {received}, phí có chứng từ {fees} — {direction, select, PAYABLE {còn phải trả} other {còn phải thu}} {difference}.",

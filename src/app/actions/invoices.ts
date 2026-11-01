@@ -32,14 +32,15 @@ const linkNote = (inv: { number: string | null; direction: string }, kind: strin
   `${inv.direction === "PAYABLE" ? "bill" : "invoice"} ${inv.number ?? "(no number)"} · ${kind} ${amount}`;
 
 // What every saved invoice/bill must have (create and edit): a client or vendor
-// that exists, and a due date on or after the issue date; an invoice also needs
-// its number. A bill may wait for the vendor's invoice (an accrual), so its
-// number is optional. Old rows are only held to this when they are saved again.
-// Returns the reason, or null.
+// that exists, a due date on or after the issue date, and its number — unless
+// it is explicitly marked "no invoice yet" (an accrual before the vendor's
+// invoice arrives, or a receivable before its e-invoice is issued). That state
+// is a row with no number, and it stays flagged until the number is entered.
+// Old rows are only held to this when they are saved again. Returns the reason, or null.
 async function invoiceProblem(
   t: Translate,
   direction: string,
-  f: { number: string | null; partyId: string | null; issueStr: string; dueStr: string },
+  f: { number: string | null; noInvoiceYet: boolean; partyId: string | null; issueStr: string; dueStr: string },
 ) {
   const payable = direction === "PAYABLE";
   if (new Date(f.dueStr) < new Date(f.issueStr)) return t("errors.dueBeforeIssue", { due: f.dueStr, issue: f.issueStr });
@@ -48,7 +49,7 @@ async function invoiceProblem(
     ? await prisma.vendor.count({ where: { id: f.partyId } })
     : await prisma.client.count({ where: { id: f.partyId } });
   if (!exists) return t("errors.partyGone", { direction });
-  if (!f.number && !payable) return t("errors.invoiceNumberRequired");
+  if (!f.number && !f.noInvoiceYet) return payable ? t("errors.billNumberRequired") : t("errors.invoiceNumberRequired");
   return null;
 }
 
@@ -58,7 +59,9 @@ export async function createInvoice(formData: FormData) {
   const t = await getT("invoices");
 
   const direction = (formData.get("direction") as string) === "PAYABLE" ? "PAYABLE" : "RECEIVABLE";
-  const number = (formData.get("number") as string)?.trim() || null;
+  // "No invoice yet" keeps the number empty, whatever was typed.
+  const noInvoiceYet = formData.get("noInvoiceYet") === "on";
+  const number = noInvoiceYet ? null : (formData.get("number") as string)?.trim() || null;
   const clientId = (formData.get("clientId") as string) || null;
   const vendorId = (formData.get("vendorId") as string) || null;
   const projectId = (formData.get("projectId") as string) || null;
@@ -71,7 +74,7 @@ export async function createInvoice(formData: FormData) {
 
   if (isNaN(amount) || amount <= 0) return { success: false, message: t("errors.invalidAmount") };
   if (!issueStr || !dueStr) return { success: false, message: t("errors.datesRequired") };
-  const problem = await invoiceProblem(t, direction, { number, partyId: direction === "PAYABLE" ? vendorId : clientId, issueStr, dueStr });
+  const problem = await invoiceProblem(t, direction, { number, noInvoiceYet, partyId: direction === "PAYABLE" ? vendorId : clientId, issueStr, dueStr });
   if (problem) return { success: false, message: problem };
 
   let exchangeRate = 1.0;
@@ -117,7 +120,9 @@ export async function updateInvoice(id: string, formData: FormData) {
   if (!inv) return { success: false, message: (await getT("common"))("errors.notFound") };
   if (inv.status === "VOID") return { success: false, message: t("errors.invoiceVoided") };
 
-  const number = (formData.get("number") as string)?.trim() || null;
+  // "No invoice yet" keeps the number empty, whatever was typed.
+  const noInvoiceYet = formData.get("noInvoiceYet") === "on";
+  const number = noInvoiceYet ? null : (formData.get("number") as string)?.trim() || null;
   const clientId = (formData.get("clientId") as string) || null;
   const vendorId = (formData.get("vendorId") as string) || null;
   const projectId = (formData.get("projectId") as string) || null;
@@ -131,7 +136,7 @@ export async function updateInvoice(id: string, formData: FormData) {
   if (isNaN(amount) || amount <= 0) return { success: false, message: t("errors.invalidAmount") };
   if (!issueStr || !dueStr) return { success: false, message: t("errors.datesRequired") };
   const isReceivable = inv.direction === "RECEIVABLE";
-  const problem = await invoiceProblem(t, inv.direction, { number, partyId: isReceivable ? clientId : vendorId, issueStr, dueStr });
+  const problem = await invoiceProblem(t, inv.direction, { number, noInvoiceYet, partyId: isReceivable ? clientId : vendorId, issueStr, dueStr });
   if (problem) return { success: false, message: problem };
   if (currency !== inv.currency && inv.allocations.length > 0) {
     return { success: false, message: t("errors.currencyLocked") };

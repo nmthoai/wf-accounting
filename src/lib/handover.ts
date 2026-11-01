@@ -161,13 +161,23 @@ export function questions(d: Data, locale: Locale = DEFAULT_LOCALE, amt: (n: num
     if (!b.covered) q.push({ area: th("questions.area.bank"), item: b.account.name, detail: th("questions.noStatement"), amount: "", ref: "", key: `noStatement:${b.account.id}` });
   }
   for (const i of d.invoices) {
+    const kind = tc(i.direction === "PAYABLE" ? "direction.PAYABLE" : "direction.RECEIVABLE");
+    // Without a number, the party and issue date say which one it is.
+    const item = i.number
+      ? th("questions.invoiceItem", { kind, number: i.number })
+      : th("questions.invoiceItemNoNumber", { kind, party: (i.direction === "PAYABLE" ? i.vendor?.name : i.client?.name) ?? "", date: iso(i.issueDate) });
     const s = settlement(i.amount, i.allocations);
     if (i.status !== "VOID" && Math.abs(s.difference) > EPS && (i.status === "PARTIAL" || s.received + s.fees > 0)) {
-      q.push({ area: th("questions.area.invoice"), item: th("questions.invoiceItem", { kind: tc(i.direction === "PAYABLE" ? "direction.PAYABLE" : "direction.RECEIVABLE"), number: i.number ?? "" }),
+      q.push({ area: th("questions.area.invoice"), item,
         // Money still to come is a part payment, not a puzzle; only an overpayment is flagged.
         detail: th(s.difference > 0 ? "questions.invoiceStillOpen" : "questions.invoiceOverpaid", {
           direction: i.direction, gross: amt(i.amount, i.currency), received: amt(s.received, i.currency), fees: amt(s.fees, i.currency), difference: amt(Math.abs(s.difference), i.currency),
         }), amount: amt(s.difference, i.currency), ref: i.id, key: `invoice:${i.id}` });
+    }
+    // Marked "no invoice yet" (saved without a number): flagged until the number is entered.
+    // Asked after any part payment, so a merged row keeps the amount still open.
+    if (i.status !== "VOID" && !i.number) {
+      q.push({ area: th("questions.area.invoice"), item, detail: th("questions.noInvoiceYet", { direction: i.direction }), amount: amt(i.amount, i.currency), ref: i.id, key: `invoice:${i.id}` });
     }
   }
   for (const c of d.costItems) {

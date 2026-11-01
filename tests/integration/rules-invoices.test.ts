@@ -1,6 +1,7 @@
 // Owner's rules for invoices and bills (1 Nov 2026): the due date is never before
 // the issue date; a receivable needs a client and a number, a bill a vendor and a
-// number — refused by the server on create and on edit, with the reason. Old rows
+// number — unless it is marked "no invoice yet", which saves it without one and
+// keeps it flagged — refused by the server on create and on edit, with the reason. Old rows
 // that predate the rules still load and take payments; they meet the rules when
 // next saved. Money still outstanding reads "still to receive / pay", not as an
 // unexplained difference; only an overpayment is flagged.
@@ -43,12 +44,13 @@ test("a due date before the issue date is refused on create and edit, naming bot
   assert.equal((await S.prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } })).dueDate.toISOString().slice(0, 10), "2026-10-31");
 });
 
-test("a receivable needs a client and an invoice number; a bill needs a vendor, its number may wait (trimmed)", async () => {
+test("a receivable needs a client and an invoice number; a bill needs a vendor and its number (trimmed)", async () => {
   as.staff();
   const before = await count();
   assert.match((await I.createInvoice(receivable({ clientId: "" }))).message!, /Choose the client/);
   assert.match((await I.createInvoice(receivable({ number: "   " }))).message!, /Enter the invoice number/);
   assert.match((await I.createInvoice(bill({ vendorId: "" }))).message!, /Choose the vendor/);
+  assert.match((await I.createInvoice(bill({ number: "   " }))).message!, /Enter the bill number.*No invoice yet/);
   // A receivable's vendor (or a bill's client) doesn't count as its party.
   assert.match((await I.createInvoice(receivable({ clientId: "", vendorId: S.vendor.id }))).message!, /Choose the client/);
   assert.match((await I.createInvoice(bill({ vendorId: "", clientId }))).message!, /Choose the vendor/);
@@ -71,12 +73,55 @@ test("a receivable needs a client and an invoice number; a bill needs a vendor, 
   const [r2, b2] = await Promise.all([r, b].map((x) => S.prisma.invoice.findUniqueOrThrow({ where: { id: x.id } })));
   assert.deepEqual([r2.number, r2.clientId, b2.number, b2.vendorId], ["R-OK", clientId, "B-OK", S.vendor.id]);
 
-  // A bill can be recorded before the vendor's invoice arrives (an accrual): no number yet.
-  assert.equal((await I.createInvoice(bill({ number: "  ", notes: "accrual, invoice to follow" }))).success, true);
+  assert.match((await I.updateInvoice(b.id, bill({ number: " " }))).message!, /Enter the bill number/);
+});
+
+test("\"no invoice yet\" saves a bill or receivable without a number, flagged in the list and the handover until the number is entered", async () => {
+  as.admin();
+  // A bill before the vendor's invoice arrives (an accrual); a receivable before its e-invoice is issued.
+  assert.equal((await I.createInvoice(bill({ number: "typed anyway", noInvoiceYet: "on", notes: "accrual, invoice to follow" }))).success, true);
   const accrual = await S.prisma.invoice.findFirstOrThrow({ where: { notes: "accrual, invoice to follow" } });
-  assert.equal(accrual.number, null);
-  assert.equal((await I.updateInvoice(b.id, bill({ number: " " }))).success, true);
-  assert.equal((await S.prisma.invoice.findUniqueOrThrow({ where: { id: b.id } })).number, null);
+  assert.equal(accrual.number, null, "the flag wins over a typed number");
+  assert.equal((await I.createInvoice(receivable({ number: "", noInvoiceYet: "on", notes: "e-invoice to issue" }))).success, true);
+  const pending = await S.prisma.invoice.findFirstOrThrow({ where: { notes: "e-invoice to issue" } });
+  assert.equal(pending.number, null);
+  // The rest of the rules still hold.
+  assert.match((await I.createInvoice(bill({ noInvoiceYet: "on", vendorId: "" }))).message!, /Choose the vendor/);
+
+  // The handover asks about each one, in its own words, until the number is in.
+  const { collect, openQuestions } = await import("@/lib/handover");
+  const asked = async () => openQuestions(await collect("2026-10"), "en").filter((q) => q.issues.some((i) => /No invoice yet/.test(i.detail)));
+  const details = (await asked()).flatMap((q) => q.issues.map((i) => i.detail));
+  assert.ok(details.includes("No invoice yet — the vendor's invoice hasn't arrived."));
+  assert.ok(details.includes("No invoice yet — the invoice hasn't been issued."));
+  // Each row says which one it is: no number, so the party and issue date.
+  const items = (await asked()).map((q) => q.item);
+  assert.ok(items.includes(`Bill without a number · ${S.vendor.name} · issued 2026-10-01`), items.join(" | "));
+  assert.ok(items.includes("Invoice without a number · Acme Studio · issued 2026-10-01"), items.join(" | "));
+  const before = (await asked()).length;
+
+  // The invoice arrives: entering its number clears the flag.
+  assert.equal((await I.updateInvoice(accrual.id, bill({ number: "B-ARRIVED", notes: "accrual, invoice to follow" }))).success, true);
+  assert.equal((await S.prisma.invoice.findUniqueOrThrow({ where: { id: accrual.id } })).number, "B-ARRIVED");
+  assert.equal((await asked()).length, before - 1);
+  // And it can be set back while the invoice is still missing.
+  assert.equal((await I.updateInvoice(accrual.id, bill({ number: "B-ARRIVED", noInvoiceYet: "on" }))).success, true);
+  assert.equal((await S.prisma.invoice.findUniqueOrThrow({ where: { id: accrual.id } })).number, null);
+
+  // Part paid as well: one row with both issues, and its amount is what is still open.
+  assert.equal((await I.recordPayment(pending.id, fd({ amount: 1000000, paidDate: "2026-10-20", accountId: S.vnd.id }))).success, true);
+  const row = (await asked()).find((q) => q.ref === pending.id)!;
+  assert.equal(row.issues.length, 2);
+  assert.match(row.issues.map((i) => i.detail).join(" "), /still to receive/);
+  assert.equal(row.amount, "4000000 VND");
+
+  // The list shows the chip on such rows, and both forms carry the checkbox.
+  for (const f of ["src/components/invoices/invoices-client.tsx", "src/components/invoices/edit-invoice-dialog.tsx"]) {
+    const src = readFileSync(join(process.cwd(), f), "utf8");
+    assert.match(src, /name="noInvoiceYet"/);
+    assert.match(src, /required=\{!noInvoiceYet\} disabled=\{noInvoiceYet\}/);
+  }
+  assert.match(readFileSync(join(process.cwd(), "src/components/invoices/invoices-client.tsx"), "utf8"), /!i\.number && i\.status !== "VOID" && <Chip tone="warn"[^>]*>\{t\("list\.noInvoiceYet"\)\}/);
 });
 
 test("an old row that breaks the rules still lists and takes payments; it meets them when next saved", async () => {
