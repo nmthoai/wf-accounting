@@ -100,12 +100,13 @@
   },
   "compare": {
     "title": "Books vs declarations",
-    "subtitle": "Sales booked in each quarter (income reviewed or posted, in VND) against total sales declared in [34]. Totals only — no entry is linked to a declaration.",
+    "subtitle": "Sales booked in each quarter (income reviewed or posted, in VND) against total sales declared in [34]. Bank interest is financial income, not a sale: it is left out of the books figure and shown apart. Totals only — no entry is linked to a declaration.",
     "books": "Sales in the books",
     "declared": "Declared [34]",
     "difference": "Difference",
     "outside": "of which outside the bank",
     "provisional": "at a provisional rate",
+    "interest": "bank interest, not in sales",
     "none": "Record a VAT declaration to compare it with the books.",
     "note": "Differences are shown, never offset. The books are cash-basis at each entry's rate; the declaration follows invoice dates and the invoice-date exchange rate."
   },

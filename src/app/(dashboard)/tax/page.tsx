@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/wf/page-header";
 import { Notice } from "@/components/wf/ledger-ui";
 import { vnTodayStart } from "@/lib/money";
 import { taxFlags, latestReturns, parseLines, addQuarters, quarterOf, quarterRange, noteIsStale, type Flag } from "@/lib/tax";
+import { isInterestCategory } from "@/lib/interest";
 import { TaxClient, type ReturnView, type FlagView } from "@/components/tax/tax-client";
 
 // The declarations the accountant filed, as the owner records them: kept apart from
@@ -25,12 +26,13 @@ export default async function TaxPage() {
 
   const [returns, income, bankOut, notes] = await Promise.all([
     prisma.taxReturn.findMany({ include: { files: { select: { id: true, fileName: true }, orderBy: { createdAt: "asc" } } } }),
-    // The books, read for totals only: booked income by quarter, and where it was received.
+    // The books, read for totals only: booked income by quarter, where it was received, and
+    // whether it is bank interest.
     prisma.transaction.findMany({
       where: { type: "INCOME" },
       select: {
         id: true, date: true, type: true, status: true, amount: true, currency: true, exchangeRate: true, vndAmount: true, rateSource: true,
-        reversalOfId: true, reversedBy: { select: { id: true } }, account: { select: { type: true } },
+        reversalOfId: true, reversedBy: { select: { id: true } }, account: { select: { type: true } }, category: { select: { name: true } },
       },
     }),
     prisma.bankLine.findMany({ where: { amount: { lt: 0 } }, select: { txnDate: true, amount: true, description: true, counterparty: true } }),
@@ -42,7 +44,10 @@ export default async function TaxPage() {
   }));
   const { flags, comparison } = taxFlags({
     returns: rows,
-    income: income.map((x) => ({ ...x, accountType: x.account?.type ?? null, cancelled: !!x.reversalOfId || !!x.reversedBy })),
+    income: income.map((x) => ({
+      ...x, accountType: x.account?.type ?? null, cancelled: !!x.reversalOfId || !!x.reversedBy,
+      interest: !!x.category && isInterestCategory(x.category.name),
+    })),
     bankOut: bankOut.map((b) => ({ date: b.txnDate, amount: b.amount, description: b.description, counterparty: b.counterparty })),
     today: vnTodayStart(),
   });

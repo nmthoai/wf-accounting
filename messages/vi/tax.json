@@ -100,12 +100,13 @@
   },
   "compare": {
     "title": "Sổ sách và tờ khai",
-    "subtitle": "Doanh thu ghi sổ trong quý (khoản thu đã duyệt hoặc đã ghi sổ, quy đổi VND) so với tổng doanh thu kê khai tại chỉ tiêu [34]. Chỉ so sánh số tổng — không bút toán nào được liên kết với tờ khai.",
+    "subtitle": "Doanh thu ghi sổ trong quý (khoản thu đã duyệt hoặc đã ghi sổ, quy đổi VND) so với tổng doanh thu kê khai tại chỉ tiêu [34]. Lãi tiền gửi ngân hàng là doanh thu hoạt động tài chính, không phải doanh thu bán hàng: không tính vào doanh thu trên sổ sách và được hiển thị riêng. Chỉ so sánh số tổng — không bút toán nào được liên kết với tờ khai.",
     "books": "Doanh thu trên sổ sách",
     "declared": "Đã kê khai [34]",
     "difference": "Chênh lệch",
     "outside": "trong đó ngoài ngân hàng",
     "provisional": "theo tỷ giá tạm tính",
+    "interest": "lãi tiền gửi, không tính vào doanh thu",
     "none": "Ghi nhận một tờ khai GTGT để đối chiếu với sổ sách.",
     "note": "Chênh lệch chỉ được hiển thị, không bù trừ. Sổ sách theo cơ sở tiền và tỷ giá từng bút toán; tờ khai theo ngày lập và tỷ giá trên hóa đơn."
   },

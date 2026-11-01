@@ -479,13 +479,14 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
           <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("compare.subtitle")}</p>
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="[&>th]:h-auto [&>th]:py-2 [&>th]:align-bottom [&>th]:whitespace-normal">
                 <TableHead>{t("returns.quarter")}</TableHead>
                 <TableHead className="text-right">{t("compare.books")}</TableHead>
                 <TableHead className="text-right">{t("compare.declared")}</TableHead>
                 <TableHead className="text-right">{t("compare.difference")}</TableHead>
                 <TableHead className="border-l border-border text-right">{t("compare.outside")}</TableHead>
                 <TableHead className="text-right">{t("compare.provisional")}</TableHead>
+                <TableHead className="border-l border-border text-right">{t("compare.interest")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -497,9 +498,10 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
                   <TableCell className={cn("text-right font-semibold", Math.abs(c.difference) >= 0.5 && "text-warn")}>{Math.abs(c.difference) < 0.5 ? "–" : nf.format(c.difference)}</TableCell>
                   <TableCell className="border-l border-border text-right">{c.outside ? nf.format(c.outside) : "–"}</TableCell>
                   <TableCell className="text-right">{c.provisional ? nf.format(c.provisional) : "–"}</TableCell>
+                  <TableCell className="border-l border-border text-right">{c.interest ? nf.format(c.interest) : "–"}</TableCell>
                 </TableRow>
               ))}
-              {comparison.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">{t("compare.none")}</TableCell></TableRow>}
+              {comparison.length === 0 && <TableRow><TableCell colSpan={7} className="py-6 text-center text-muted-foreground">{t("compare.none")}</TableCell></TableRow>}
             </TableBody>
           </Table>
           <p className="border-t border-border px-5 py-3 text-[13.5px] text-muted-foreground">{t("compare.note")}</p>

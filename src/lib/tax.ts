@@ -116,6 +116,8 @@ export type ReturnRow = {
 export type IncomeRow = {
   id: string; date: Date; type: string; status: string; amount: number; currency: string; exchangeRate: number;
   vndAmount: number | null; rateSource: string | null; accountType: string | null; cancelled: boolean;
+  // Booked under the bank-interest category: financial income, not a sale.
+  interest: boolean;
 };
 export type BankOut = { date: Date; amount: number; description: string | null; counterparty: string | null };
 export type Severity = "high" | "medium" | "info";
@@ -127,7 +129,7 @@ export type Flag = {
   // The figure a note on this flag refers to: if it later moves, the flag comes back.
   figure?: number;
 };
-export type Comparison = { period: string; books: number; declared: number; difference: number; outside: number; provisional: number };
+export type Comparison = { period: string; books: number; declared: number; difference: number; outside: number; provisional: number; interest: number };
 
 // The latest filing per form and quarter: a supplement replaces the original.
 export function latestReturns(rows: ReturnRow[]) {
@@ -155,14 +157,16 @@ export const tolerance = (a: number, b: number) => Math.max(500000, 0.02 * Math.
 export function taxFlags({ returns, income, bankOut, today }: { returns: ReturnRow[]; income: IncomeRow[]; bankOut: BankOut[]; today: Date }) {
   const flags: Flag[] = [];
   const latest = latestReturns(returns);
-  const sales = income.filter((t) => t.type === "INCOME" && isBooked(t));
+  const booked = income.filter((t) => t.type === "INCOME" && isBooked(t));
+  const sales = booked.filter((t) => !t.interest);
   const vnd = (rows: IncomeRow[]) => rows.reduce((s, t) => s + toVnd(t), 0);
   const inQuarter = (p: string, d: Date) => { const { start, end } = quarterRange(p); return d >= start && d < end; };
   const outside = (t: IncomeRow) => t.accountType === "OWNER" || t.accountType === "CASH";
 
   // Per quarter with a VAT declaration: sales in the books against declared sales [34]. The
   // breakdown (received outside the company bank, still at a provisional rate) explains a gap;
-  // it is shown in totals only, never as a flag on an entry.
+  // it is shown in totals only, never as a flag on an entry. Bank interest is not a sale: it
+  // is left out of the books figure and shown beside it, so nothing is hidden.
   const comparison: Comparison[] = [];
   for (const [k, r] of latest) {
     if (r.form !== "01/GTGT") continue;
@@ -173,6 +177,7 @@ export function taxFlags({ returns, income, bankOut, today }: { returns: ReturnR
     const row = {
       period: p, books, declared, difference,
       outside: vnd(lq.filter(outside)), provisional: vnd(lq.filter(isProvisional)),
+      interest: vnd(booked.filter((t) => t.interest && inQuarter(p, t.date))),
     };
     comparison.push(row);
     if (difference > tolerance(books, declared)) flags.push({ key: `sales-gap:${p}`, severity: "high", kind: "notDeclared", period: p, amount: difference, figure: difference, provisionalVnd: row.provisional });

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CircleAlert, Loader2 } from "lucide-react";
 import { saveAccount, createLoan, updateLoan, recordMovement, updateMovement, classifyMovement, createTransfer, updateTransfer } from "@/app/actions/accounts";
 import { ACCOUNT_TYPE_LABEL, vnToday } from "@/lib/money";
+import { INTEREST, isInterestCategory } from "@/lib/interest";
 import { AccountSelect, type AccountOpt } from "./account-select";
 import { notify, notifyFailure } from "@/components/ui/toast";
 
@@ -230,9 +231,6 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
 // ---- Capital, loan and unclassified movements -------------------------------
 
 const BASE_KINDS = ["CAPITAL_IN", "LOAN_IN", "LOAN_REPAY"];
-// Bank interest, as banks word it ("Lai nhap von", "TRA LAI TIEN GUI"). Plain
-// unaccented "lai" isn't enough: "tra lai" is also a refund, and Lai a surname.
-const INTEREST = /interest|lãi|lai nhap von|tra lai tien gui|tien lai/i;
 
 export function MovementDialog({ accounts, loans, categories, movement, trigger }: {
   accounts: AccountOpt[]; loans: LoanRow[]; categories: CategoryOpt[]; movement?: SingleRow; trigger: React.ReactElement;
@@ -243,7 +241,7 @@ export function MovementDialog({ accounts, loans, categories, movement, trigger 
   // Money in that reads like bank interest starts as income under the interest
   // category, when there is one (categories are never created here).
   const interest = movement?.kind === "OTHER_IN" && INTEREST.test(movement.description ?? "");
-  const interestCategory = interest ? categories.find((c) => c.type === "INCOME" && INTEREST.test(c.name)) : undefined;
+  const interestCategory = interest ? categories.find((c) => c.type === "INCOME" && isInterestCategory(c.name)) : undefined;
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState(interest ? "INCOME" : movement?.kind ?? "CAPITAL_IN");
   const [accountId, setAccountId] = useState(movement?.accountId ?? "");

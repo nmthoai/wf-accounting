@@ -4,6 +4,7 @@ import {
   addQuarters, quarterOf, quarterRange, quartersBetween, parseFigure, parseLines, mathChecks, taxFlags, latestReturns,
   isSocialInsurance, isContribution, noteIsStale, FLAG_KEY, type IncomeRow, type ReturnRow,
 } from "@/lib/tax";
+import { isInterestCategory } from "@/lib/interest";
 
 // Invented declarations that follow the form's arithmetic: Q1 with purchases only (a VAT
 // credit carried forward), Q2 with sales at 10% using up that credit.
@@ -18,7 +19,7 @@ const ret = (form: string, period: string, lines: Record<string, number>, supple
   ({ id: `${form}${period}${supplement}`, form, period, supplement, lines, ...dates });
 const income = (o: Partial<Omit<IncomeRow, "date">> & { date: string; amount: number }): IncomeRow => ({
   id: Math.random().toString(36).slice(2), type: "INCOME", status: "REVIEWED", currency: "EUR", exchangeRate: 30000, vndAmount: null,
-  rateSource: "DEFAULT", accountType: "BANK", cancelled: false, ...o, date: day(o.date),
+  rateSource: "DEFAULT", accountType: "BANK", cancelled: false, interest: false, ...o, date: day(o.date),
 });
 const today = day("2030-07-20");
 const KINDS = ["notDeclared", "declaredMore", "missingReturn", "creditChain", "math", "bhxhNoStaff", "bhxhMonthMissing", "filedLate", "notFiled"];
@@ -103,6 +104,45 @@ test("cancelled pairs, drafts and rejected entries don't count as sales", () => 
   });
   assert.deepEqual(comparison.map((c) => [c.period, c.books, c.outside]), [["2030-Q1", 0, 0]]);
   assert.deepEqual(flags.filter((f) => f.kind === "notDeclared" || f.kind === "declaredMore"), []);
+});
+
+test("bank interest is not a sale: left out of the books figure and shown apart, booked interest only", () => {
+  const vndIncome = (o: Partial<Omit<IncomeRow, "date">> & { date: string; amount: number }) =>
+    income({ currency: "VND", exchangeRate: 1, rateSource: null, ...o });
+  const { flags, comparison } = taxFlags({
+    returns: [ret("01/GTGT", "2030-Q2", Q2_VAT)],
+    income: [
+      vndIncome({ date: "2030-04-16", amount: 48000000 }), // the declared sale
+      // Term-deposit interest large enough to flag if it were counted as a sale.
+      vndIncome({ date: "2030-05-31", amount: 2400000, interest: true }),
+      vndIncome({ date: "2030-06-30", amount: 35000, interest: true, accountType: "TERM_DEPOSIT" }),
+      // A cancelled pair and a draft don't count, here as for sales.
+      vndIncome({ date: "2030-06-01", amount: 900000, interest: true, cancelled: true }),
+      vndIncome({ date: "2030-06-02", amount: -900000, interest: true, cancelled: true }),
+      vndIncome({ date: "2030-06-03", amount: 777000, interest: true, status: "DRAFT" }),
+      vndIncome({ date: "2030-07-31", amount: 41000, interest: true }), // the next quarter
+    ],
+    bankOut: [], today,
+  });
+  const q2 = comparison.find((c) => c.period === "2030-Q2")!;
+  assert.deepEqual([q2.books, q2.declared, q2.difference, q2.interest], [48000000, 48000000, 0, 2435000]);
+  assert.deepEqual(flags.filter((f) => f.kind === "notDeclared" || f.kind === "declaredMore"), []);
+});
+
+test("the bank-interest category is told by its name, in either language and either Unicode form", () => {
+  for (const name of [
+    "Bank interest", "Deposit interest", "Lãi tiền gửi ngân hàng", "Lãi tiền gửi ngân hàng".normalize("NFD"), "LÃI TIỀN GỬI",
+    "Lai tien gui ngan hang", "LAI TIEN GUI", "Tien lai ngan hang", "Lãi ngân hàng",
+  ]) {
+    assert.equal(isInterestCategory(name), true, name);
+  }
+  // Other income with "lãi" or "interest" in its name is not bank interest.
+  for (const name of [
+    "Doanh thu dịch vụ", "Software services", "Hoàn trả lại", "Thu nhập khác", "Lai Van A",
+    "Lãi chênh lệch tỷ giá", "Lãi trả chậm", "Thu lãi cho vay", "Interest on overdue invoices", "Hoan tien lai",
+  ]) {
+    assert.equal(isInterestCategory(name), false, name);
+  }
 });
 
 test("a quarter without its declarations, a broken VAT-credit chain, and a supplement that replaces the original", () => {

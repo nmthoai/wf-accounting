@@ -305,6 +305,7 @@ The Vietnamese interface (messages/vi/*.json) uses these terms. Drafted from VAS
 | Flags / To look at | Cần lưu ý | Cần lưu ý | Questions, not conclusions. Severity: Quan trọng / Cần kiểm tra / Thông tin. |
 | Mark as known / Known / Reopen | Đánh dấu đã biết / Đã biết / Mở lại | Đã biết | The flag stays on record with the owner's note ('Ghi chú'). |
 | Books vs declarations | Sổ sách và tờ khai | Sổ sách – tờ khai | 'Doanh thu trên sổ sách' against 'Đã kê khai [34]'; 'Chênh lệch' shown, never offset. |
+| Bank interest, not in sales | Lãi tiền gửi, không tính vào doanh thu | Lãi tiền gửi | Income under the bank-interest category ('Lãi tiền gửi ngân hàng') is 'doanh thu hoạt động tài chính' (TK 515), not 'doanh thu bán hàng' (TK 511). On the Tax page it is left out of the books figure and shown in its own column. Avoid a bare 'không tính', which reads as 'not taxed'. |
 | Delete file | Xóa tệp | Xóa tệp | Deleting a declaration's file is permanent; the history keeps a note. |
 
 ## Users & security
