@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
@@ -10,7 +9,6 @@ import { notify, notifyFailure } from "@/components/ui/toast";
 
 // Delete a category — refused, with the reason, while entries or invoices use it.
 export function DeleteCategoryButton({ id, name }: { id: string; name: string }) {
-  const router = useRouter();
   const t = useTranslations("settings");
   const tc = useTranslations("common");
   const [busy, setBusy] = useState(false);
@@ -21,7 +19,6 @@ export function DeleteCategoryButton({ id, name }: { id: string; name: string })
       const res = await deleteCategory(id);
       if (res.success) notify.success(t("categories.toast.deleted"), name);
       else notifyFailure(res.message, t("categories.toast.couldNotDelete"));
-      router.refresh();
     } catch {
       notifyFailure();
     } finally { setBusy(false); }

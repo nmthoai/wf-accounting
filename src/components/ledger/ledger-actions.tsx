@@ -18,13 +18,14 @@ export function RowActions({ id, href, status, isAdmin }: { id: string; href: st
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   // An action can refuse (e.g. the entry changed meanwhile): say so, not "done".
-  async function run(fn: () => Promise<{ success: boolean; message?: string } | void>, done: string) {
+  // A saved change comes back with the action (it revalidates /ledger); a
+  // refusal changed nothing here, so the page is reloaded to show what did.
+  async function run(fn: () => Promise<{ success: boolean; message?: string }>, done: string) {
     setBusy(true);
     try {
       const res = await fn();
-      if (res && !res.success) notifyFailure(res.message);
-      else notify.success(done);
-      router.refresh();
+      if (res.success) notify.success(done);
+      else { notifyFailure(res.message); router.refresh(); }
     }
     catch { notifyFailure(); }
     finally { setBusy(false); }
@@ -63,8 +64,8 @@ export function PostThrough({ defaultDate, reviewedCount }: { defaultDate: strin
     setBusy(true);
     try {
       const res = await postEntries(null, date);
-      notifyResult(res, t("postThrough.done", { count: res.count }), t("postThrough.failed"));
-      router.refresh();
+      // Posted entries come back with the action (it revalidates /ledger).
+      if (!notifyResult(res, t("postThrough.done", { count: res.count }), t("postThrough.failed"))) router.refresh();
     } catch { notifyFailure(); }
     finally { setBusy(false); }
   }

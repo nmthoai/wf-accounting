@@ -12,7 +12,7 @@ import { toVnd, valueIn, settlement, BOOKED, BOOKED_ALLOCATIONS , vnTodayStart ,
 import { defaultUsdRate } from "@/lib/fx";
 import { getView } from "@/lib/view";
 import { getTranslations, getLocale } from "next-intl/server";
-import { fmtDate as formatDate } from "@/lib/format";
+import { fmtDate as formatDate, fmtDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/wf/page-header";
 import { ViewNote } from "@/components/wf/view-note";
@@ -48,7 +48,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   ]);
   if (!project) redirect("/projects");
 
-  const documents = project.attachments.map((a) => ({ id: a.id, fileName: a.fileName, filePath: a.filePath, createdAt: iso(a.createdAt) }));
+  const documents = project.attachments.map((a) => ({ id: a.id, fileName: a.fileName, filePath: a.filePath, createdAt: fmtDateTime(a.createdAt, locale) })); // a real moment: Vietnam time
   const dateRange = [fmtDate(project.startDate, locale), fmtDate(project.endDate, locale)].filter(Boolean).join(" → ");
   const now = vnTodayStart(); // overdue from the day after the due date
   const outstanding = openInvoices.map((i) => ({

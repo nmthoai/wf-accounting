@@ -1,4 +1,5 @@
 import * as xlsx from "xlsx";
+import { inflateRawSync } from "node:zlib";
 import { translator, type Translate } from "@/i18n/server";
 
 // Reads a bank statement export (XLSX/CSV). The transaction table is found by
@@ -28,6 +29,9 @@ export type ParsedStatement = {
   periodFrom: Date | null; // the statement period as printed, when it holds every line
   periodTo: Date | null;
   currency: string | null; // when the file names exactly one currency
+  // Every figure the file shows for each balance — stated and from the running
+  // balance (they differ when the file disagrees with itself).
+  shown: { opening: number[]; closing: number[] };
   warnings: string[];
 };
 
@@ -92,17 +96,24 @@ function utc(y: number, m: number, d: number) {
   return date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? date : null; // rejects 31/02
 }
 
-export function toDate(v: unknown): Date | null {
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+const year = (y: string) => (y.length === 2 ? 2000 + +y : +y); // "26" is 2026
+
+// date1904: the workbook counts serial days from 1904 (old Mac Excel).
+export function toDate(v: unknown, date1904 = false): Date | null {
   if (typeof v === "number") {
     if (v < 20000 || v > 80000) return null; // Excel serial day, 1954–2119
-    const d = xlsx.SSF.parse_date_code(v);
+    const d = xlsx.SSF.parse_date_code(v, { date1904 });
     return d ? utc(d.y, d.m, d.d) : null;
   }
   const s = String(v ?? "").trim();
-  let m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/); // dd/mm/yyyy — day first, as Vietnamese banks write it
-  if (m) return utc(+m[3], +m[2], +m[1]);
+  let m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})(?!\d)/); // dd/mm/yyyy or dd/mm/yy — day first, as Vietnamese banks write it
+  if (m) return utc(year(m[3]), +m[2], +m[1]);
   m = s.match(/^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})/);
   if (m) return utc(+m[1], +m[2], +m[3]);
+  m = s.match(/^(\d{1,2})[\s/.-]+([a-z]{3,9})\.?[\s/.,-]+(\d{4}|\d{2})(?!\d)/i); // 02-Aug-2026, 2 Aug 26
+  const month = m ? MONTHS.findIndex((name) => name.startsWith(m![2].toLowerCase())) : -1;
+  if (m && month >= 0) return utc(year(m[3]), month + 1, +m[1]);
   return null;
 }
 
@@ -161,7 +172,7 @@ const OPENING = ["so du dau ky", "so du dau", "opening balance", "beginning bala
 const CLOSING = ["so du cuoi ky", "so du cuoi", "closing balance", "ending balance"];
 const EPS = 0.005;
 
-function readSheet(name: string, rows: unknown[][], t: Translate): ParsedStatement | null {
+function readSheet(name: string, rows: unknown[][], t: Translate, date1904: boolean): ParsedStatement | null {
   const head = findHeader(rows);
   if (!head) return null;
   const { cols } = head;
@@ -174,7 +185,7 @@ function readSheet(name: string, rows: unknown[][], t: Translate): ParsedStateme
   let lines: StatementLine[] = [];
   for (let i = head.start; i < rows.length; i++) {
     const row = rows[i];
-    const txnDate = toDate(row[first("txnDate") ?? first("postingDate")!]);
+    const txnDate = toDate(row[first("txnDate") ?? first("postingDate")!], date1904);
     if (!txnDate) continue; // totals, notes and blank rows have no date
     const amount = cols.amount
       ? toNum(row[first("amount")!]) ?? 0
@@ -183,7 +194,7 @@ function readSheet(name: string, rows: unknown[][], t: Translate): ParsedStateme
     lines.push({
       row: i + 1,
       txnDate,
-      postingDate: cols.postingDate && cols.txnDate ? toDate(row[first("postingDate")!]) : null,
+      postingDate: cols.postingDate && cols.txnDate ? toDate(row[first("postingDate")!], date1904) : null,
       reference: text(row, "reference"),
       amount: Math.round(amount * 100) / 100,
       balance: cols.balance ? toNum(row[first("balance")!]) : null,
@@ -198,7 +209,8 @@ function readSheet(name: string, rows: unknown[][], t: Translate): ParsedStateme
   const flows = (ls: StatementLine[]) => ls.every((l, i) => i === 0 || l.balance === null || ls[i - 1].balance === null || Math.abs(ls[i - 1].balance! + l.amount - l.balance!) < EPS);
   const last = lines[lines.length - 1];
   if (lines[0].txnDate > last.txnDate || (+lines[0].txnDate === +last.txnDate && !flows(lines) && flows([...lines].reverse()))) lines = lines.reverse();
-  if (!flows(lines)) warnings.push(t("statement.warnings.order"));
+  const ordered = flows(lines);
+  if (!ordered) warnings.push(t("statement.warnings.order"));
 
   const derivedOpening = lines[0].balance !== null ? Math.round((lines[0].balance - lines[0].amount) * 100) / 100 : null;
   const derivedClosing = lines[lines.length - 1].balance;
@@ -225,6 +237,11 @@ function readSheet(name: string, rows: unknown[][], t: Translate): ParsedStateme
     periodFrom: inPeriod ? stated.from : null,
     periodTo: inPeriod ? stated.to : null,
     currency: found.size === 1 ? [...found][0] : null,
+    shown: {
+      // The running balance counts only when it flows; out of order it proves nothing.
+      opening: [statedOpening, ordered ? derivedOpening : null].filter((n): n is number => n !== null),
+      closing: [statedClosing, ordered ? derivedClosing : null].filter((n): n is number => n !== null),
+    },
     warnings,
   };
 }
@@ -232,6 +249,58 @@ function readSheet(name: string, rows: unknown[][], t: Translate): ParsedStateme
 // Uploads are untrusted: a file may declare an enormous sheet or carry huge
 // cells. Read at most this much — far beyond any real statement.
 const MAX_ROWS = 5000, MAX_COLS = 40, MAX_SHEETS = 5, MAX_CELL = 300;
+
+// An .xlsx is a zip, and a small zip can unpack to gigabytes — SheetJS unpacks
+// every part before sheetRows applies. Real statements unpack to a few MB.
+const MAX_PART = 20 * 1024 * 1024, MAX_UNPACKED = 50 * 1024 * 1024;
+
+// A ZIP64 extended-information field (header id 0x0001) in an extra field.
+function hasZip64(extra: Buffer) {
+  for (let i = 0; i + 4 <= extra.length; i += 4 + extra.readUInt16LE(i + 2)) if (extra.readUInt16LE(i) === 1) return true;
+  return false;
+}
+
+// Unpacks the zip the way SheetJS will read it — every central-directory entry,
+// from its local header — stopping as soon as one part or the total grows past
+// the limit. A declared size counts too: SheetJS allocates it up front, so a
+// tiny part claiming 900 MB is refused like a real one. ZIP64 never appears in
+// a statement and is refused outright.
+function zipProblem(buf: Buffer): "tooBig" | "unreadable" | null {
+  let end = buf.length - 4;
+  while (end >= 0 && buf.readUInt32LE(end) !== 0x06054b50) end--;
+  if (end < 0 || end + 20 > buf.length) return "unreadable";
+  const count = buf.readUInt16LE(end + 8);
+  let p = buf.readUInt32LE(end + 16);
+  let total = 0;
+  for (let i = 0; i < count; i++) {
+    if (p + 46 > buf.length) return "unreadable";
+    const at = buf.readUInt32LE(p + 42);
+    const cdSize = buf.readUInt32LE(p + 24);
+    const cdNameLen = buf.readUInt16LE(p + 28), cdExtraLen = buf.readUInt16LE(p + 30);
+    if (p + 46 + cdNameLen + cdExtraLen > buf.length) return "unreadable";
+    if (hasZip64(buf.subarray(p + 46 + cdNameLen, p + 46 + cdNameLen + cdExtraLen))) return "tooBig";
+    p += 46 + cdNameLen + cdExtraLen + buf.readUInt16LE(p + 32);
+    if (at + 30 > buf.length) return "unreadable";
+    const method = buf.readUInt16LE(at + 8);
+    const nameLen = buf.readUInt16LE(at + 26), extraLen = buf.readUInt16LE(at + 28);
+    const start = at + 30 + nameLen + extraLen;
+    if (start > buf.length) return "unreadable";
+    if (hasZip64(buf.subarray(at + 30 + nameLen, start))) return "tooBig";
+    const declared = Math.max(cdSize, buf.readUInt32LE(at + 22));
+    if (declared > MAX_PART) return "tooBig";
+    if (method === 0) {
+      total += Math.max(declared, Math.min(buf.readUInt32LE(at + 18), buf.length - start));
+    } else if (method === 8) {
+      try {
+        total += Math.max(declared, inflateRawSync(buf.subarray(start), { maxOutputLength: Math.max(1, Math.min(MAX_PART, MAX_UNPACKED - total)) }).length);
+      } catch (e) {
+        return e instanceof RangeError ? "tooBig" : "unreadable";
+      }
+    } // SheetJS refuses any other method itself
+    if (total > MAX_UNPACKED) return "tooBig";
+  }
+  return null;
+}
 
 // Messages (errors, warnings) come from `t`, the "bank" translator — English
 // unless the caller passes the user's.
@@ -242,7 +311,10 @@ export function parseStatement(buf: Buffer, t: Translate = translator("en", "ban
     // .xlsx is a zip ("PK"), .xls an OLE file; anything else is text (CSV), read as
     // UTF-8 so Vietnamese headers survive. raw keeps CSV cells as text, so
     // "02/08/2026" is read day-first below rather than as 8 February.
-    const binary = buf.subarray(0, 2).toString("latin1") === "PK" || buf.subarray(0, 4).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0]));
+    const zip = buf.subarray(0, 2).toString("latin1") === "PK";
+    const binary = zip || buf.subarray(0, 4).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0]));
+    const bomb = zip ? zipProblem(buf) : null;
+    if (bomb) return bomb === "tooBig" ? { error: t("statement.tooBig") } : unreadable;
     const text = binary ? "" : buf.toString("utf8").replace(/^\uFEFF/, "");
     if (!binary && /^\s*(<|ID;|\{\\rtf)/.test(text)) return unreadable; // HTML/XML/SYLK/RTF posing as a statement
     wb = binary
@@ -251,6 +323,7 @@ export function parseStatement(buf: Buffer, t: Translate = translator("en", "ban
   } catch {
     return unreadable;
   }
+  const date1904 = !!wb.Workbook?.WBProps?.date1904;
   // The sheet with the most transaction lines.
   let best: ParsedStatement | null = null;
   for (const name of wb.SheetNames.slice(0, MAX_SHEETS)) {
@@ -261,7 +334,7 @@ export function parseStatement(buf: Buffer, t: Translate = translator("en", "ban
     range.e.c = Math.min(range.e.c, range.s.c + MAX_COLS);
     const rows = xlsx.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: true, defval: "", range })
       .map((r) => r.map((v) => (typeof v === "string" ? v.slice(0, MAX_CELL) : v)));
-    const parsed = readSheet(name, rows, t);
+    const parsed = readSheet(name, rows, t, date1904);
     if (parsed && (!best || parsed.lines.length > best.lines.length)) best = parsed;
   }
   if (!best) {

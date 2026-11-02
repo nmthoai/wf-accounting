@@ -36,9 +36,10 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
     setBusy(true);
     try {
       const res = await fn();
+      // A saved change comes back with the action (it revalidates /entry/<id>);
+      // a refusal changed nothing here, so reload to show what did.
       if (res.success) notify.success(done);
-      else notifyFailure(res.message);
-      router.refresh();
+      else { notifyFailure(res.message); router.refresh(); }
     } catch { notifyFailure(); }
     finally { setBusy(false); }
   }

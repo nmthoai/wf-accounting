@@ -40,12 +40,14 @@
     "signOut": "Sign out",
     "signOutTitle": "Sign out?",
     "signOutBody": "You'll need your password and 2FA code to sign back in.",
-    "signOutConfirm": "Yes, sign out"
+    "signOutConfirm": "Yes, sign out",
+    "signOutFailed": "Couldn't sign out. Check your connection and try again."
   },
   "language": {
     "label": "Language",
     "en": "English",
-    "vi": "Tiếng Việt"
+    "vi": "Tiếng Việt",
+    "failed": "Couldn't change the language. Check your connection and try again."
   },
   "actions": {
     "save": "Save",
@@ -162,5 +164,16 @@
     "usdNote": "USD view · {rate} ₫/USD",
     "usdHint": "USD entries show their real USD. VND amounts are converted at {rate} ₫/USD, so they're estimates. Switch currency in Profile."
   },
-  "moreInfo": "More info"
+  "moreInfo": "More info",
+  "errorPage": {
+    "title": "Couldn't load this page",
+    "body": "Try again, or go back to the dashboard.",
+    "retry": "Try again",
+    "home": "Go to dashboard"
+  },
+  "notFoundPage": {
+    "title": "Page not found",
+    "body": "The link is wrong, or what it pointed to was deleted.",
+    "home": "Go to dashboard"
+  }
 }

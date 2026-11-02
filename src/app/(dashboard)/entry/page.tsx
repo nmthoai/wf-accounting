@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { EntryForm } from "./entry-form";
 import { defaultUsdRate } from "@/lib/fx";
@@ -7,6 +8,7 @@ import { fmtMoney } from "@/lib/money";
 import { explained } from "@/lib/bank-match";
 import { CostDuplicates, type Lookalike } from "@/components/costs/cost-duplicates";
 import { PageHeader } from "@/components/wf/page-header";
+import { Notice } from "@/components/wf/ledger-ui";
 
 const DAY = 86_400_000;
 
@@ -32,6 +34,12 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
   let correction;
   let costItem;
   let lookalikes: Lookalike[] = [];
+  // Opened from a register item or bank line that is already used up (or
+  // gone): say so and lead back, rather than show a misleading form.
+  let used: { text: string; href: string; back: string } | null = null;
+  if (itemId && !item) used = { text: t("new.itemGone"), href: "/costs", back: t("new.backToCosts") };
+  else if (itemId && item?.status !== "PENDING") used = { text: t("errors.registerItemTaken"), href: "/costs", back: t("new.backToCosts") };
+  if (lineId && !line) used = { text: t("new.lineGone"), href: "/bank", back: t("new.backToBank") };
   // From the cost register: the receipt's details, paid from the payer's account.
   if (item?.status === "PENDING") {
     const active = accounts.filter((a) => a.isActive);
@@ -81,6 +89,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
     const cur = line.account.currency;
     const matched = explained(line, line.entries, cur);
     const open = Math.round((Math.abs(line.amount) - matched) * 100) / 100;
+    if (open <= 0) used = { text: t("new.lineMatched"), href: "/bank", back: t("new.backToBank") };
     prefill = {
       type: line.amount > 0 ? "INCOME" : "EXPENSE",
       accountId: line.accountId,
@@ -102,22 +111,29 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
     <div className="mx-auto max-w-3xl">
       <PageHeader section="ledger" title={t("new.title")} description={t("new.subtitle")} />
 
-      <div className="grid gap-6">
-        {costItem && <CostDuplicates itemId={costItem.id} lookalikes={lookalikes} />}
+      {used ? (
+        <Notice tone="warning">
+          <p>{used.text}</p>
+          <Link href={used.href} className="mt-1 inline-block font-semibold text-primary underline-offset-4 hover:underline">{used.back}</Link>
+        </Notice>
+      ) : (
+        <div className="grid gap-6">
+          {costItem && <CostDuplicates itemId={costItem.id} lookalikes={lookalikes} />}
 
-        <EntryForm
-          categories={categories}
-          projects={projects}
-          vendors={vendors}
-          accounts={accounts}
-          defaultUsdRate={usdRate}
-          isAdmin={session?.user?.role === "ADMIN"}
-          prefill={prefill}
-          bankLine={bankLine}
-          correction={correction}
-          costItem={costItem}
-        />
-      </div>
+          <EntryForm
+            categories={categories}
+            projects={projects}
+            vendors={vendors}
+            accounts={accounts}
+            defaultUsdRate={usdRate}
+            isAdmin={session?.user?.role === "ADMIN"}
+            prefill={prefill}
+            bankLine={bankLine}
+            correction={correction}
+            costItem={costItem}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +14,7 @@ import { ACCOUNT_TYPE_LABEL, vnToday } from "@/lib/money";
 import { INTEREST, isInterestCategory } from "@/lib/interest";
 import { AccountSelect, type AccountOpt } from "./account-select";
 import { notify, notifyFailure } from "@/components/ui/toast";
+import { newRequestId } from "@/lib/request-id";
 
 type Result = { success: boolean; message?: string };
 
@@ -37,10 +37,10 @@ export type SingleRow = Workflow & {
 
 const today = vnToday;
 
-// Shared submit plumbing: build FormData, run the action, confirm, close + refresh on success.
+// Shared submit plumbing: build FormData, run the action, confirm and close on
+// success. The page comes back with the action (each revalidates /accounts).
 function useSubmit(close: () => void, done: string) {
   const tc = useTranslations("common");
-  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   async function submit(e: React.FormEvent<HTMLFormElement>, run: (fd: FormData) => Promise<Result>, extra: Record<string, string>) {
@@ -54,7 +54,6 @@ function useSubmit(close: () => void, done: string) {
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       notify.success(done);
       close();
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -100,11 +99,16 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
   const [type, setType] = useState(account?.type ?? "BANK");
   const [currency, setCurrency] = useState(account?.currency ?? "VND");
   const [active, setActive] = useState(account?.isActive ?? true);
-  const { saving, err, submit } = useSubmit(() => setOpen(false), account ? t("toast.accountSaved") : t("toast.accountAdded"));
+  const { saving, err, submit, clearErr } = useSubmit(() => setOpen(false), account ? t("toast.accountSaved") : t("toast.accountAdded"));
   const locked = !!account && account.movementCount > 0;
+  // Each opening starts from the account as saved: a cancelled edit is gone.
+  const openDialog = (o: boolean) => {
+    if (o) { setType(account?.type ?? "BANK"); setCurrency(account?.currency ?? "VND"); setActive(account?.isActive ?? true); clearErr(); }
+    setOpen(o);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={openDialog}>
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader><DialogTitle>{account ? t("accountDialog.editTitle", { name: account.name }) : t("accountDialog.newTitle")}</DialogTitle></DialogHeader>
@@ -167,7 +171,17 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
   const [toId, setToId] = useState(transfer?.toAccountId ?? "");
   const [out, setOut] = useState(transfer ? String(transfer.amountOut) : "");
   const [inn, setInn] = useState(transfer ? String(transfer.amountIn) : "");
+  const [requestId, setRequestId] = useState(newRequestId);
   const { saving, err, submit, clearErr } = useSubmit(() => setOpen(false), transfer ? t("toast.transferSaved") : t("toast.transferRecorded"));
+  // Each opening starts afresh: the transfer as saved (or blank), a new request id.
+  const openDialog = (o: boolean) => {
+    if (o) {
+      setFromId(transfer?.fromAccountId ?? ""); setToId(transfer?.toAccountId ?? "");
+      setOut(transfer ? String(transfer.amountOut) : ""); setInn(transfer ? String(transfer.amountIn) : "");
+      setRequestId(newRequestId()); clearErr();
+    }
+    setOpen(o);
+  };
 
   const pick = accounts.filter((a) => a.isActive || a.id === fromId || a.id === toId);
   const from = accounts.find((a) => a.id === fromId);
@@ -178,14 +192,14 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
   const rate = usd > 0 && vnd > 0 ? vnd / usd : null;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={openDialog}>
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader><DialogTitle>{transfer ? t("transferDialog.editTitle") : t("transferDialog.newTitle")} <InfoTip>{t("tips.transferDialog.intro")}</InfoTip></DialogTitle></DialogHeader>
         <form className="grid gap-4 pt-1" onSubmit={(e) => submit(
           e,
           (fd) => (transfer ? updateTransfer(transfer.transferId, fd) : createTransfer(fd)),
-          { fromAccountId: fromId, toAccountId: toId, amountOut: out, amountIn: cross ? inn : out },
+          { fromAccountId: fromId, toAccountId: toId, amountOut: out, amountIn: cross ? inn : out, requestId },
         )}>
           <div className="grid grid-cols-2 gap-4">
             {/* A changed choice clears the last submit's error (e.g. "choose two different accounts"). */}
@@ -244,11 +258,21 @@ export function MovementDialog({ accounts, loans, categories, movement, trigger 
   const [accountId, setAccountId] = useState(movement?.accountId ?? "");
   const [loanId, setLoanId] = useState(movement?.loanId ?? "");
   const [categoryId, setCategoryId] = useState(interestCategory?.id ?? "");
+  const [requestId, setRequestId] = useState(newRequestId);
   const pnl = kind === "INCOME" || kind === "EXPENSE";
-  const { saving, err, submit } = useSubmit(
+  const { saving, err, submit, clearErr } = useSubmit(
     () => setOpen(false),
     pnl ? t(kind === "INCOME" ? "toast.classifiedIncome" : "toast.classifiedExpense") : movement ? t("toast.movementSaved") : t("toast.movementRecorded"),
   );
+  // Each opening starts afresh: the movement as saved (or blank), a new request id.
+  const openDialog = (o: boolean) => {
+    if (o) {
+      setKind(interest ? "INCOME" : movement?.kind ?? "CAPITAL_IN"); setAccountId(movement?.accountId ?? "");
+      setLoanId(movement?.loanId ?? ""); setCategoryId(interestCategory?.id ?? "");
+      setRequestId(newRequestId()); clearErr();
+    }
+    setOpen(o);
+  };
 
   // Unclassified rows (bank interest, fees, card charges, refunds, or rows
   // carried over from the old Balance tab) can be reclassified — as financing,
@@ -263,14 +287,14 @@ export function MovementDialog({ accounts, loans, categories, movement, trigger 
   const category = categoryChoices.find((c) => c.id === categoryId);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={openDialog}>
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader><DialogTitle>{unclassified ? t("movementDialog.classifyTitle") : movement ? t("movementDialog.editTitle") : t("movementDialog.newTitle")}</DialogTitle></DialogHeader>
         <form className="grid gap-4 pt-1" onSubmit={(e) => submit(
           e,
           (fd) => (movement && pnl ? classifyMovement(movement.id, fd) : movement ? updateMovement(movement.id, fd) : recordMovement(fd)),
-          { type: kind, accountId, loanId: isLoan ? loanId : "", categoryId: pnl ? categoryId : "" },
+          { type: kind, accountId, loanId: isLoan ? loanId : "", categoryId: pnl ? categoryId : "", requestId },
         )}>
           <div className="grid gap-2">
             <Label>{t("movementDialog.whatIsIt")}</Label>
@@ -337,11 +361,16 @@ export function LoanDialog({ loan, trigger }: { loan?: LoanRow; trigger: React.R
   const t = useTranslations("accounts");
   const [open, setOpen] = useState(false);
   const [currency, setCurrency] = useState(loan?.currency ?? "VND");
-  const { saving, err, submit } = useSubmit(() => setOpen(false), loan ? t("toast.loanSaved") : t("toast.loanAdded"));
+  const { saving, err, submit, clearErr } = useSubmit(() => setOpen(false), loan ? t("toast.loanSaved") : t("toast.loanAdded"));
   // Movements recorded against a loan are in its currency, so it stays.
   const locked = !!loan && loan.movementCount > 0;
+  // Each opening starts from the loan as saved: a cancelled edit is gone.
+  const openDialog = (o: boolean) => {
+    if (o) { setCurrency(loan?.currency ?? "VND"); clearErr(); }
+    setOpen(o);
+  };
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={openDialog}>
       <DialogTrigger render={trigger} />
       <DialogContent>
         <DialogHeader><DialogTitle>{loan ? t("loanDialog.editTitle") : t("loanDialog.title")}</DialogTitle></DialogHeader>

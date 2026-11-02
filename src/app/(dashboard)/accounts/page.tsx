@@ -51,10 +51,13 @@ export default async function AccountsPage() {
   const rejections = new Map<string, string>();
   const rejectedIds = txns.filter((t) => t.status === "REJECTED").map((t) => t.id);
   if (rejectedIds.length) {
-    for (const r of await prisma.changeLog.findMany({ where: { action: "REJECT", entityId: { in: rejectedIds } }, orderBy: { createdAt: "desc" } })) {
+    for (const r of await prisma.changeLog.findMany({ where: { entity: "Transaction", action: "REJECT", entityId: { in: rejectedIds } }, orderBy: { createdAt: "desc" } })) {
       if (!rejections.has(r.entityId) && r.reason) rejections.set(r.entityId, r.reason);
     }
   }
+  // The two legs of each transfer, found once.
+  const legsOf = new Map<string, typeof txns>();
+  for (const t of txns) if (t.transferId) legsOf.set(t.transferId, [...(legsOf.get(t.transferId) ?? []), t]);
   const flow = (t: { id: string; status: string; reversalOfId: string | null }) => ({
     status: t.status, reversal: !!t.reversalOfId, reversed: cancelled.has(t.id), rejectedReason: rejections.get(t.id) ?? null,
   });
@@ -63,7 +66,7 @@ export default async function AccountsPage() {
     if (t.transferId) {
       if (seenTransfers.has(t.transferId)) continue;
       seenTransfers.add(t.transferId);
-      const legs = txns.filter((x) => x.transferId === t.transferId);
+      const legs = legsOf.get(t.transferId) ?? [];
       const out = legs.find((x) => x.type === "TRANSFER_OUT");
       const inn = legs.find((x) => x.type === "TRANSFER_IN");
       if (!out || !inn) continue;

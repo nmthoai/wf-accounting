@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,6 @@ type Doc = { id: string; fileName: string; filePath: string; createdAt: string }
 export function ProjectDocuments({ projectId, documents }: { projectId: string; documents: Doc[] }) {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
-  const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   // Upload waits for a file, so a click never does nothing.
@@ -39,7 +37,6 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
       } else notifyFailure(res.message, t("documents.couldNotUpload"));
       form.reset();
       setHasFile(false);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -53,7 +50,6 @@ export function ProjectDocuments({ projectId, documents }: { projectId: string; 
     try {
       const res = await deleteAttachment(id);
       notifyResult(res, t("toast.documentRemoved"), t("documents.couldNotRemove"));
-      router.refresh();
     } catch {
       notifyFailure();
     } finally { setRemovingId(null); }

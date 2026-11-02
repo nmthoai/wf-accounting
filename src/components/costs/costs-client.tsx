@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +55,6 @@ function Choice({ id, label, options, value, onChange, disabled }: {
 function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactElement }) {
   const t = useTranslations("costs");
   const tc = useTranslations("common");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -65,6 +63,17 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
   const [reimbursement, setReimbursement] = useState(item?.reimbursement ?? "UNRESOLVED");
   const [docStatus, setDocStatus] = useState(item?.docStatus ?? "RECEIPT");
   const locked = item?.status === "CONVERTED";
+  // Each opening starts from the saved item (or a blank one): a cancelled edit leaves nothing behind.
+  function openDialog(o: boolean) {
+    if (o) {
+      setErr("");
+      setCurrency(item?.currency ?? "USD");
+      setPayer(item?.payer ?? "UNKNOWN");
+      setReimbursement(item?.reimbursement ?? "UNRESOLVED");
+      setDocStatus(item?.docStatus ?? "RECEIPT");
+    }
+    setOpen(o);
+  }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -78,7 +87,6 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
       if (!res.success) { setErr(res.message ?? tc("errors.couldNotSave")); return; }
       notify.success(item ? t("toast.saved") : t("toast.added"), (fd.get("provider") as string | null) || item?.provider);
       setOpen(false);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally { setBusy(false); }
@@ -92,7 +100,7 @@ function ItemDialog({ item, trigger }: { item?: CostRow; trigger: React.ReactEle
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={openDialog}>
       <DialogTrigger render={trigger} />
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader><DialogTitle>{item ? `${item.provider}${item.ref ? ` · ${item.ref}` : ""}` : t("form.addTitle")}</DialogTitle></DialogHeader>
@@ -179,7 +187,6 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
 }) {
   const t = useTranslations("costs");
   const tc = useTranslations("common");
-  const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   async function run(id: string, fn: () => Promise<{ success: boolean; message?: string }>, done: string, detail?: string) {
     setBusyId(id);
@@ -187,7 +194,6 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
       const res = await fn();
       if (res.success) notify.success(done, detail);
       else notifyFailure(res.message);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally { setBusyId(null); }

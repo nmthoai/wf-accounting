@@ -18,6 +18,7 @@ import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { BookedRate } from "@/components/ledger/booked-rate";
 import { Chip, Notice } from "@/components/wf/ledger-ui";
 import { InfoTip } from "@/components/ui/info-tip";
+import { newRequestId } from "@/lib/request-id";
 
 const hint = "text-[13.5px] text-muted-foreground";
 
@@ -88,6 +89,8 @@ export function EntryForm({
   const router = useRouter();
   const init = initialData ?? prefill;
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // One per new entry: a double click or a retried save is recorded once.
+  const [requestId, setRequestId] = useState(newRequestId);
   const [type, setType] = useState<"INCOME" | "EXPENSE">(init?.type === "INCOME" ? "INCOME" : "EXPENSE");
   const [currency, setCurrency] = useState<string>(init?.currency || "VND");
   const [projectId, setProjectId] = useState<string>(init?.projectId || "");
@@ -189,6 +192,7 @@ export function EntryForm({
     if (bankLine) formData.set("bankLineId", bankLine.id);
     if (correction) formData.set("correctionOfId", correction.id);
     if (costItem) formData.set("costItemId", costItem.id);
+    if (!isEdit) formData.set("requestId", requestId);
     // Submit exactly the files shown in the UI (state owns the list).
     formData.delete("files");
     for (const f of pendingFiles) formData.append("files", f);
@@ -202,6 +206,7 @@ export function EntryForm({
       }
 
       if (notifyResult(res, isEdit ? t("toast.saved") : t("toast.created"))) {
+        setRequestId(newRequestId()); // the next save from this form is a new entry
         router.push(bankLine ? "/bank" : costItem ? "/costs" : "/ledger");
       }
     } catch {

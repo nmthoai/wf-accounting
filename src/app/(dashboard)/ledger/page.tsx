@@ -69,7 +69,7 @@ export default async function LedgerPage({ searchParams }: { searchParams: Promi
   const rejectedIds = transactions.filter((t) => t.status === "REJECTED").map((t) => t.id);
   const rejections = new Map<string, string>();
   if (rejectedIds.length) {
-    const rows = await prisma.changeLog.findMany({ where: { action: "REJECT", entityId: { in: rejectedIds } }, orderBy: { createdAt: "desc" } });
+    const rows = await prisma.changeLog.findMany({ where: { entity: "Transaction", action: "REJECT", entityId: { in: rejectedIds } }, orderBy: { createdAt: "desc" } });
     for (const r of rows) if (!rejections.has(r.entityId) && r.reason) rejections.set(r.entityId, r.reason);
   }
 

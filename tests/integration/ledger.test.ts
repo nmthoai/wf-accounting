@@ -82,7 +82,9 @@ test("posting locks money and classification; evidence and tax review can still 
   assert.equal(res.success, true, res.message);
   const after = await S.prisma.transaction.findUniqueOrThrow({ where: { id: t.id } });
   assert.deepEqual([after.amount, after.description, after.docStatus, after.reviewNote, after.status], [500000, "to post", "INVOICE", "invoice arrived", "POSTED"]);
-  await assert.rejects(() => L.deleteTransaction(t.id), /Posted entries can't be deleted/);
+  const del = await L.deleteTransaction(t.id);
+  assert.equal(del.success, false);
+  assert.match(del.message ?? "", /Can't delete — it's posted/);
   const att = await S.prisma.attachment.create({ data: { filePath: "x.pdf", fileName: "x.pdf", fileType: "application/pdf", transactionId: t.id } });
   assert.equal((await L.deleteAttachment(att.id)).success, false);
 });
@@ -142,7 +144,7 @@ test("an entry matched to a bank line can't be moved off it or past its amount",
   await S.prisma.transaction.update({ where: { id: t.id }, data: { bankLineId: line.id } });
   assert.match((await L.editTransaction(t.id, expense({ description: "matched", amount: 1200000 }))).message!, /more than the bank line/);
   assert.match((await L.editTransaction(t.id, expense({ description: "matched", amount: 1000000, accountId: S.cash.id }))).message!, /must be too/);
-  assert.match((await L.editTransaction(t.id, expense({ description: "matched", amount: 1000000, type: "INCOME" }))).message!, /money out/);
+  assert.match((await L.editTransaction(t.id, expense({ description: "matched", amount: 1000000, type: "INCOME", categoryId: S.income.id }))).message!, /money out/);
 });
 
 test("deleting one leg of a transfer deletes both", async () => {

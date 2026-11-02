@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { notify, notifyResult } from "@/components/ui/toast";
+import { notifyFailure, notifyResult } from "@/components/ui/toast";
 import { setDisplayCurrency } from "@/app/actions/profile";
 
 const CHOICES = ["VND", "USD"] as const;
 
 export function CurrencyForm({ current }: { current: string }) {
   const t = useTranslations("profile");
-  const router = useRouter();
   const [value, setValue] = useState(current);
   const [saving, setSaving] = useState(false);
 
@@ -19,11 +17,11 @@ export function CurrencyForm({ current }: { current: string }) {
     setSaving(true);
     try {
       if (notifyResult(await setDisplayCurrency(currency), t("toast.currencySaved", { currency }))) {
+        // The action's revalidatePath re-renders the page; no refresh needed.
         setValue(currency);
-        router.refresh();
       }
     } catch {
-      notify.error(t("toast.connectionError"));
+      void notifyFailure(undefined, t("toast.connectionError"));
     } finally {
       setSaving(false);
     }

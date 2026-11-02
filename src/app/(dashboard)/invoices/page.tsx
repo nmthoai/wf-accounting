@@ -29,9 +29,13 @@ export default async function InvoicesPage() {
     prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, type: true } }),
     // Ledger entries that could settle an invoice: income/expense with money not
     // yet allocated — not a reversal, nor an entry a reversal cancelled, nor a
-    // bank fee already counted in the receipt it was withheld from.
+    // bank fee already counted in the receipt it was withheld from. Posted entries
+    // are the owner's to link, so staff aren't offered them.
     prisma.transaction.findMany({
-      where: { type: { in: ["INCOME", "EXPENSE"] }, reversalOfId: null, reversedBy: { is: null }, deductedFromId: null, status: { not: "REJECTED" } },
+      where: {
+        type: { in: ["INCOME", "EXPENSE"] }, reversalOfId: null, reversedBy: { is: null }, deductedFromId: null,
+        status: session.user.role === "ADMIN" ? { not: "REJECTED" } : { notIn: ["REJECTED", "POSTED"] },
+      },
       orderBy: { date: "desc" },
       include: { account: true, allocations: true, _count: { select: { attachments: true } } },
     }),

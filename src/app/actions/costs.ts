@@ -9,12 +9,17 @@ import { DOC_STATUS } from "@/lib/review";
 import { PAYER, REIMBURSEMENT } from "@/lib/costs";
 import { convertCostItem, CostItemTaken } from "@/lib/cost-items";
 import { getT, type Translate } from "@/i18n/server";
+import { parseAmount } from "@/lib/amount";
 
 async function currentUser() {
   const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
   return { name: session.user.name ?? null, isAdmin: session.user.role === "ADMIN" };
 }
+
+// Ids come from the browser: anything but a string (a crafted request can send
+// an object such as {not: null}, which Prisma reads as a filter) is refused.
+const notFound = async () => (await getT("common"))("errors.notFound");
 
 function revalidateAll() {
   for (const p of ["/costs", "/ledger", "/"]) revalidatePath(p);
@@ -42,7 +47,7 @@ function parseItem(fd: FormData, t: Translate) {
   const str = (k: string) => ((fd.get(k) as string) || "").trim();
   const provider = str("provider");
   const receiptDate = day(str("receiptDate"));
-  const amount = parseFloat(str("amount"));
+  const amount = parseAmount(str("amount"));
   const currency = str("currency") || "USD";
   if (!provider) return { error: t("errors.providerRequired") };
   if (!receiptDate) return { error: t("errors.dateRequired") };
@@ -75,6 +80,7 @@ async function duplicateOf(e: { provider: string; receiptNumber: string | null; 
 
 export async function saveCostItem(id: string | null, fd: FormData) {
   const me = await currentUser();
+  if (id !== null && typeof id !== "string") return { success: false, message: await notFound() };
   const t = await getT("costs");
   const tc = await getT("common");
   if (id) {
@@ -111,6 +117,7 @@ export async function saveCostItem(id: string | null, fd: FormData) {
 export async function dismissCostItem(id: string, reason: string) {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (typeof id !== "string") return { success: false, message: await notFound() };
   const t = await getT("costs");
   if (!reason?.trim()) return { success: false, message: t("errors.reasonRequired") };
   const item = await prisma.costItem.findUnique({ where: { id } });
@@ -123,6 +130,7 @@ export async function dismissCostItem(id: string, reason: string) {
 export async function reopenCostItem(id: string) {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (typeof id !== "string") return { success: false, message: await notFound() };
   await prisma.costItem.updateMany({ where: { id, status: "DISMISSED" }, data: { status: "PENDING" } });
   revalidateAll();
   return { success: true };
@@ -132,6 +140,7 @@ export async function reopenCostItem(id: string) {
 export async function deleteCostItem(id: string) {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (typeof id !== "string") return { success: false, message: await notFound() };
   const t = await getT("costs");
   const item = await prisma.costItem.findUnique({ where: { id } });
   if (!item || item.status === "CONVERTED") return { success: false, message: t("errors.ledgerItemsNoDelete") };
@@ -146,6 +155,7 @@ export async function deleteCostItem(id: string) {
 // a second one. Its receipts become evidence on that expense too.
 export async function linkCostItem(id: string, transactionId: string) {
   const me = await currentUser();
+  if (typeof id !== "string" || typeof transactionId !== "string") return { success: false, message: await notFound() };
   const tr = await getT("costs"); // `t` is the expense below
   const [item, t] = await Promise.all([
     prisma.costItem.findUnique({ where: { id } }),

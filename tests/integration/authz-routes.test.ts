@@ -72,7 +72,9 @@ test("an account that hasn't finished onboarding (default password, no 2FA) can'
   assert.deepEqual(await snapshot(), before);
   for (const route of ["@/app/api/reports/export/route", "@/app/api/handover/route"]) {
     const { GET } = await import(route);
-    assert.equal((await GET(new Request("http://test/x?type=entries&from=2026-06-01&to=2026-06-30&month=2026-06"))).status, 401, route);
+    const res = await GET(new Request("http://test/x?type=entries&from=2026-06-01&to=2026-06-30&month=2026-06"));
+    assert.equal(res.status, 302, route); // a download link: sent to sign in, never the file
+    assert.equal(res.headers.get("location"), "/login", route); // relative: the browser keeps the public origin
   }
   const uploads = await import("@/app/api/uploads/[name]/route");
   assert.equal((await uploads.GET(new Request("http://test/x"), { params: Promise.resolve({ name: "r1.pdf" }) })).status, 401);
@@ -136,7 +138,7 @@ test("receipts: sign-in required, no path tricks, safe content types", async () 
 test("Excel export: sign-in required; drafts listed but not in the totals", async () => {
   const { GET } = await import("@/app/api/reports/export/route");
   as.nobody();
-  assert.equal((await GET(new Request("http://test/api/reports/export?type=entries&from=2026-06-01&to=2026-06-30"))).status, 401);
+  assert.equal((await GET(new Request("http://test/api/reports/export?type=entries&from=2026-06-01&to=2026-06-30"))).status, 302);
   as.staff();
   await (await import("@/app/actions/ledger")).createTransaction(fd({ type: "EXPENSE", amount: 777, currency: "VND", date: "2026-06-02", accountId: S.vnd.id, description: "draft row" }));
   as.admin();
@@ -152,7 +154,7 @@ test("handover package: sign-in required; ZIP holds the workbook and the evidenc
   const { GET } = await import("@/app/api/handover/route");
   const L = await import("@/app/actions/ledger");
   as.nobody();
-  assert.equal((await GET(new Request("http://test/api/handover?month=2026-06"))).status, 401);
+  assert.equal((await GET(new Request("http://test/api/handover?month=2026-06"))).status, 302);
   as.admin();
   assert.equal((await GET(new Request("http://test/api/handover?month=June"))).status, 400);
   await L.createTransaction(fd({ type: "EXPENSE", amount: 5000, currency: "VND", date: "2026-06-15", accountId: S.vnd.id, description: "with receipt", files: new File([new Uint8Array([1, 2, 3])], "receipt ánh.pdf") }));

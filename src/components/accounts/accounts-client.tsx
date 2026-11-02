@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { deleteTransaction, reverseEntry } from "@/app/actions/ledger";
 import { deleteLoan } from "@/app/actions/accounts";
-import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
+import { notifyResult, notifyFailure } from "@/components/ui/toast";
 import { fmtMoney, fmtVnd, totalsList, type Totals } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { Chip, ENTRY_TYPE_TONE, Notice, Stat, StatStrip } from "@/components/wf/ledger-ui";
@@ -42,14 +42,15 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
   const [busyId, setBusyId] = useState<string | null>(null);
   const unclassified = movements.filter((m): m is SingleRow => !m.isTransfer && m.kind.startsWith("OTHER_") && !m.reversal && !m.reversed && m.status !== "POSTED");
 
+  // A saved change comes back with the action (each revalidates /accounts);
+  // a refusal changed nothing here, so the page is reloaded to show what did.
   async function reverse(id: string) {
     const reason = prompt(t("movements.reversePrompt"));
     if (!reason?.trim()) return;
     setBusyId(id);
     try {
       const res = await reverseEntry(id, reason);
-      notifyResult(res, t("toast.movementReversed"), t("toast.couldNotReverse"));
-      router.refresh();
+      if (!notifyResult(res, t("toast.movementReversed"), t("toast.couldNotReverse"))) router.refresh();
     } catch {
       notifyFailure();
     } finally { setBusyId(null); }
@@ -58,7 +59,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
   async function remove(id: string) {
     if (!confirm(t("movements.deleteConfirm"))) return;
     setBusyId(id);
-    try { await deleteTransaction(id); notify.success(t("toast.movementDeleted")); router.refresh(); }
+    try { if (!notifyResult(await deleteTransaction(id), t("toast.movementDeleted"))) router.refresh(); }
     catch { notifyFailure(); }
     finally { setBusyId(null); }
   }
@@ -69,7 +70,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
     setBusyId(l.id);
     try {
       const res = await deleteLoan(l.id);
-      if (notifyResult(res, t("toast.loanDeleted"))) router.refresh();
+      if (!notifyResult(res, t("toast.loanDeleted"))) router.refresh();
     } catch {
       notifyFailure();
     } finally { setBusyId(null); }

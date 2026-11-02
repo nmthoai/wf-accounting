@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { getT } from "@/i18n/server";
 import { findSameName } from "@/lib/unique-name";
 
+// Ids come from the browser: anything but a string (a crafted request can send
+// an object such as {not: null}, which Prisma reads as a filter) is refused.
+const notFound = async () => (await getT("common"))("errors.notFound");
+
 async function requireUser() {
   const session = await getSession();
   if (!session?.user) throw new Error("Unauthorized");
@@ -33,13 +37,14 @@ export async function createClient(formData: FormData) {
   if (taken) return { success: false, message: taken };
 
   await prisma.client.create({ data: { name, email, phone, notes } });
-  revalidatePath("/clients");
+  revalidatePath("/contacts");
   revalidatePath("/invoices");
   return { success: true };
 }
 
 export async function updateClient(id: string, formData: FormData) {
   await requireUser();
+  if (typeof id !== "string") return { success: false, message: await notFound() };
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
   const phone = (formData.get("phone") as string)?.trim() || null;
@@ -52,13 +57,14 @@ export async function updateClient(id: string, formData: FormData) {
   if (taken) return { success: false, message: taken };
 
   await prisma.client.update({ where: { id }, data: { name, email, phone, notes } });
-  revalidatePath("/clients");
+  revalidatePath("/contacts");
   return { success: true };
 }
 
 export async function deleteClient(id: string) {
   const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+  if (typeof id !== "string") return { success: false, message: await notFound() };
 
   const projects = await prisma.project.count({ where: { clientId: id } });
   const invoices = await prisma.invoice.count({ where: { clientId: id } });
@@ -67,6 +73,6 @@ export async function deleteClient(id: string) {
     return { success: false, message: t("errors.clientHasLinks") };
   }
   await prisma.client.delete({ where: { id } });
-  revalidatePath("/clients");
+  revalidatePath("/contacts");
   return { success: true };
 }

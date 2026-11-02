@@ -16,7 +16,9 @@ function sheet(rows: Record<string, unknown>[], headers: string[]) {
 
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session?.user) return new Response("Unauthorized", { status: 401 });
+  // A download link, opened by the browser: without a session go to sign-in
+  // rather than show a bare error (the proxy leaves /api alone).
+  if (!session?.user) return new Response(null, { status: 302, headers: { Location: "/login" } }); // relative: the public origin, not the container's
 
   const url = new URL(req.url);
   const type = url.searchParams.get("type"); // "entries" | "invoices"

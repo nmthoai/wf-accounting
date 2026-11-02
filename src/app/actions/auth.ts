@@ -1,35 +1,10 @@
 "use server";
 
-import { signIn, signOut, auth } from "@/auth";
-import { AuthError } from "next-auth";
+import { signOut, auth } from "@/auth";
 import speakeasy from "speakeasy";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getT } from "@/i18n/server";
-
-export async function authenticate(_prevState: unknown, formData: FormData) {
-  try {
-    await signIn("credentials", formData);
-  } catch (error) {
-    if (error instanceof AuthError) {
-      const t = await getT("auth");
-      if (error.type === "CredentialsSignin") {
-        // Give a clearer message if the account is locked out.
-        const username = formData.get("username") as string;
-        if (username) {
-          const u = await prisma.user.findUnique({ where: { username }, select: { lockedUntil: true, twoFactorEnabled: true } });
-          if (u?.lockedUntil && u.lockedUntil > new Date() && !u.twoFactorEnabled) {
-            const mins = Math.max(1, Math.ceil((u.lockedUntil.getTime() - Date.now()) / 60000));
-            return t("errors.locked", { mins });
-          }
-        }
-        return t("errors.invalidCredentials");
-      }
-      return t("errors.somethingWrong");
-    }
-    throw error;
-  }
-}
 
 export async function generate2FASecret() {
   try {

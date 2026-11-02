@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +30,6 @@ export function EditInvoiceDialog({
 }) {
   const t = useTranslations("invoices");
   const tc = useTranslations("common");
-  const router = useRouter();
   const isReceivable = invoice.direction === "RECEIVABLE";
   const parties = isReceivable ? clients : vendors;
 
@@ -52,6 +50,17 @@ export function EditInvoiceDialog({
   // Receivables become income; payables an expense — show the matching categories.
   const cats = categories.filter((c) => c.type === (isReceivable ? "INCOME" : "EXPENSE"));
 
+  // Each opening starts from the saved invoice: a cancelled edit leaves nothing behind.
+  function reset() {
+    setErr("");
+    setPartyId((isReceivable ? invoice.clientId : invoice.vendorId) ?? "");
+    setProjectId(invoice.projectId ?? "");
+    setCategoryId(invoice.categoryId ?? "");
+    setCurrency(invoice.currency);
+    setNoInvoiceYet(!invoice.number);
+    setIssueDate(invoice.issueDate);
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
@@ -67,7 +76,6 @@ export function EditInvoiceDialog({
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       setOpen(false);
       notify.success(isReceivable ? t("toast.invoiceUpdated") : t("toast.billUpdated"));
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -76,7 +84,7 @@ export function EditInvoiceDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) { setIssueDate(invoice.issueDate); setNoInvoiceYet(!invoice.number); } }}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) reset(); }}>
       <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" aria-label={tc("actions.edit")} title={tc("actions.edit")} />}>
         <Pencil />
       </DialogTrigger>

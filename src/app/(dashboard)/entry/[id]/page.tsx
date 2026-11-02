@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { EntryForm } from "../entry-form";
 import { redirect } from "next/navigation";
@@ -7,6 +7,7 @@ import { requirePageSession } from "@/lib/session";
 import { Card } from "@/components/ui/card";
 import { EntryStatus } from "@/components/ledger/entry-status";
 import { fmtMoney, fmtVnd } from "@/lib/money";
+import { fmtDateTime } from "@/lib/format";
 import { APP_REASONS, parseSnapshot } from "@/lib/history-format";
 import { PageHeader } from "@/components/wf/page-header";
 import { Chip, ENTRY_STATUS_TONE, ENTRY_TYPE_TONE, PanelHead } from "@/components/wf/ledger-ui";
@@ -37,6 +38,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
     : null;
   const t = await getTranslations("ledger");
   const tc = await getTranslations("common");
+  const locale = await getLocale();
 
   const ref = (t: { id: string; date: Date; amount: number; currency: string; description: string | null } | null) =>
     t ? { id: t.id, label: `${t.date.toISOString().slice(0, 10)} · ${fmtMoney(Math.abs(t.amount), t.currency)}${t.description ? ` · ${t.description}` : ""}` } : null;
@@ -138,7 +140,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
                   {h.reason && <p className="text-[13.5px] text-text-secondary">{t("history.reason", { reason: reason(h.reason) })}</p>}
                 </div>
                 <span className="wf-num shrink-0 text-[13.5px] text-muted-foreground">
-                  {h.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC{h.user ? ` · ${h.user}` : ""}
+                  {fmtDateTime(h.createdAt, locale)}{h.user ? ` · ${h.user}` : ""}
                 </span>
               </li>
             ))}

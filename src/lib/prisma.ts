@@ -10,4 +10,6 @@ declare const globalThis: {
 
 export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
-if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;
+// One client per process: the production build bundles this module more than
+// once (proxy, routes, pages), and each copy would otherwise open its own engine.
+globalThis.prismaGlobal = prisma;

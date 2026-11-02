@@ -16,7 +16,7 @@ const VIEWS: Record<string, Prisma.CostItemWhereInput | undefined> = {
 
 export default async function CostsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const sp = await searchParams;
-  const view = sp.view && sp.view in VIEWS ? sp.view : "pending";
+  const view = sp.view && Object.hasOwn(VIEWS, sp.view) ? sp.view : "pending"; // own keys only: "constructor" is not a view
   const session = await requirePageSession();
   const t = await getTranslations("costs");
   const [items, all] = await Promise.all([

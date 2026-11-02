@@ -123,7 +123,8 @@
       "order": "Số dư lũy kế không theo thứ tự dòng ở vài chỗ — hãy đối chiếu số tổng với ngân hàng.",
       "opening": "Số dư đầu kỳ ghi trên sao kê khác với số dư lũy kế.",
       "closing": "Số dư cuối kỳ ghi trên sao kê khác với số dư lũy kế."
-    }
+    },
+    "tooBig": "Tệp này khi giải nén lớn bất thường so với một sao kê — hãy xuất lại từ ngân hàng."
   },
   "errors": {
     "chooseFile": "Chọn tệp sao kê.",
@@ -144,7 +145,13 @@
     "lineInEntryOut": "Dòng sao kê là tiền vào; bút toán này là tiền ra.",
     "lineOutEntryIn": "Dòng sao kê là tiền ra; bút toán này là tiền vào.",
     "moreThanLine": "Vượt quá số tiền của dòng sao kê ({amount}).",
-    "rejected": "Không thể khớp bút toán bị từ chối — hãy sửa và gửi lại trước."
+    "rejected": "Không thể khớp bút toán bị từ chối — hãy sửa và gửi lại trước.",
+    "fileTooBig": "Tệp này nặng {mb} MB, tối đa {max} MB. Hãy xuất sao kê cho kỳ ngắn hơn.",
+    "notBank": "{account} không phải tài khoản ngân hàng — hãy chọn tài khoản ngân hàng.",
+    "openingNotFile": "Số dư đầu kỳ trên tệp là {file}, không phải {typed} — hãy nhập đúng số trên sao kê.",
+    "closingNotFile": "Số dư cuối kỳ trên tệp là {file}, không phải {typed} — hãy nhập đúng số trên sao kê.",
+    "openingNotPrevious": "Số dư đầu kỳ {opening} khác số dư cuối kỳ {previous} của sao kê trước (ngày {date}) — hãy kiểm tra lại tài khoản và tệp sao kê.",
+    "postedMatch": "Bút toán này đã ghi sổ — chỉ chủ doanh nghiệp mới được khớp."
   },
   "tips": {
     "match": {

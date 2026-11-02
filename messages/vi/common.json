@@ -40,12 +40,14 @@
     "signOut": "Đăng xuất",
     "signOutTitle": "Đăng xuất?",
     "signOutBody": "Để đăng nhập lại, bạn sẽ cần mật khẩu và mã xác thực 2FA.",
-    "signOutConfirm": "Có, đăng xuất"
+    "signOutConfirm": "Có, đăng xuất",
+    "signOutFailed": "Chưa đăng xuất được. Kiểm tra kết nối rồi thử lại."
   },
   "language": {
     "label": "Ngôn ngữ",
     "en": "English",
-    "vi": "Tiếng Việt"
+    "vi": "Tiếng Việt",
+    "failed": "Chưa đổi được ngôn ngữ. Kiểm tra kết nối rồi thử lại."
   },
   "actions": {
     "save": "Lưu",
@@ -162,5 +164,16 @@
     "usdNote": "Xem bằng USD · {rate} ₫/USD",
     "usdHint": "Bút toán USD giữ đúng số USD. Số tiền VND được quy đổi theo {rate} ₫/USD, chỉ là ước tính. Đổi tiền tệ hiển thị trong Hồ sơ."
   },
-  "moreInfo": "Thêm thông tin"
+  "moreInfo": "Thêm thông tin",
+  "errorPage": {
+    "title": "Không tải được trang này",
+    "body": "Hãy thử lại hoặc quay về trang Tổng quan.",
+    "retry": "Thử lại",
+    "home": "Về Tổng quan"
+  },
+  "notFoundPage": {
+    "title": "Không tìm thấy trang",
+    "body": "Đường dẫn bị sai hoặc nội dung đã bị xóa.",
+    "home": "Về Tổng quan"
+  }
 }

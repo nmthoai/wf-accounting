@@ -43,7 +43,7 @@ export async function GET(
       "Content-Disposition": `${viewable ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(f.fileName)}`,
     };
     if (!viewable) headers["Content-Security-Policy"] = "sandbox; default-src 'none'";
-    return new Response(new Uint8Array(file), { headers });
+    return new Response(file, { headers });
   } catch {
     return new Response("Not found", { status: 404 });
   }

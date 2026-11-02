@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { accountDelta, fmtMoney, EPS } from "@/lib/money";
 import { getT } from "@/i18n/server";
@@ -19,10 +20,10 @@ type Entry = {
 // already matched to it (except `replacing`)? Every entry moves money the same
 // way as the line, except a bank fee withheld from a receipt that is on the
 // line too: the line then shows the net. Returns the problem, in the user's
-// language, or null.
-export async function bankLinkProblem(lineId: string, entries: Entry[], replacing: string[] = []) {
+// language, or null. Pass `db` to check inside a transaction, after its writes.
+export async function bankLinkProblem(lineId: string, entries: Entry[], replacing: string[] = [], db: Prisma.TransactionClient | typeof prisma = prisma) {
   const t = await getT("bank");
-  const line = await prisma.bankLine.findUnique({ where: { id: lineId }, include: { account: true, entries: true } });
+  const line = await db.bankLine.findUnique({ where: { id: lineId }, include: { account: true, entries: true } });
   if (!line) return t("errors.lineGone");
   const cur = line.account.currency;
   for (const e of entries) {

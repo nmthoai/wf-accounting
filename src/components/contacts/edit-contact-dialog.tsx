@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,6 @@ export function EditContactDialog({
   kind: "client" | "vendor";
   action: (id: string, formData: FormData) => Promise<{ success: boolean; message?: string }>;
 }) {
-  const router = useRouter();
   const t = useTranslations("contacts");
   const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
@@ -37,7 +35,6 @@ export function EditContactDialog({
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       notify.success(kind === "client" ? t("toast.clientUpdated") : t("toast.vendorUpdated"));
       setOpen(false);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {

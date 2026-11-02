@@ -116,7 +116,7 @@ export async function resetUser2FA(id: string) {
   // onboarding wizard (existing sessions end, so an old one can't enrol).
   await prisma.user.update({
     where: { id },
-    data: { twoFactorEnabled: false, twoFactorSecret: null, ...endSessions },
+    data: { twoFactorEnabled: false, twoFactorSecret: null, failedCodeAttempts: 0, lastTotpStep: null, ...endSessions },
   });
   revalidatePath("/settings");
   return { success: true };
@@ -126,7 +126,7 @@ export async function unlockUser(id: string) {
   await requireAdmin();
   await prisma.user.update({
     where: { id },
-    data: { failedLoginAttempts: 0, lockedUntil: null },
+    data: { failedLoginAttempts: 0, failedCodeAttempts: 0, lockedUntil: null },
   });
   revalidatePath("/settings");
   return { success: true };

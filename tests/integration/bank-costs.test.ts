@@ -32,11 +32,11 @@ const statement = (currency = "VND") => {
 const upload = (accountId: string, closing: number | string, currency = "VND") =>
   B.importStatement(fd({ file: statement(currency), accountId, opening: 0, closing }));
 
-test("a statement that doesn't add up is refused and nothing is saved", async () => {
+test("a closing balance other than the file's is refused and nothing is saved", async () => {
   as.staff();
   const res = await upload(S.vnd.id, 91778000);
   assert.equal(res.success, false);
-  assert.match(res.message!, /doesn't add up/);
+  assert.match(res.message!, /The file's closing balance is 91.778.075 ₫, not 91.778.000 ₫/);
   assert.equal(await S.prisma.bankLine.count(), 0);
 });
 

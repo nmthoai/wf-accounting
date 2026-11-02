@@ -186,7 +186,10 @@
     "feeTooLarge": "The fee must be less than the amount settled.",
     "feeCategory": "Choose the expense category for the fee.",
     "withheldFee": "This bank fee was withheld from a receipt and is already counted there.",
-    "entryRejected": "This entry was rejected — fix and resubmit it, then link."
+    "entryRejected": "This entry was rejected — fix and resubmit it, then link.",
+    "postedLink": "That entry is posted — only the owner can link it.",
+    "belowSettled": "{amount} is already settled — enter {amount} or more.",
+    "currency": "Unsupported currency — choose {list}."
   },
   "tips": {
     "form": {

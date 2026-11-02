@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ const rateFmt = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 export function BookedRate({ entry, isAdmin, locked, defaultUsdRate }: { entry: Entry; isAdmin: boolean; locked: boolean; defaultUsdRate: number }) {
   const t = useTranslations("ledger");
   const tc = useTranslations("common");
-  const router = useRouter();
   const booked = Math.round(entry.vndAmount ?? entry.amount * entry.exchangeRate);
   const fee = entry.deductedFee?.amount ?? 0;
   const [open, setOpen] = useState(false);
@@ -59,7 +57,8 @@ export function BookedRate({ entry, isAdmin, locked, defaultUsdRate }: { entry: 
     if (mode === "BANK") fd.set("vndAmount", vnd);
     fd.set("reason", reason);
     try {
-      if (notifyResult(await revalueEntry(entry.id, fd), t("revalue.done"))) { setOpen(false); setReason(""); router.refresh(); }
+      // The new value comes back with the action (it revalidates /entry/<id>).
+      if (notifyResult(await revalueEntry(entry.id, fd), t("revalue.done"))) { setOpen(false); setReason(""); }
     } catch {
       notifyFailure();
     } finally {

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { CircleAlert, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import { notify, notifyFailure } from "@/components/ui/toast";
 export function RejectDialog({ id, compact = false }: { id: string; compact?: boolean }) {
   const t = useTranslations("ledger");
   const tc = useTranslations("common");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,9 +25,9 @@ export function RejectDialog({ id, compact = false }: { id: string; compact?: bo
     try {
       const res = await rejectEntries([id], reason);
       if (!res.success) { setErr(res.message ?? tc("errors.somethingWrong")); return; }
+      // The rejected entry comes back with the action (it revalidates /ledger and /entry/<id>).
       notify.success(t("toast.rejected"));
       setOpen(false); setReason("");
-      router.refresh();
     } catch { notifyFailure(); }
     finally { setBusy(false); }
   }

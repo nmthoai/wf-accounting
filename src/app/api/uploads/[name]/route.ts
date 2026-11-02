@@ -52,7 +52,7 @@ export async function GET(
     };
     // Downloads are also sandboxed (a sandbox would break the browser's PDF viewer).
     if (!viewable) headers["Content-Security-Policy"] = "sandbox; default-src 'none'";
-    return new Response(new Uint8Array(file), { headers });
+    return new Response(file, { headers });
   } catch {
     return new Response("Not found", { status: 404 });
   }

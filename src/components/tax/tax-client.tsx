@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CircleAlert, CircleCheck, ChevronRight, FileText, Info, Loader2, Pencil, Plus, Scale, Trash2, TriangleAlert, Undo2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,6 @@ function FlagText({ f, locale }: { f: Flag; locale: string }) {
 function NoteDialog({ flag, locale, trigger }: { flag: FlagView; locale: string; trigger: React.ReactElement }) {
   const t = useTranslations("tax.flags");
   const tc = useTranslations("common");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState("");
@@ -78,7 +76,7 @@ function NoteDialog({ flag, locale, trigger }: { flag: FlagView; locale: string;
       const res = await setTaxFlagNote(flag.key, text, flag.figure ?? null);
       if (!res.success) { setErr(res.message ?? tc("errors.couldNotSave")); return; }
       notify.success(t("toastNoted"));
-      setOpen(false); router.refresh();
+      setOpen(false);
     } catch { notifyFailure(); } finally { setBusy(false); }
   }
   return (
@@ -109,7 +107,6 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
 }) {
   const t = useTranslations("tax");
   const tc = useTranslations("common");
-  const router = useRouter();
   const start = () => ({ form: ((ret?.form ?? preset?.form) as Form) ?? "01/GTGT", period: ret?.period ?? preset?.period ?? defaultPeriod });
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -142,18 +139,18 @@ function ReturnDialog({ ret, preset, defaultPeriod, locale, trigger }: {
         return;
       }
       notify.success(ret ? t("toast.saved") : t("toast.added"), `${form} ${periodLabel(period, locale)}`);
-      setOpen(false); router.refresh();
+      setOpen(false);
     } catch { notifyFailure(); } finally { setBusy(false); }
   }
   async function remove() {
     if (!ret || !confirm(t("form.deleteConfirm", { form: ret.form, period: periodLabel(ret.period, locale) }))) return;
     setBusy(true);
-    try { await deleteTaxReturn(ret.id); notify.success(t("toast.deleted"), `${ret.form} ${periodLabel(ret.period, locale)}`); setOpen(false); router.refresh(); }
+    try { await deleteTaxReturn(ret.id); notify.success(t("toast.deleted"), `${ret.form} ${periodLabel(ret.period, locale)}`); setOpen(false); }
     catch { notifyFailure(); } finally { setBusy(false); }
   }
   async function removeFile(id: string, name: string) {
     if (!confirm(t("form.removeFileConfirm", { name }))) return;
-    try { await deleteTaxReturnFile(id); notify.success(t("toast.fileRemoved"), name); router.refresh(); }
+    try { await deleteTaxReturnFile(id); notify.success(t("toast.fileRemoved"), name); }
     catch { notifyFailure(); }
   }
   const shown = (code: string) => (ret?.form === form && ret.lines[code] ? nf.format(ret.lines[code]) : "");
@@ -284,7 +281,6 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
   flags: FlagView[]; returns: ReturnView[]; periods: string[]; comparison: Comparison[]; defaultPeriod: string; locale: string;
 }) {
   const t = useTranslations("tax");
-  const router = useRouter();
   // A note made when the figure was different doesn't settle the flag: it comes back, note shown.
   const open = flags.filter((f) => !f.note || f.changedFrom != null);
   const known = flags.filter((f) => f.note && f.changedFrom == null);
@@ -294,7 +290,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
 
   async function reopen(key: string) {
     if (!confirm(t("flags.reopenConfirm"))) return;
-    try { await clearTaxFlagNote(key); notify.success(t("flags.toastReopened")); router.refresh(); }
+    try { await clearTaxFlagNote(key); notify.success(t("flags.toastReopened")); }
     catch { notifyFailure(); }
   }
   const cell = (r: ReturnView | undefined, code: string) => (r ? nf.format(r.lines[code] ?? 0) : "—");

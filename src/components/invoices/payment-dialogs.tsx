@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +25,6 @@ const label = (i: Inv, t: (key: "label.bill" | "label.invoice") => string) => i.
 
 function useSubmit(close: () => void, done: string) {
   const tc = useTranslations("common");
-  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   async function submit(e: React.FormEvent<HTMLFormElement>, run: (fd: FormData) => Promise<{ success: boolean; message?: string }>, extra: Record<string, string>) {
@@ -40,14 +38,13 @@ function useSubmit(close: () => void, done: string) {
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       close();
       notify.success(done);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
       setSaving(false);
     }
   }
-  // An error from the last save goes once the user edits the form again.
+  // An error from the last save goes once the user edits the form again, or reopens it.
   const clearErr = () => { if (err) setErr(""); };
   return { saving, err, submit, clearErr };
 }
@@ -74,11 +71,6 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
   const [amountText, setAmountText] = useState(openAmount);
   const [feeText, setFeeText] = useState("");
   const [feeCategoryId, setFeeCategoryId] = useState(feeDefault(feeCategories));
-  // Each opening starts afresh: what is open now, no fee, a new request id.
-  const openDialog = (o: boolean) => {
-    if (o) { setRequestId(newRequestId()); setAmountText(openAmount); setFeeText(""); setFeeCategoryId(feeDefault(feeCategories)); }
-    setOpen(o);
-  };
   const settled = parseFloat(amountText) || 0;
   const fee = receipt ? parseFloat(feeText) || 0 : 0;
   const { saving, err, submit, clearErr } = useSubmit(() => setOpen(false), t("toast.paymentRecorded"));
@@ -89,7 +81,17 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
   const account = accounts.find((a) => a.id === accountId);
   const foreign = invoice.currency !== "VND";
   // Into a VND account, a foreign amount settles at the bank's actual VND figure.
-  const [rateMode, setRateMode] = useState<"BANK" | "MANUAL" | "DEFAULT">(foreign && invoice.currency !== "USD" ? "BANK" : "DEFAULT");
+  const firstMode = foreign && invoice.currency !== "USD" ? "BANK" : "DEFAULT";
+  const [rateMode, setRateMode] = useState<"BANK" | "MANUAL" | "DEFAULT">(firstMode);
+  // Each opening starts afresh: what is open now, no fee, the suggested account
+  // and rate, no old error, a new request id.
+  const openDialog = (o: boolean) => {
+    if (o) {
+      setRequestId(newRequestId()); setAmountText(openAmount); setFeeText(""); setFeeCategoryId(feeDefault(feeCategories));
+      setAccountId(suggested?.id ?? ""); setRateMode(firstMode); clearErr();
+    }
+    setOpen(o);
+  };
   const modes: ["BANK" | "MANUAL" | "DEFAULT", string][] = [
     ...(account?.currency === "VND" ? [["BANK", t("payment.rateBank")] as ["BANK", string]] : []),
     ["MANUAL", t("payment.rateManual")],
@@ -203,14 +205,20 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
   const [kind, setKind] = useState<"PAYMENT" | "FEE">("PAYMENT");
   const [entryId, setEntryId] = useState("");
   const { saving, err, submit, clearErr } = useSubmit(() => setOpen(false), t("toast.linked", { kind, direction: invoice.direction }));
+  // Each opening starts afresh: a payment, no entry chosen, no old error.
+  const openDialog = (o: boolean) => {
+    if (o) { setKind("PAYMENT"); setEntryId(""); clearErr(); }
+    setOpen(o);
+  };
 
   const wanted = kind === "FEE" ? "EXPENSE" : invoice.direction === "RECEIVABLE" ? "INCOME" : "EXPENSE";
-  const choices = candidates.filter((c) => c.type === wanted && c.currency === invoice.currency && !c.linkedTo.includes(invoice.id));
+  // Every invoice row has this dialog: the candidates are only sifted while it is open.
+  const choices = open ? candidates.filter((c) => c.type === wanted && c.currency === invoice.currency && !c.linkedTo.includes(invoice.id)) : [];
   const entry = choices.find((c) => c.id === entryId);
   const suggested = entry ? Math.round(Math.min(entry.free, Math.max(invoice.difference, 0)) * 100) / 100 : "";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={openDialog}>
       <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" aria-label={t("link.trigger")} title={t("link.trigger")} />}>
         <Link2 />
       </DialogTrigger>

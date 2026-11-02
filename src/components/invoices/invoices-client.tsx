@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { Fragment, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +55,6 @@ export function InvoicesClient({
 }) {
   const t = useTranslations("invoices");
   const tc = useTranslations("common");
-  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState("");
@@ -83,7 +81,6 @@ export function InvoicesClient({
     try {
       const res = await fn();
       notifyResult(res, done);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -111,7 +108,6 @@ export function InvoicesClient({
       form.reset();
       setIssueDate(today); setPartyId(""); setProjectId(""); setCategoryId(""); setCurrency("VND"); setNoInvoiceYet(false); setShowForm(false);
       notify.success(direction === "PAYABLE" ? t("toast.billCreated") : t("toast.invoiceCreated"));
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {

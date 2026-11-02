@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import { Upload, Loader2, X, Plus, Link2, Trash2, CircleAlert, CircleCheck } fro
 import { AccountSelect, type AccountOpt } from "@/components/accounts/account-select";
 import { previewStatement, importStatement, matchLine, unmatchEntry, deleteStatement } from "@/app/actions/bank";
 import { fmtMoney, EPS } from "@/lib/money";
+import { fmtDateTime } from "@/lib/format";
+import { MAX_STATEMENT_BYTES, MAX_STATEMENT_MB } from "@/lib/statement-limit";
 import { cn } from "@/lib/utils";
 import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { Chip, Notice, type Tone } from "@/components/wf/ledger-ui";
@@ -35,7 +37,7 @@ export type AccountSummary = {
 export type StatementRow = {
   id: string; accountName: string; currency: string; fileName: string; periodFrom: string; periodTo: string;
   opening: number; inflows: number; outflows: number; closing: number;
-  lineCount: number; added: number; importedBy: string | null; importedAt: string;
+  lineCount: number; added: number; importedBy: string | null; importedAt: string; // ISO moment
 };
 type Preview = Extract<Awaited<ReturnType<typeof previewStatement>>, { success: true }>["preview"];
 
@@ -43,11 +45,13 @@ const tol = (currency: string) => (currency === "VND" ? 0.5 : EPS);
 const signed = (n: number, c: string) => `${n < 0 ? "−" : "+"}${fmtMoney(Math.abs(n), c)}`;
 const STATUS_TONE: Record<LineRow["status"], Tone> = { MATCHED: "pos", PARTIAL: "warn", UNMATCHED: "neg" };
 
+// A successful action revalidates /bank and its response carries the new page,
+// so only a refusal needs a refresh (the data it was refused on may be stale).
 async function act(fn: () => Promise<{ success: boolean; message?: string }>, refresh: () => void, done: string) {
   let res;
   try { res = await fn(); } catch { notifyFailure(); return; }
   notifyResult(res, done);
-  refresh();
+  if (!res.success) refresh();
 }
 
 function FormError({ children }: { children: React.ReactNode }) {
@@ -61,7 +65,6 @@ function FormError({ children }: { children: React.ReactNode }) {
 // Upload a statement, check it adds up, then append its new lines.
 function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
   const t = useTranslations("bank");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [accountId, setAccountId] = useState(accounts.find((a) => a.type === "BANK")?.id ?? "");
   const [file, setFile] = useState<File | null>(null);
@@ -99,7 +102,6 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
       setDone(res.skipped ? t("import.doneSkipped", { added: res.added!, skipped: res.skipped }) : t("import.done", { added: res.added! }));
       notify.success(t("import.toast.title"), res.skipped ? t("import.toast.addedSkipped", { added: res.added!, skipped: res.skipped }) : t("import.toast.added", { added: res.added! }));
       setPreview(null);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally { setBusy(false); }
@@ -125,7 +127,15 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="statement-file">{t("import.file")}</Label>
-              <Input id="statement-file" type="file" accept=".xlsx,.xls,.csv" onChange={(e) => { setFile(e.target.files?.[0] ?? null); reset(); }} />
+              <Input id="statement-file" type="file" accept=".xlsx,.xls,.csv" onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                reset();
+                // Past the limit the upload would fail before the server could say why.
+                if (f && f.size > MAX_STATEMENT_BYTES) {
+                  setFile(null);
+                  setErr(t("errors.fileTooBig", { mb: (f.size / 1048576).toFixed(1), max: MAX_STATEMENT_MB }));
+                } else setFile(f);
+              }} />
             </div>
           </div>
           {!preview && !done && (
@@ -207,15 +217,36 @@ function ImportDialog({ accounts }: { accounts: AccountOpt[] }) {
 // Pick the ledger entries that make up a bank line (one or several).
 function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) {
   const t = useTranslations("bank");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [round, setRound] = useState(0);
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setRound((r) => r + 1); }}>
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label={t("match.trigger")} title={t("match.trigger")} />}>
+        <Link2 aria-hidden="true" />
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader><DialogTitle>{t("match.title", { amount: signed(line.amount, line.currency), date: line.txnDate })}</DialogTitle></DialogHeader>
+        {/* Rendered only while the dialog is shown; a fresh form (nothing ticked, no error) each time it opens. */}
+        <MatchForm key={round} line={line} entries={entries} onDone={() => setOpen(false)} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MatchForm({ line, entries, onDone }: { line: LineRow; entries: EntryOpt[]; onDone: () => void }) {
+  const t = useTranslations("bank");
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const days = (d: string) => Math.abs(+new Date(d) - +new Date(line.txnDate));
-  const choices = entries
-    .filter((e) => e.accountId === line.accountId && Math.sign(e.amount) === Math.sign(line.amount))
-    .sort((a, b) => Math.abs(Math.abs(a.amount) - line.remaining) - Math.abs(Math.abs(b.amount) - line.remaining) || days(a.date) - days(b.date));
+  // Closest amount first, then closest date.
+  const choices = useMemo(() => {
+    const day = Date.parse(line.txnDate);
+    return entries
+      .filter((e) => e.accountId === line.accountId && Math.sign(e.amount) === Math.sign(line.amount))
+      .map((e) => ({ e, gap: Math.abs(Math.abs(e.amount) - line.remaining), days: Math.abs(Date.parse(e.date) - day) }))
+      .sort((a, b) => a.gap - b.gap || a.days - b.days)
+      .map(({ e }) => e);
+  }, [entries, line.accountId, line.amount, line.remaining, line.txnDate]);
   const total = choices.filter((e) => picked.includes(e.id)).reduce((s, e) => s + Math.abs(e.amount), 0);
 
   async function submit() {
@@ -224,53 +255,44 @@ function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) 
       const res = await matchLine(line.id, picked);
       if (!res.success) { setErr(res.message ?? t("match.couldNotMatch")); return; }
       notify.success(line.remaining - total > tol(line.currency) ? t("match.toast.partMatched") : t("match.toast.matched"), t("match.toast.linked", { count: picked.length }));
-      setOpen(false); setPicked([]);
-      router.refresh();
+      onDone();
     } catch {
       notifyFailure();
     } finally { setBusy(false); }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon-sm" aria-label={t("match.trigger")} title={t("match.trigger")} />}>
-        <Link2 aria-hidden="true" />
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader><DialogTitle>{t("match.title", { amount: signed(line.amount, line.currency), date: line.txnDate })}</DialogTitle></DialogHeader>
-        <div className="grid gap-4 pt-1">
-          <p className="text-[13.5px] text-muted-foreground">
-            {t("match.help", { account: line.accountName })}
-            <InfoTip className="ml-1">{t("tips.match.help")}</InfoTip>
-          </p>
-          <ul className="max-h-72 divide-y divide-border overflow-y-auto border-y border-border">
-            {choices.map((e) => (
-              <li key={e.id}>
-                <label className="flex cursor-pointer items-center justify-between gap-3 px-1 py-2.5 transition-colors duration-150 hover:bg-secondary/45">
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <input type="checkbox" className="size-4 shrink-0 accent-primary" checked={picked.includes(e.id)}
-                      onChange={(ev) => setPicked((p) => (ev.target.checked ? [...p, e.id] : p.filter((x) => x !== e.id)))} />
-                    <span className="truncate text-text-secondary"><span className="wf-num">{e.date}</span> · {e.label}</span>
-                  </span>
-                  <span className="wf-figure shrink-0">{fmtMoney(Math.abs(e.amount), line.currency)}</span>
-                </label>
-              </li>
-            ))}
-            {choices.length === 0 && <li className="py-3 text-muted-foreground">{t(line.amount > 0 ? "match.noneIn" : "match.noneOut", { account: line.accountName })}</li>}
-          </ul>
-          <p className="text-[14.5px] text-text-secondary">
-            {t.rich(total > line.remaining + tol(line.currency) ? "match.selectedOver" : "match.selected", {
-              total: fmtMoney(total, line.currency), remaining: fmtMoney(line.remaining, line.currency),
-              over: (c) => <span className="text-destructive">{c}</span>,
-            })}
-          </p>
-          {err && <FormError>{err}</FormError>}
-          <Button type="button" className="w-full" disabled={busy || picked.length === 0} onClick={submit}>
-            {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("match.submit", { count: picked.length })}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div className="grid gap-4 pt-1">
+      <p className="text-[13.5px] text-muted-foreground">
+        {t("match.help", { account: line.accountName })}
+        <InfoTip className="ml-1">{t("tips.match.help")}</InfoTip>
+      </p>
+      <ul className="max-h-72 divide-y divide-border overflow-y-auto border-y border-border">
+        {choices.map((e) => (
+          <li key={e.id}>
+            <label className="flex cursor-pointer items-center justify-between gap-3 px-1 py-2.5 transition-colors duration-150 hover:bg-secondary/45">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <input type="checkbox" className="size-4 shrink-0 accent-primary" checked={picked.includes(e.id)}
+                  onChange={(ev) => setPicked((p) => (ev.target.checked ? [...p, e.id] : p.filter((x) => x !== e.id)))} />
+                <span className="truncate text-text-secondary"><span className="wf-num">{e.date}</span> · {e.label}</span>
+              </span>
+              <span className="wf-figure shrink-0">{fmtMoney(Math.abs(e.amount), line.currency)}</span>
+            </label>
+          </li>
+        ))}
+        {choices.length === 0 && <li className="py-3 text-muted-foreground">{t(line.amount > 0 ? "match.noneIn" : "match.noneOut", { account: line.accountName })}</li>}
+      </ul>
+      <p className="text-[14.5px] text-text-secondary">
+        {t.rich(total > line.remaining + tol(line.currency) ? "match.selectedOver" : "match.selected", {
+          total: fmtMoney(total, line.currency), remaining: fmtMoney(line.remaining, line.currency),
+          over: (c) => <span className="text-destructive">{c}</span>,
+        })}
+      </p>
+      {err && <FormError>{err}</FormError>}
+      <Button type="button" className="w-full" disabled={busy || picked.length === 0} onClick={submit}>
+        {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : t("match.submit", { count: picked.length })}
+      </Button>
+    </div>
   );
 }
 
@@ -279,6 +301,7 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
   accounts: AccountOpt[]; summaries: AccountSummary[]; lines: LineRow[]; entries: EntryOpt[]; statements: StatementRow[];
 }) {
   const t = useTranslations("bank");
+  const locale = useLocale();
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const openLines = lines.filter((l) => l.status !== "MATCHED");
@@ -358,8 +381,8 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
                 <div className="min-w-0">
                   <p className="text-foreground">{s.accountName} · <span className="wf-num">{s.periodFrom} → {s.periodTo}</span></p>
                   <p className="mt-0.5 text-[13.5px] text-muted-foreground">{s.importedBy
-                    ? t("imports.metaBy", { file: s.fileName, lines: s.lineCount, added: s.added, date: s.importedAt, name: s.importedBy })
-                    : t("imports.meta", { file: s.fileName, lines: s.lineCount, added: s.added, date: s.importedAt })}</p>
+                    ? t("imports.metaBy", { file: s.fileName, lines: s.lineCount, added: s.added, date: fmtDateTime(s.importedAt, locale), name: s.importedBy })
+                    : t("imports.meta", { file: s.fileName, lines: s.lineCount, added: s.added, date: fmtDateTime(s.importedAt, locale) })}</p>
                 </div>
                 <div className="ml-auto flex items-center gap-3">
                   <p className="wf-num flex items-center gap-1.5 text-[13.5px] text-text-secondary">

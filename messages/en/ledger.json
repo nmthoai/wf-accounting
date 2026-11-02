@@ -104,7 +104,12 @@
   "new": {
     "title": "New entry",
     "subtitle": "Record income or an expense",
-    "costPeriod": "{provider} — {from} to {to}"
+    "costPeriod": "{provider} — {from} to {to}",
+    "lineMatched": "This bank line is already fully matched.",
+    "backToBank": "Back to bank reconciliation",
+    "backToCosts": "Back to cost register",
+    "lineGone": "This bank line no longer exists.",
+    "itemGone": "This register item no longer exists."
   },
   "edit": {
     "title": "Edit entry",
@@ -254,7 +259,13 @@
     "pairNotPosted": "Can't reverse yet — its linked entries must all be posted and not reversed.",
     "rejectReasonRequired": "Give the reason for rejecting it.",
     "onlyDraftsRejected": "Only drafts waiting for review can be rejected.",
-    "postedMeanwhile": "This entry was posted meanwhile — reload. To change it, reverse it."
+    "postedMeanwhile": "This entry was posted meanwhile — reload. To change it, reverse it.",
+    "unknownCategory": "Category not found — choose another.",
+    "changedMeanwhile": "The entry changed meanwhile — reload the page and try again.",
+    "nothingToApprove": "Nothing to approve — reload the page.",
+    "nothingToPost": "Nothing to post — reload the page.",
+    "nothingToPostThrough": "No reviewed entries to post up to {date}.",
+    "postedNoDelete": "Can't delete — it's posted. Reverse it instead."
   },
   "revalue": {
     "booked": "Booked at {rate} VND/{currency} → {vnd} VND · {source} rate",

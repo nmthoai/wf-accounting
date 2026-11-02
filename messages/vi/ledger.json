@@ -104,7 +104,12 @@
   "new": {
     "title": "Bút toán mới",
     "subtitle": "Ghi một khoản thu hoặc chi",
-    "costPeriod": "{provider} — từ {from} đến {to}"
+    "costPeriod": "{provider} — từ {from} đến {to}",
+    "lineMatched": "Dòng sao kê này đã được khớp đủ.",
+    "backToBank": "Quay lại Đối chiếu ngân hàng",
+    "backToCosts": "Quay lại Bảng kê chi phí",
+    "lineGone": "Dòng sao kê này không còn nữa.",
+    "itemGone": "Khoản này không còn trong bảng kê chi phí."
   },
   "edit": {
     "title": "Sửa bút toán",
@@ -254,7 +259,13 @@
     "pairNotPosted": "Chưa đảo được — các bút toán đi kèm phải đã ghi sổ và chưa bị đảo.",
     "rejectReasonRequired": "Hãy nhập lý do từ chối.",
     "onlyDraftsRejected": "Chỉ có thể từ chối bút toán nháp đang chờ duyệt.",
-    "postedMeanwhile": "Bút toán vừa được ghi sổ — hãy tải lại trang. Muốn sửa, hãy đảo bút toán."
+    "postedMeanwhile": "Bút toán vừa được ghi sổ — hãy tải lại trang. Muốn sửa, hãy đảo bút toán.",
+    "unknownCategory": "Không tìm thấy khoản mục này — hãy chọn khoản mục khác.",
+    "changedMeanwhile": "Bút toán vừa được thay đổi — hãy tải lại trang rồi thử lại.",
+    "nothingToApprove": "Không còn bút toán nào để duyệt — hãy tải lại trang.",
+    "nothingToPost": "Không còn bút toán nào để ghi sổ — hãy tải lại trang.",
+    "nothingToPostThrough": "Không có bút toán đã duyệt nào đến hết ngày {date} để ghi sổ.",
+    "postedNoDelete": "Không xóa được — bút toán đã ghi sổ. Hãy đảo bút toán."
   },
   "revalue": {
     "booked": "Đã ghi nhận theo tỷ giá {rate} VND/{currency} → {vnd} VND · tỷ giá {source}",

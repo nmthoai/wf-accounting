@@ -21,6 +21,10 @@ async function requireAdmin() {
   return { name: session.user.name ?? null };
 }
 
+// Ids come from the browser: anything but a string (a crafted request can send
+// an object such as {not: null}, which Prisma reads as a filter) is refused.
+const gone = async () => (await getT("tax"))("errors.gone");
+
 const str = (fd: FormData, k: string, max = 200) => ((fd.get(k) as string) || "").trim().slice(0, max);
 const day = (s: string) => (/^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T00:00:00.000Z`) : null);
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
@@ -28,6 +32,7 @@ const snapshot = (r: { form: string; period: string; supplement: number }) => `$
 
 export async function saveTaxReturn(id: string | null, fd: FormData) {
   const me = await requireAdmin();
+  if (id !== null && typeof id !== "string") return { success: false, message: await gone() };
   const t = await getT("tax");
 
   const form = str(fd, "form");
@@ -101,8 +106,9 @@ export async function saveTaxReturn(id: string | null, fd: FormData) {
 
 export async function deleteTaxReturn(id: string) {
   const me = await requireAdmin();
+  if (typeof id !== "string") return { success: false, message: await gone() };
   const r = await prisma.taxReturn.findUnique({ where: { id }, include: { files: true } });
-  if (!r) return { success: true };
+  if (!r) { revalidatePath("/tax"); return { success: true }; } // already gone: show the page as it is
   const files = r.files.map((f) => f.fileName).join(", ");
   await prisma.$transaction(async (tx) => {
     await tx.taxReturn.delete({ where: { id } });
@@ -117,8 +123,9 @@ export async function deleteTaxReturn(id: string) {
 // Delete one file of a declaration (e.g. the wrong PDF).
 export async function deleteTaxReturnFile(fileId: string) {
   const me = await requireAdmin();
+  if (typeof fileId !== "string") return { success: false, message: await gone() };
   const f = await prisma.taxReturnFile.findUnique({ where: { id: fileId } });
-  if (!f) return { success: false };
+  if (!f) { revalidatePath("/tax"); return { success: true }; } // already gone: show the page as it is
   await prisma.$transaction(async (tx) => {
     await tx.taxReturnFile.delete({ where: { id: fileId } });
     await record([{ entity: "TaxReturn", entityId: f.taxReturnId, action: "UPDATE", field: "file", oldValue: f.fileName }], me.name, tx);
@@ -133,7 +140,8 @@ export async function deleteTaxReturnFile(fileId: string) {
 export async function setTaxFlagNote(key: string, note: string, figure?: number | null) {
   const me = await requireAdmin();
   const t = await getT("tax");
-  const text = (note || "").trim().slice(0, 1000);
+  if (typeof key !== "string") return { success: false, message: t("errors.gone") };
+  const text = (typeof note === "string" ? note : "").trim().slice(0, 1000);
   if (!FLAG_KEY.test(key)) return { success: false, message: t("errors.gone") };
   if (!text) return { success: false, message: t("errors.noteRequired") };
   const before = await prisma.taxFlagNote.findUnique({ where: { key } });
@@ -148,8 +156,9 @@ export async function setTaxFlagNote(key: string, note: string, figure?: number 
 
 export async function clearTaxFlagNote(key: string) {
   const me = await requireAdmin();
+  if (typeof key !== "string") return { success: false, message: await gone() };
   const before = await prisma.taxFlagNote.findUnique({ where: { key } });
-  if (!before) return { success: true };
+  if (!before) { revalidatePath("/tax"); return { success: true }; } // already reopened: show the page as it is
   await prisma.$transaction(async (tx) => {
     await tx.taxFlagNote.delete({ where: { key } });
     await record([{ entity: "TaxFlag", entityId: key, action: "REOPEN", oldValue: before.note }], me.name, tx);

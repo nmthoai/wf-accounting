@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +24,6 @@ type ManagedUser = {
 };
 
 export function UserManagement({ users, currentUserId }: { users: ManagedUser[]; currentUserId: string }) {
-  const router = useRouter();
   const t = useTranslations("settings");
   const tc = useTranslations("common");
   const [adding, setAdding] = useState(false);
@@ -46,7 +44,6 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
       }
       notify.success(t("users.toast.created"), (data.get("username") as string)?.trim());
       form.reset();
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -59,7 +56,6 @@ export function UserManagement({ users, currentUserId }: { users: ManagedUser[];
     try {
       const res = await fn();
       notifyResult(res, done, t("users.toast.couldNotUpdate"));
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {

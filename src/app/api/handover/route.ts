@@ -8,7 +8,9 @@ import { fmtMonth } from "@/lib/format";
 // in the signed-in user's language.
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session?.user) return new Response("Unauthorized", { status: 401 });
+  // A download link, opened by the browser: without a session go to sign-in
+  // rather than show a bare error (the proxy leaves /api alone).
+  if (!session?.user) return new Response(null, { status: 302, headers: { Location: "/login" } }); // relative: the public origin, not the container's
   const month = new URL(req.url).searchParams.get("month") || "";
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return new Response("Invalid month", { status: 400 });
   const locale = await resolveLocale();

@@ -66,7 +66,9 @@ test("a delete whose entry is posted meanwhile deletes nothing", async () => {
   const t = await make("race delete");
   // deleteTransaction reads the entry, then looks for a fee withheld from it.
   const race = postAfterNextRead("findMany", t.id);
-  await assert.rejects(() => L.deleteTransaction(t.id), /changed meanwhile/);
+  const res = await L.deleteTransaction(t.id);
+  assert.equal(res.success, false);
+  assert.match(res.message ?? "", /posted meanwhile/);
   race.restore();
   assert.equal(race.hook.mock.callCount(), 1, "the race hook ran");
   assert.equal((await entry(t.id))?.status, "POSTED");

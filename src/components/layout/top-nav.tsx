@@ -13,6 +13,8 @@ import { currentNav } from "./nav";
 import { signOutAction } from "@/app/actions/auth";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ThemeMenu } from "@/components/wf/theme-menu";
+import { notifyFailure } from "@/components/ui/toast";
+import { isRedirect } from "@/lib/redirect-error";
 import type { Theme } from "@/lib/theme";
 
 // The top bar: the breadcrumb (group / page), today's date, the language switch,
@@ -100,7 +102,16 @@ export function TopNav({
               <DialogClose render={<Button variant="outline" />}>{t("actions.cancel")}</DialogClose>
               <Button
                 disabled={signingOut}
-                onClick={async () => { setSigningOut(true); await signOutAction(); }}
+                onClick={async () => {
+                  setSigningOut(true);
+                  try {
+                    await signOutAction();
+                  } catch (err) {
+                    if (isRedirect(err)) return; // a successful sign-out ends in a redirect, not a failure
+                    setSigningOut(false);
+                    void notifyFailure(t("header.signOutFailed"));
+                  }
+                }}
               >
                 {signingOut ? <Loader2 className="animate-spin" /> : <LogOut />}
                 {t("header.signOutConfirm")}

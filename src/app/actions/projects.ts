@@ -13,6 +13,10 @@ async function requireUser() {
   return session;
 }
 
+// Ids come from the browser: anything but a string (a crafted request can send
+// an object such as {not: null}, which Prisma reads as a filter) is refused.
+const notFound = async () => (await getT("common"))("errors.notFound");
+
 const parseDate = (v: FormDataEntryValue | null) => {
   const s = (v as string)?.trim();
   return s ? new Date(s) : null;
@@ -53,6 +57,7 @@ export async function createProject(formData: FormData) {
 
 export async function updateProject(id: string, formData: FormData) {
   await requireUser();
+  if (typeof id !== "string") return { success: false, message: await notFound() };
   const t = await getT("projects");
   const name = (formData.get("name") as string)?.trim();
   const clientId = (formData.get("clientId") as string) || null;
@@ -76,6 +81,7 @@ export async function updateProject(id: string, formData: FormData) {
 // Status-only update (archive / reactivate) — leaves other fields untouched.
 export async function setProjectStatus(id: string, status: string) {
   await requireUser();
+  if (typeof id !== "string") return { success: false, message: await notFound() };
   await prisma.project.update({ where: { id }, data: { status } });
   revalidatePath("/projects");
   revalidatePath(`/projects/${id}`);
@@ -86,6 +92,7 @@ export async function setProjectStatus(id: string, status: string) {
 // served only through the auth-protected /api/uploads route).
 export async function addProjectDocument(projectId: string, formData: FormData) {
   await requireUser();
+  if (typeof projectId !== "string") return { success: false, message: await notFound() };
   const tc = await getT("common");
   // Check first, so a bad id doesn't leave an orphan file on disk.
   if (!(await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } }))) return { success: false, message: tc("errors.notFound") };
@@ -97,6 +104,7 @@ export async function addProjectDocument(projectId: string, formData: FormData) 
 export async function deleteProject(id: string) {
   const session = await getSession();
   if (!session?.user || session.user.role !== "ADMIN") throw new Error("Unauthorized");
+  if (typeof id !== "string") return { success: false, message: await notFound() };
   const t = await getT("projects");
 
   const txns = await prisma.transaction.count({ where: { projectId: id } });

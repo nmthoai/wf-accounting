@@ -385,7 +385,10 @@ test("posting never takes a rejected entry — chosen or by post-through", async
   await rejectAsAdmin([t.id], "not ours");
 
   as.admin();
-  assert.deepEqual(await L.postEntries([t.id]), { success: true, count: 0 });
+  // Nothing posted, and the owner is told so rather than "posted".
+  const chosen = await L.postEntries([t.id]);
+  assert.deepEqual([chosen.success, chosen.count], [false, 0]);
+  assert.match(chosen.message ?? "", /Nothing to post/);
   assert.equal(await statusOf(t.id), "REJECTED");
   const res = await L.postEntries(null, "2026-06-30");
   assert.equal(res.success, true);

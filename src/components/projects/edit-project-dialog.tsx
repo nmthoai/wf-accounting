@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +19,6 @@ type Project = {
 export function EditProjectDialog({ project, clients }: { project: Project; clients: { id: string; name: string }[] }) {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -41,7 +39,6 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       setOpen(false);
       notify.success(t("toast.saved"));
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -50,7 +47,11 @@ export function EditProjectDialog({ project, clients }: { project: Project; clie
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setStartDate(project.startDate ?? ""); }}>
+    <Dialog open={open} onOpenChange={(o) => {
+      setOpen(o);
+      // Each opening starts from the saved project: a cancelled edit leaves nothing behind.
+      if (o) { setClientId(project.clientId ?? ""); setStatus(project.status); setStartDate(project.startDate ?? ""); setErr(""); }
+    }}>
       <DialogTrigger render={<Button variant="outline" />}>
         <Pencil aria-hidden="true" />{tc("actions.edit")}
       </DialogTrigger>

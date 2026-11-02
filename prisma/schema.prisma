@@ -20,6 +20,8 @@ model User {
   isActive         Boolean  @default(true)  // admin can deactivate without deleting
   failedLoginAttempts Int    @default(0)
   lockedUntil      DateTime?                 // set after 5 failed attempts; auto-clears
+  failedCodeAttempts Int    @default(0)      // wrong 2FA codes after a right password; backs off, then locks
+  lastTotpStep     Int?                      // the 30-second step of the last accepted code: a code is used once
   sessionVersion   Int      @default(0)      // bumped by an admin password/2FA reset or deactivation: ends older sessions
   role             String   @default("USER") // ADMIN, USER
   defaultUsdRate   Float    @default(25400)
@@ -97,6 +99,8 @@ model BankLine {
   createdAt    DateTime      @default(now())
 
   @@unique([accountId, dedupeKey])
+  @@index([statementId])
+  @@index([txnDate])
 }
 
 // Change history: who changed what, when and why — one row per changed field.
@@ -184,6 +188,14 @@ model Transaction {
   updatedAt     DateTime  @updatedAt
 
   attachments   Attachment[]
+
+  @@index([date])
+  @@index([status])
+  @@index([accountId, date])
+  @@index([bankLineId])
+  @@index([transferId])
+  @@index([projectId])
+  @@index([vendorId])
 }
 
 model Vendor {
@@ -273,6 +285,7 @@ model PaymentAllocation {
   createdAt     DateTime    @default(now())
 
   @@unique([invoiceId, transactionId])
+  @@index([transactionId])
 }
 
 model Attachment {
@@ -289,6 +302,11 @@ model Attachment {
   costItemId    String?      // a register receipt; shared with the expense it became
   costItem      CostItem?    @relation(fields: [costItemId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
+
+  @@index([transactionId])
+  @@index([invoiceId])
+  @@index([costItemId])
+  @@index([filePath])
 }
 
 // A tax declaration as the company's accountant filed it: independent information,

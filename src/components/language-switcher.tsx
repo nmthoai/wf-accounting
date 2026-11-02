@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { setLocale } from "@/app/actions/locale";
 import { LOCALES } from "@/i18n/config";
 import { cn } from "@/lib/utils";
+import { notify } from "@/components/ui/toast";
 
 // .en | .vi as a mono segmented control. Signed in, the choice is saved on the profile.
 export function LanguageSwitcher() {
@@ -15,9 +16,16 @@ export function LanguageSwitcher() {
   async function choose(next: string) {
     if (next === locale || busy) return;
     setBusy(true);
-    await setLocale(next);
-    // Reload so every server-rendered part comes back in the new language.
-    window.location.reload();
+    try {
+      await setLocale(next);
+      // Reload so every server-rendered part comes back in the new language.
+      window.location.reload();
+    } catch {
+      // Needs no session (the sign-in page offers it too), so not notifyFailure:
+      // the cause is the connection or the server, never "signed out".
+      notify.error(t("failed"));
+      setBusy(false);
+    }
   }
 
   return (

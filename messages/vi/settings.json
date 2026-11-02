@@ -125,6 +125,8 @@
     "cantDeleteSelf": "Không thể xóa tài khoản của chính mình.",
     "cantDeleteLastAdmin": "Không thể xóa quản trị viên duy nhất còn hoạt động.",
     "cantDeactivateSelf": "Không thể vô hiệu hóa tài khoản của chính mình.",
-    "cantDeactivateLastAdmin": "Không thể vô hiệu hóa quản trị viên duy nhất còn hoạt động."
+    "cantDeactivateLastAdmin": "Không thể vô hiệu hóa quản trị viên duy nhất còn hoạt động.",
+    "categoryNameTaken": "Đã có khoản mục {type, select, INCOME {thu} other {chi}} tên “{name}”. Hãy dùng khoản mục đó hoặc đặt tên khác.",
+    "unitRateTaken": "Đã có đơn giá “{name}” theo {unit, select, hours {giờ} project {dự án} manday {ngày công} other {{unit}}}. Hãy sửa đơn giá đó hoặc đặt tên khác."
   }
 }

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -33,7 +32,6 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
 }) {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
-  const router = useRouter();
   const money = (n: number) => fmtMoney(n, currency);
   const [addingProject, setAddingProject] = useState(false);
   const [projectClientId, setProjectClientId] = useState("");
@@ -46,7 +44,6 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
       const res = await fn();
       if (res.success) notify.success(done, detail);
       else notifyFailure(res.message);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -67,7 +64,6 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
       notify.success(t("toast.created"), (fd.get("name") as string).trim());
       form.reset();
       setProjectClientId("");
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {

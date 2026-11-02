@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,6 @@ export function EditUnitRateDialog({
   unitRate: UnitRate;
   action: (id: string, formData: FormData) => Promise<{ success: boolean; message?: string }>;
 }) {
-  const router = useRouter();
   const t = useTranslations("settings");
   const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
@@ -39,7 +37,6 @@ export function EditUnitRateDialog({
       if (!res.success) { setErr(res.message || tc("errors.couldNotSave")); return; }
       setOpen(false);
       notify.success(t("unitRates.toast.saved"));
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -50,7 +47,11 @@ export function EditUnitRateDialog({
   const unitLabel: Record<string, string> = { hours: t("unitRates.units.hours"), project: t("unitRates.units.project"), manday: t("unitRates.units.manday") };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => {
+      setOpen(o);
+      // Each opening starts from the saved rate: a cancelled edit leaves nothing behind.
+      if (o) { setUnit(unitRate.unit); setErr(""); }
+    }}>
       <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" title={tc("actions.edit")} aria-label={tc("actions.edit")} />}>
         <Pencil aria-hidden="true" />
       </DialogTrigger>

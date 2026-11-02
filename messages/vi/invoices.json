@@ -186,7 +186,10 @@
     "feeTooLarge": "Phí phải nhỏ hơn số tiền đối trừ.",
     "feeCategory": "Chọn khoản mục chi phí cho khoản phí.",
     "withheldFee": "Khoản phí ngân hàng này đã bị trừ khi nhận tiền và đã được tính vào khoản thu đó.",
-    "entryRejected": "Bút toán này đã bị từ chối — sửa và gửi lại rồi mới liên kết."
+    "entryRejected": "Bút toán này đã bị từ chối — sửa và gửi lại rồi mới liên kết.",
+    "postedLink": "Bút toán này đã ghi sổ — chỉ chủ doanh nghiệp mới được liên kết.",
+    "belowSettled": "Hóa đơn đã được thanh toán {amount} — nhập số tiền từ {amount} trở lên.",
+    "currency": "Loại tiền không được hỗ trợ — chọn {list}."
   },
   "tips": {
     "form": {

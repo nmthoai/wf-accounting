@@ -125,6 +125,8 @@
     "cantDeleteSelf": "You can't delete your own account.",
     "cantDeleteLastAdmin": "Can't delete the last active admin.",
     "cantDeactivateSelf": "You can't deactivate your own account.",
-    "cantDeactivateLastAdmin": "Can't deactivate the last active admin."
+    "cantDeactivateLastAdmin": "Can't deactivate the last active admin.",
+    "categoryNameTaken": "An {type, select, INCOME {income} other {expense}} category called “{name}” already exists. Use it, or pick another name.",
+    "unitRateTaken": "A rate for “{name}” per {unit, select, hours {hour} project {project} manday {man-day} other {{unit}}} already exists. Edit that one, or pick another name."
   }
 }

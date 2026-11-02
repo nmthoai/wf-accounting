@@ -13,6 +13,8 @@ import { getT } from "@/i18n/server";
 import { bankLinkProblem } from "@/lib/bank-match";
 import { diff, record, snapshot, type Change } from "@/lib/history";
 import { costItemProblem, convertCostItem, CostItemTaken } from "@/lib/cost-items";
+import { parseAmount } from "@/lib/amount";
+import { requestIdOf } from "@/lib/request-id";
 import type { Prisma } from "@prisma/client";
 
 type Decisions = { purposeStatus: string; citStatus: string; vatStatus: string };
@@ -33,13 +35,21 @@ async function guardedUpdate(tx: Prisma.TransactionClient, rows: { id: string; s
   }
 }
 
-const tryAgain = async () => (await getT("common"))("errors.somethingWrong");
-
-// What to say then: posted means locked; anything else, try again.
+// What to say then: posted means locked; anything else, reload and try again.
 async function changedText(id: string | null, posted: string) {
   const now = id ? await prisma.transaction.findUnique({ where: { id }, select: { status: true } }) : null;
-  return now?.status === "POSTED" ? posted : tryAgain();
+  return now?.status === "POSTED" ? posted : (await getT("ledger"))("errors.changedMeanwhile");
 }
+
+// What an action answers; the bulk ones also say how many entries they changed.
+type Result = { success: boolean; message?: string };
+type Counted = Result & { count: number };
+
+// Ids come from the browser: anything but a string (or a list of strings) is
+// refused as not found, never passed to a query as a filter.
+const badId = (id: unknown) => typeof id !== "string";
+const badIds = (ids: unknown) => !Array.isArray(ids) || ids.some(badId);
+const notFound = async (): Promise<Result> => ({ success: false, message: (await getT("common"))("errors.notFound") });
 
 async function currentUser() {
   const session = await getSession();
@@ -63,7 +73,7 @@ function parseReview(formData: FormData, type: string, amount: number, isAdmin: 
     purposeStatus: decide("purposeStatus"),
     citStatus: decide("citStatus"),
     vatStatus: decide("vatStatus"),
-    vatAmount: expense && str("vatAmount") ? parseFloat(str("vatAmount")) : null,
+    vatAmount: expense && str("vatAmount") ? parseAmount(str("vatAmount")) : null,
     reviewNote: str("reviewNote") || null,
   };
   const problem = reviewProblem({ type, amount, ...review });
@@ -80,8 +90,10 @@ async function problemText(problem: ReviewProblem) {
 type Booked = { currency: string; amount: number; exchangeRate: number; vndAmount: number | null; rateSource: string | null };
 
 // Changes that alter the books. A note, an invoice number, evidence or the
-// tax-review fields never take a reviewed entry out of the balances.
-const BOOKS_FIELDS = new Set(["type", "date", "amount", "currency", "exchangeRate", "vndAmount", "rateSource", "accountId", "loanId", "categoryId", "projectId", "vendorId"]);
+// tax-review statuses never take a reviewed entry out of the balances. The VAT
+// amount feeds the accountant's figures, so a change by anyone but the owner
+// goes back for review too.
+const BOOKS_FIELDS = new Set(["type", "date", "amount", "currency", "exchangeRate", "vndAmount", "rateSource", "accountId", "loanId", "categoryId", "projectId", "vendorId", "vatAmount"]);
 
 // The VND value an entry was booked at stays when it is edited in the same
 // currency: notes, category, project or files never re-price it, and a changed
@@ -97,7 +109,7 @@ function keptFx(booked: Booked, amount: number) {
 
 async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions, booked?: Booked) {
   const type = formData.get("type") as string;
-  const amount = parseFloat(formData.get("amount") as string);
+  const amount = parseAmount(formData.get("amount"));
   const currency = (formData.get("currency") as string) || "VND";
   const dateStr = formData.get("date") as string;
   const accountId = formData.get("accountId") as string;
@@ -122,6 +134,14 @@ async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions
   const description = formData.get("description") as string;
   const invoiceNumber = formData.get("invoiceNumber") as string;
   const categoryId = formData.get("categoryId") as string;
+  // A category is optional; one given must exist and be of the entry's type.
+  if (categoryId) {
+    const category = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!category) return { error: t("errors.unknownCategory") };
+    if (category.type !== type) {
+      return { error: (await getT("accounts"))(type === "INCOME" ? "errors.categoryIsExpense" : "errors.categoryIsIncome", { name: category.name }) };
+    }
+  }
   const projectId = formData.get("projectId") as string;
   const vendorId = formData.get("vendorId") as string;
 
@@ -145,8 +165,22 @@ async function parseEntry(formData: FormData, isAdmin: boolean, prev?: Decisions
   };
 }
 
-export async function createTransaction(formData: FormData) {
+export async function createTransaction(formData: FormData): Promise<Result> {
   const me = await currentUser();
+  const files = formData.getAll("files") as File[];
+  // The same save arriving again (a double click, a retry): finish what the
+  // first one may not have (its evidence) and report it saved.
+  const requestId = requestIdOf(formData);
+  const already = async () => {
+    const done = requestId ? await prisma.transaction.findUnique({ where: { requestId }, select: { id: true, _count: { select: { attachments: true } } } }) : null;
+    if (!done) return null;
+    if (done._count.attachments === 0) await persistUploads(files, { transactionId: done.id });
+    revalidateAll();
+    return { success: true };
+  };
+  const repeat = await already();
+  if (repeat) return repeat;
+
   const parsed = await parseEntry(formData, me.isAdmin);
   if ("error" in parsed) return { success: false, message: parsed.error };
   const t = await getT("ledger");
@@ -178,34 +212,39 @@ export async function createTransaction(formData: FormData) {
   try {
     transaction = await prisma.$transaction(async (tx) => {
       const t = await tx.transaction.create({
-        data: { ...parsed.data, bankLineId, correctionOfId, status: me.isAdmin ? "REVIEWED" : "DRAFT", createdBy: me.name },
+        data: { ...parsed.data, bankLineId, correctionOfId, requestId, status: me.isAdmin ? "REVIEWED" : "DRAFT", createdBy: me.name },
       });
       await record([{ entityId: t.id, action: "CREATE", newValue: snapshot(t), reason: correctionOfId ? "Correction of a reversed entry" : null }], me.name, tx);
       if (costItemId) await convertCostItem(costItemId, t.id, me.name, tx);
       return t;
     });
   } catch (e) {
+    // The same save arriving twice at once: the first one recorded it.
+    const repeat = await already();
+    if (repeat) return repeat;
     if (e instanceof CostItemTaken) return { success: false, message: t("errors.registerItemTaken") };
     throw e;
   }
 
-  await persistUploads(formData.getAll("files") as File[], { transactionId: transaction.id });
+  await persistUploads(files, { transactionId: transaction.id });
   revalidateAll();
   return { success: true };
 }
 
-export async function deleteTransaction(id: string) {
+export async function deleteTransaction(id: string): Promise<Result> {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (badId(id)) return notFound();
+  const tl = await getT("ledger");
 
   // A transfer is two linked legs — delete both so money can't vanish from one side.
   const t = await prisma.transaction.findUnique({ where: { id } });
-  if (!t) return;
+  if (!t) { revalidateAll(); return { success: true }; } // already gone: show the page as it is
   const legs = t.transferId ? await prisma.transaction.findMany({ where: { transferId: t.transferId } }) : [t];
   // A receipt takes the bank fee withheld from it along; a fee alone can go.
   legs.push(...(await prisma.transaction.findMany({ where: { deductedFromId: { in: legs.map((l) => l.id) } } })));
   // Posted entries are corrected by reversal, never deleted.
-  if (legs.some((l) => l.status === "POSTED")) throw new Error("Posted entries can't be deleted — reverse them instead.");
+  if (legs.some((l) => l.status === "POSTED")) return { success: false, message: tl("errors.postedNoDelete") };
   const ids = legs.map((l) => l.id);
 
   const invoices = await invoicesOf(ids); // payments being removed — their invoices reopen
@@ -221,26 +260,34 @@ export async function deleteTransaction(id: string) {
   }
 
   // All or nothing, history included; a leg posted meanwhile stops it.
-  const attachments = await prisma.$transaction(async (tx) => {
+  let attachments;
+  try {
+    attachments = await prisma.$transaction(async (tx) => {
     // A register item that became this expense goes back to pending, keeping its receipts.
-    await tx.costItem.updateMany({ where: { transactionId: { in: ids } }, data: { status: "PENDING", transactionId: null } });
-    await tx.attachment.updateMany({ where: { transactionId: { in: ids }, costItemId: { not: null } }, data: { transactionId: null } });
-    // Cascade-delete removes the Attachment rows; also remove the files from disk.
-    const attachments = await tx.attachment.findMany({ where: { transactionId: { in: ids } } });
-    await tx.transaction.updateMany({ where: { id: { in: unmatch.map((c) => c.entityId) } }, data: { bankLineId: null } });
-    const { count } = await tx.transaction.deleteMany({ where: { id: { in: ids }, status: { not: "POSTED" } } });
-    if (count !== ids.length) throw new ChangedMeanwhile();
-    await record([...legs.map((l) => ({ entityId: l.id, action: "DELETE", oldValue: snapshot(l) })), ...unmatch], me.name, tx);
-    return attachments;
-  });
+      await tx.costItem.updateMany({ where: { transactionId: { in: ids } }, data: { status: "PENDING", transactionId: null } });
+      await tx.attachment.updateMany({ where: { transactionId: { in: ids }, costItemId: { not: null } }, data: { transactionId: null } });
+      // Cascade-delete removes the Attachment rows; also remove the files from disk.
+      const attachments = await tx.attachment.findMany({ where: { transactionId: { in: ids } } });
+      await tx.transaction.updateMany({ where: { id: { in: unmatch.map((c) => c.entityId) } }, data: { bankLineId: null } });
+      const { count } = await tx.transaction.deleteMany({ where: { id: { in: ids }, status: { not: "POSTED" } } });
+      if (count !== ids.length) throw new ChangedMeanwhile();
+      await record([...legs.map((l) => ({ entityId: l.id, action: "DELETE", oldValue: snapshot(l) })), ...unmatch], me.name, tx);
+      return attachments;
+    });
+  } catch (e) {
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText(id, tl("errors.postedMeanwhile")) };
+    throw e;
+  }
 
   for (const a of attachments) await removeUploadFile(a.filePath);
   await refreshInvoiceStatus(invoices);
   revalidateAll();
+  return { success: true };
 }
 
-export async function editTransaction(id: string, formData: FormData) {
+export async function editTransaction(id: string, formData: FormData): Promise<Result> {
   const me = await currentUser();
+  if (badId(id)) return notFound();
   const existing = await prisma.transaction.findUnique({
     where: { id },
     include: {
@@ -358,17 +405,21 @@ async function withLegs(ids: string[]) {
 }
 
 // Admin: approve drafts (or a rejected entry, accepted after all).
-export async function reviewEntries(ids: string[]) {
+export async function reviewEntries(ids: string[]): Promise<Counted> {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (badIds(ids)) return { ...(await notFound()), count: 0 };
+  const t = await getT("ledger");
   const drafts = (await withLegs(ids)).filter((t) => t.status === "DRAFT" || t.status === "REJECTED");
+  // Approved, posted or deleted since the page was loaded.
+  if (drafts.length === 0) return { success: false, message: t("errors.nothingToApprove"), count: 0 };
   try {
     await prisma.$transaction(async (tx) => {
       await guardedUpdate(tx, drafts, { status: "REVIEWED" });
       await record(drafts.map((t) => ({ entityId: t.id, action: "REVIEW", field: "status", oldValue: t.status, newValue: "REVIEWED" })), me.name, tx);
     });
   } catch (e) {
-    if (e instanceof ChangedMeanwhile) return { success: false, message: await tryAgain(), count: 0 };
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText(ids.length === 1 ? ids[0] : null, t("errors.postedMeanwhile")), count: 0 };
     throw e;
   }
   await refreshInvoiceStatus(await invoicesOf(drafts.map((t) => t.id))); // reviewed payments now settle their invoices
@@ -379,11 +430,12 @@ export async function reviewEntries(ids: string[]) {
 // Admin: reject drafts, with the reason, back to whoever entered them. A
 // rejected entry stays out of the books; its creator corrects it and saving
 // resubmits it as a draft. The reason is kept in the change history.
-export async function rejectEntries(ids: string[], reason: string) {
+export async function rejectEntries(ids: string[], reason: string): Promise<Counted> {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (badIds(ids)) return { ...(await notFound()), count: 0 };
   const t = await getT("ledger");
-  const why = reason?.trim();
+  const why = typeof reason === "string" ? reason.trim() : "";
   if (!why) return { success: false, message: t("errors.rejectReasonRequired"), count: 0 };
   const drafts = (await withLegs(ids)).filter((e) => e.status === "DRAFT");
   if (drafts.length === 0) return { success: false, message: t("errors.onlyDraftsRejected"), count: 0 };
@@ -404,7 +456,7 @@ export async function rejectEntries(ids: string[], reason: string) {
       await record(changes, me.name, tx);
     });
   } catch (e) {
-    if (e instanceof ChangedMeanwhile) return { success: false, message: await tryAgain(), count: 0 };
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText(ids.length === 1 ? ids[0] : null, t("errors.postedMeanwhile")), count: 0 };
     throw e;
   }
   await refreshInvoiceStatus(invoices);
@@ -414,14 +466,15 @@ export async function rejectEntries(ids: string[], reason: string) {
 
 // Admin: post (lock) reviewed entries — the chosen ones, or every reviewed
 // entry dated up to and including `through` (e.g. a month end).
-export async function postEntries(ids: string[] | null, through?: string) {
+export async function postEntries(ids: string[] | null, through?: string): Promise<Counted> {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (ids !== null && badIds(ids)) return { ...(await notFound()), count: 0 };
+  const t = await getT("ledger");
   let entries;
   if (ids) entries = (await withLegs(ids)).filter((t) => t.status === "REVIEWED");
   else {
-    if (!through || !/^\d{4}-\d{2}-\d{2}$/.test(through)) {
-      const t = await getT("ledger");
+    if (typeof through !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(through)) {
       return { success: false, message: t("errors.postThroughDate"), count: 0 };
     }
     const end = new Date(`${through}T00:00:00.000Z`);
@@ -438,6 +491,10 @@ export async function postEntries(ids: string[] | null, through?: string) {
     const p = partners.find((x) => (t.deductedFromId ? x.id === t.deductedFromId : x.deductedFromId === t.id));
     return !p || posting.has(p.id) || p.status === "POSTED";
   });
+  // Posted, sent back or deleted since the page was loaded; or nothing reviewed by that date.
+  if (entries.length === 0) {
+    return { success: false, message: ids ? t("errors.nothingToPost") : t("errors.nothingToPostThrough", { date: through! }), count: 0 };
+  }
   // Still reviewed: one sent back to draft meanwhile is not posted.
   try {
     await prisma.$transaction(async (tx) => {
@@ -445,7 +502,7 @@ export async function postEntries(ids: string[] | null, through?: string) {
       await record(entries.map((t) => ({ entityId: t.id, action: "POST", field: "status", oldValue: "REVIEWED", newValue: "POSTED" })), me.name, tx);
     });
   } catch (e) {
-    if (e instanceof ChangedMeanwhile) return { success: false, message: await tryAgain(), count: 0 };
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText(ids?.length === 1 ? ids[0] : null, t("errors.postedMeanwhile")), count: 0 };
     throw e;
   }
   revalidateAll(ids?.length === 1 ? ids[0] : undefined);
@@ -454,11 +511,12 @@ export async function postEntries(ids: string[] | null, through?: string) {
 
 // Admin: correct a posted entry by cancelling it with a posted mirror image.
 // Both stay on record; the corrected entry is then entered afresh.
-export async function reverseEntry(id: string, reason: string) {
+export async function reverseEntry(id: string, reason: string): Promise<Result> {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (badId(id)) return notFound();
   const tl = await getT("ledger"); // `t` is the entry below
-  const why = reason?.trim();
+  const why = typeof reason === "string" ? reason.trim() : "";
   if (!why) return { success: false, message: tl("errors.reasonRequired") };
   const t = await prisma.transaction.findUnique({ where: { id }, include: { reversedBy: true } });
   if (!t || t.status !== "POSTED") return { success: false, message: tl("errors.onlyPostedReversed") };
@@ -524,9 +582,10 @@ export async function reverseEntry(id: string, reason: string) {
 // go into the change history. A receipt is revalued with the fee withheld from
 // it (the bank's VND figure is then what it credited, the net). Posted entries
 // are corrected by reversal instead; a transfer keeps the rate its two sides imply.
-export async function revalueEntry(id: string, formData: FormData) {
+export async function revalueEntry(id: string, formData: FormData): Promise<Result> {
   const me = await currentUser();
   if (!me.isAdmin) throw new Error("Unauthorized");
+  if (badId(id)) return notFound();
   const t = await getT("ledger");
   const reason = ((formData.get("reason") as string) || "").trim();
   if (!reason) return { success: false, message: t("errors.reasonRequired") };
@@ -583,8 +642,9 @@ export async function revalueEntry(id: string, formData: FormData) {
   return { success: true };
 }
 
-export async function deleteAttachment(id: string) {
+export async function deleteAttachment(id: string): Promise<Result> {
   const me = await currentUser();
+  if (badId(id)) return notFound();
   const att = await prisma.attachment.findUnique({
     where: { id },
     include: {
@@ -592,7 +652,7 @@ export async function deleteAttachment(id: string) {
       costItem: { select: { status: true } },
     },
   });
-  if (!att) return { success: true };
+  if (!att) { revalidateAll(); revalidatePath("/projects/[id]", "page"); return { success: true }; } // already gone
   const t = await getT("ledger");
   // Evidence on a posted entry stays; more can be added.
   if (att.transaction?.status === "POSTED") return { success: false, message: t("errors.attachmentPosted") };

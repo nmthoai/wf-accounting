@@ -117,7 +117,7 @@ export default async function BankPage({ searchParams }: { searchParams: Promise
     id: s.id, accountName: acc.get(s.accountId)!.name, currency: acc.get(s.accountId)!.currency, fileName: s.fileName,
     periodFrom: iso(s.periodFrom), periodTo: iso(s.periodTo),
     opening: s.openingBalance, inflows: s.inflows, outflows: s.outflows, closing: s.closingBalance,
-    lineCount: s.lineCount, added: s._count.lines, importedBy: s.importedBy, importedAt: iso(s.createdAt),
+    lineCount: s.lineCount, added: s._count.lines, importedBy: s.importedBy, importedAt: s.createdAt.toISOString(),
   }));
 
   return (

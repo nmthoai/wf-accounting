@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,6 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
   clients: ClientRow[]; vendors: VendorRow[];
   isAdmin: boolean; // deleting a client or vendor is the owner's decision
 }) {
-  const router = useRouter();
   const t = useTranslations("contacts");
   const tc = useTranslations("common");
   const [addingClient, setAddingClient] = useState(false);
@@ -41,7 +39,6 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
       const res = await fn();
       if (res.success) notify.success(done, detail);
       else notifyFailure(res.message);
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
@@ -61,7 +58,6 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
       if (!res.success) { setAddErr((prev) => ({ ...prev, [kind]: res.message || tc("errors.couldNotSave") })); return; }
       notify.success(kind === "client" ? t("toast.clientAdded") : t("toast.vendorAdded"));
       form.reset();
-      router.refresh();
     } catch {
       notifyFailure();
     } finally {
