@@ -53,7 +53,7 @@ export default async function CostsPage({ searchParams }: { searchParams: Promis
 
   return (
     <div>
-      <PageHeader section="costs" title={t("page.title")} description={t("page.subtitle")} />
+      <PageHeader section="costs" title={t("page.title")} info={t("tips.page.subtitle")} description={t("page.subtitle")} />
       <CostsClient
         isAdmin={session?.user?.role === "ADMIN"}
         view={view}

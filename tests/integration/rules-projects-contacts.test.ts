@@ -53,7 +53,7 @@ test("a duplicate project name is refused whatever its spacing or case, and the 
   for (const name of ["AI Interview", "  ai   interview ", "AI\tINTERVIEW"]) {
     const res = await P.createProject(fd({ name }));
     assert.equal(res.success, false, name);
-    assert.equal(res.message, "A project called “AI Interview” already exists — use that project, or give this one a different name.");
+    assert.equal(res.message, "A project called “AI Interview” already exists. Use it, or pick another name.");
   }
   assert.equal(await S.prisma.project.count({ where: { name: { contains: "nterview" } } }), 1);
   // A different name is fine.
@@ -113,7 +113,7 @@ test("a duplicate client name is refused on add and on rename, within the client
   assert.equal((await C.createClient(fd({ name: "Acme Co" }))).success, true);
   const dup = await C.createClient(fd({ name: " acme  co " }));
   assert.equal(dup.success, false);
-  assert.equal(dup.message, "A client called “Acme Co” already exists — use that client, or give this one a different name.");
+  assert.equal(dup.message, "A client called “Acme Co” already exists. Use it, or pick another name.");
   assert.equal(await S.prisma.client.count({ where: { name: { contains: "cme" } } }), 1);
 
   assert.equal((await C.createClient(fd({ name: "Beta Co" }))).success, true);
@@ -132,7 +132,7 @@ test("a duplicate vendor name is refused on add and on rename, within the vendor
   // The seed already has "ODP Solution".
   const dup = await V.createVendor(fd({ name: "odp   SOLUTION" }));
   assert.equal(dup.success, false);
-  assert.equal(dup.message, "A vendor called “ODP Solution” already exists — use that vendor, or give this one a different name.");
+  assert.equal(dup.message, "A vendor called “ODP Solution” already exists. Use it, or pick another name.");
   assert.equal(await S.prisma.vendor.count({ where: { name: { contains: "OD" } } }), 1);
 
   assert.equal((await V.createVendor(fd({ name: "ZDN" }))).success, true);

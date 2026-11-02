@@ -1,11 +1,10 @@
 {
   "page": {
-    "title": "Hồ sơ cá nhân",
-    "subtitle": "Tên và thông tin tài khoản của bạn"
+    "title": "Hồ sơ cá nhân"
   },
   "name": {
     "title": "Tên của bạn",
-    "description": "Hiển thị trong lời chào ở đầu trang. Để trống nếu muốn dùng tên đăng nhập."
+    "description": "Hiện trong lời chào. Để trống sẽ dùng tên đăng nhập."
   },
   "account": {
     "title": "Tài khoản đăng nhập",
@@ -31,13 +30,18 @@
     "currencySaved": "Số tổng hợp hiển thị bằng {currency}"
   },
   "errors": {
-    "unauthorized": "Không có quyền thực hiện",
+    "unauthorized": "Bạn đã bị đăng xuất nên chưa lưu được. Hãy đăng nhập lại.",
     "nameTooLong": "Tên không được dài quá {max} ký tự.",
     "badCurrency": "Chọn VND hoặc USD."
   },
   "currency": {
-    "title": "Loại tiền hiển thị số tổng hợp",
+    "title": "Loại tiền cho số tổng hợp",
     "label": "Hiển thị số tổng hợp bằng",
-    "description": "Áp dụng cho Tổng quan, Báo cáo, Dự án và tổng Hóa đơn. Khoản ghi bằng USD giữ đúng số USD; số tiền VND quy đổi theo tỷ giá hiện tại trong Cài đặt ({rate} ₫/USD), chỉ là số ước tính. Sổ thu chi, Tài khoản, Ngân hàng, Thuế và Bàn giao luôn hiển thị đúng loại tiền gốc."
+    "description": "Áp dụng cho số tổng trên Tổng quan, Báo cáo, Dự án và Hóa đơn."
+  },
+  "tips": {
+    "currency": {
+      "description": "Số tiền VND được quy đổi theo tỷ giá trong Cài đặt ({rate} ₫/USD), chỉ là ước tính. Sổ thu chi, Tài khoản, Ngân hàng, Thuế và Bàn giao luôn giữ loại tiền gốc."
+    }
   }
 }

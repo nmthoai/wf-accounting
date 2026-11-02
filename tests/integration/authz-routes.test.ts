@@ -142,9 +142,9 @@ test("Excel export: sign-in required; drafts listed but not in the totals", asyn
   as.admin();
   const res = await GET(new Request("http://test/api/reports/export?type=entries&from=2026-06-01&to=2026-06-30"));
   assert.equal(res.status, 200);
-  const rows = xlsx.utils.sheet_to_json<Record<string, unknown>>(xlsx.read(Buffer.from(await res.arrayBuffer())).Sheets["Ledger Entries"]);
+  const rows = xlsx.utils.sheet_to_json<Record<string, unknown>>(xlsx.read(Buffer.from(await res.arrayBuffer())).Sheets["Ledger entries"]);
   assert.ok(rows.some((r) => r.Description === "draft row" && r.Status === "Draft"));
-  assert.equal(rows.find((r) => r.Type === "TOTAL Expense")?.["Amount (VND)"], 1000); // the reviewed 1,000 only
+  assert.equal(rows.find((r) => r.Type === "Total expense")?.["Amount (VND)"], 1000); // the reviewed 1,000 only
   assert.equal((await GET(new Request("http://test/api/reports/export?type=entries&from=bad&to=2026-06-30"))).status, 400);
 });
 

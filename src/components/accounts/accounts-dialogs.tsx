@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CircleAlert, Loader2 } from "lucide-react";
@@ -134,14 +135,11 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
               <Input id="acc-open" name="openingBalance" type="number" step="any" defaultValue={account?.openingBalance ?? 0} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="acc-odate">{t("accountDialog.asOfDate")}</Label>
+              <Label htmlFor="acc-odate">{t("accountDialog.asOfDate")}<InfoTip>{t("tips.accountDialog.openingHelp")}</InfoTip></Label>
               <Input id="acc-odate" name="openingDate" type="date" defaultValue={account?.openingDate ?? ""} />
             </div>
           </div>
-          <p className="text-[13.5px] text-muted-foreground">
-            {t("accountDialog.openingHelp")}
-            {type === "OWNER" && ` ${t("accountDialog.openingHelpOwner")}`}
-          </p>
+          {type === "OWNER" && <p className="text-[13.5px] text-muted-foreground">{t("accountDialog.openingHelpOwner")}</p>}
           <div className="grid gap-2">
             <Label htmlFor="acc-notes">{t("form.notesOptional")}</Label>
             <Input id="acc-notes" name="notes" defaultValue={account?.notes ?? ""} placeholder={t("accountDialog.notesPlaceholder")} />
@@ -149,7 +147,7 @@ export function AccountDialog({ account, trigger }: { account?: AccountRow; trig
           {account && (
             <label className="flex items-start gap-2 text-[14.5px] text-text-secondary">
               <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-primary" checked={active} onChange={(e) => setActive(e.target.checked)} />
-              {t("accountDialog.active")}
+              <span>{t("accountDialog.active")} <InfoTip>{t("tips.accountDialog.active")}</InfoTip></span>
             </label>
           )}
           {err && <FormError>{err}</FormError>}
@@ -183,13 +181,12 @@ export function TransferDialog({ accounts, transfer, trigger }: { accounts: Acco
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />
       <DialogContent>
-        <DialogHeader><DialogTitle>{transfer ? t("transferDialog.editTitle") : t("transferDialog.newTitle")}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{transfer ? t("transferDialog.editTitle") : t("transferDialog.newTitle")} <InfoTip>{t("tips.transferDialog.intro")}</InfoTip></DialogTitle></DialogHeader>
         <form className="grid gap-4 pt-1" onSubmit={(e) => submit(
           e,
           (fd) => (transfer ? updateTransfer(transfer.transferId, fd) : createTransfer(fd)),
           { fromAccountId: fromId, toAccountId: toId, amountOut: out, amountIn: cross ? inn : out },
         )}>
-          <p className="text-[13.5px] text-muted-foreground">{t("transferDialog.intro")}</p>
           <div className="grid grid-cols-2 gap-4">
             {/* A changed choice clears the last submit's error (e.g. "choose two different accounts"). */}
             <div className="grid gap-2"><Label htmlFor="tr-from">{t("transferDialog.from")}</Label><AccountSelect id="tr-from" className="w-full" accounts={pick} value={fromId} onChange={(id) => { setFromId(id); clearErr(); }} /></div>
@@ -285,6 +282,7 @@ export function MovementDialog({ accounts, loans, categories, movement, trigger 
             </Select>
             <p className="text-[13.5px] text-muted-foreground">
               {pnl ? t(kind === "INCOME" ? "movementDialog.pnlHelpIncome" : "movementDialog.pnlHelpExpense") : t("movementDialog.financingHelp")}
+              {pnl && <> <InfoTip>{t(kind === "INCOME" ? "tips.movementDialog.pnlHelpIncome" : "tips.movementDialog.pnlHelpExpense")}</InfoTip></>}
             </p>
           </div>
           {pnl && (

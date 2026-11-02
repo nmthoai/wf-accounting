@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Card, CardDescription, CardHeader } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import { fmtMoney, EPS } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { Chip, Notice, type Tone } from "@/components/wf/ledger-ui";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export type EntryOpt = { id: string; accountId: string; date: string; amount: number; label: string; href: string }; // amount: signed, account currency
 type Linked = { id: string; label: string; date: string; amount: number; href: string };
@@ -240,6 +241,7 @@ function MatchDialog({ line, entries }: { line: LineRow; entries: EntryOpt[] }) 
         <div className="grid gap-4 pt-1">
           <p className="text-[13.5px] text-muted-foreground">
             {t("match.help", { account: line.accountName })}
+            <InfoTip className="ml-1">{t("tips.match.help")}</InfoTip>
           </p>
           <ul className="max-h-72 divide-y divide-border overflow-y-auto border-y border-border">
             {choices.map((e) => (
@@ -347,8 +349,8 @@ export function BankClient({ isAdmin, view, accounts, summaries, lines, entries,
             <h2 className="wf-panel__title">
               {t("imports.title")}
               <span className="wf-panel__count">{statements.length}</span>
+              <InfoTip>{t("tips.imports.description")}</InfoTip>
             </h2>
-            <CardDescription>{t("imports.description")}</CardDescription>
           </CardHeader>
           <ul className="wf-rows">
             {statements.map((s) => (

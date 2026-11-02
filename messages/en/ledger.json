@@ -1,10 +1,10 @@
 {
   "page": {
     "title": "Ledger",
-    "subtitle": "All recorded transactions",
-    "newEntry": "New Entry",
+    "subtitle": "All recorded entries",
+    "newEntry": "New entry",
     "emptyView": "Nothing here — all clear.",
-    "empty": "No transactions found. Click \"New Entry\" to add one."
+    "empty": "No entries yet."
   },
   "tabs": {
     "all": "All",
@@ -31,13 +31,13 @@
     "noAccount": "— none —",
     "uncategorized": "Uncategorized",
     "feeTitle": "Evidenced fee linked to this invoice/bill",
-    "settlesTitle": "Settles this invoice/bill — don't add a manual duplicate",
+    "settlesTitle": "Settles this invoice/bill",
     "feeLink": "fee → {ref}",
     "settlesLink": "→ {ref}",
     "bill": "bill",
     "invoice": "invoice",
     "notMatched": "not matched",
-    "notMatchedTitle": "Not matched to any invoice yet — link it from the Invoices page",
+    "notMatchedTitle": "No invoice linked — link it on the Invoices page",
     "onStatement": "on statement",
     "onStatementTitle": "Matched to a bank statement line",
     "citTitle": "CIT deductibility",
@@ -48,14 +48,14 @@
     "rejectedReason": "Rejected: {reason}"
   },
   "rowActions": {
-    "approve": "Approve (mark reviewed)",
+    "approve": "Approve",
     "openPosted": "Open (posted — locked)",
-    "confirmDelete": "Delete this entry? A transfer deletes both sides; a receipt also deletes the bank fee withheld from it.",
-    "reject": "Reject (send back with a reason)"
+    "confirmDelete": "Delete this entry? A transfer's other side or a withheld bank fee is deleted with it.",
+    "reject": "Reject"
   },
   "postThrough": {
     "label": "Post reviewed entries through",
-    "confirm": "Post every reviewed entry dated up to {date}? Posted entries are locked — corrections then go through a reversal.",
+    "confirm": "Post all reviewed entries up to {date}? They'll be locked — fix them later by reversing.",
     "done": "{count, plural, one {# entry posted} other {# entries posted}}",
     "failed": "Could not post."
   },
@@ -75,48 +75,48 @@
     "saved": "Entry saved",
     "receiptRemoved": "Receipt removed",
     "receiptRemoveFailed": "Could not remove the receipt.",
-    "somethingWrong": "Something went wrong",
+    "somethingWrong": "Entry not saved — try again.",
     "rejected": "Entry rejected"
   },
   "status": {
-    "reversalOf": "This reversal cancels <link>{label}</link>. It is posted and can't change.",
-    "reversedBy": "Posted, then reversed by <link>{label}</link> — it no longer counts.",
-    "draft": "Draft — waiting for the owner's review. Not counted in balances or reports yet.",
-    "reviewed": "Reviewed — counted in balances and reports. Posting locks it for the accountant.",
-    "posted": "Posted — locked. Evidence and tax review can still be updated; to change anything else, reverse it and enter the correction.",
+    "reversalOf": "Reversal of <link>{label}</link>. Posted — locked.",
+    "reversedBy": "Reversed by <link>{label}</link> — no longer counted.",
+    "draft": "Draft — waiting for review. Not in balances or reports yet.",
+    "reviewed": "Reviewed — counted in balances and reports.",
+    "posted": "Posted — locked. Evidence and tax review can still change.",
     "correctionOf": "Correction of <link>{label}</link>.",
-    "confirmPost": "Post this entry? It will be locked; corrections then go through a reversal.",
+    "confirmPost": "Post this entry? It will be locked — fix it later by reversing.",
     "reverseFailed": "Could not reverse.",
-    "rejected": "Rejected — sent back for correction. Not counted in balances or reports; saving a corrected version resubmits it for review.",
+    "rejected": "Rejected — fix it and save to send it back for review.",
     "rejectedReason": "Reason: {reason}",
     "rejectedReasonBy": "Rejected by {name}: {reason}",
-    "rejectedOwner": "Rejected — sent back for correction. Not counted in balances or reports; it comes back as a draft when corrected, or approve it yourself."
+    "rejectedOwner": "Rejected — not counted. It comes back to you once corrected, or approve it now."
   },
   "reverse": {
     "title": "Reverse a posted entry",
-    "body": "A posted reversal cancels this entry in full; both stay on record. Its bank match and invoice links are released so the corrected entry — which you enter next — can take them.",
+    "body": "A reversal cancels this entry in full. Both stay on record; you enter the correction next.",
     "reason": "Reason",
     "reasonPlaceholder": "e.g. wrong amount — bank shows 8.221.200",
     "submit": "Reverse and enter the correction",
     "descPrefix": "Reversal: {description}",
-    "withFee": "This receipt and the bank fee withheld from it are reversed together. Its invoice reopens — record the corrected payment from the invoice."
+    "withFee": "The withheld bank fee is reversed too. The invoice reopens — record the payment again there."
   },
   "new": {
-    "title": "New Entry",
-    "subtitle": "Log a new income or expense transaction",
+    "title": "New entry",
+    "subtitle": "Record income or an expense",
     "costPeriod": "{provider} — {from} to {to}"
   },
   "edit": {
-    "title": "Edit Entry",
-    "titlePosted": "Posted Entry",
+    "title": "Edit entry",
+    "titlePosted": "Posted entry",
     "enteredBy": "Entered by {name}",
-    "subtitle": "Update transaction details"
+    "subtitle": "Update entry details"
   },
   "history": {
     "title": "History",
     "actionField": "{action} · {field}",
     "reason": "Reason: {reason}",
-    "empty": "No changes recorded since history began (4 Oct 2026).",
+    "empty": "No changes yet (history kept since 4 Oct 2026).",
     "reasons": {
       "correction": "Correction of a reversed entry",
       "matchedEntryDeleted": "The matched entry was deleted"
@@ -167,13 +167,13 @@
     }
   },
   "form": {
-    "fromBankLine": "From bank line <b>{label}</b> — saving matches this entry to it.",
-    "fromCostItem": "From the cost register: <b>{label}</b> — saving adds it to the ledger once, with its receipt.",
-    "correcting": "Correcting <b>{label}</b>, which has been reversed — enter the right values. Saving records this as its correction.",
+    "fromBankLine": "From bank line <b>{label}</b> — matched when you save.",
+    "fromCostItem": "From the cost register: <b>{label}</b> — saved with its receipt.",
+    "correcting": "Correcting reversed entry <b>{label}</b> — enter the right values.",
     "entryType": "Entry type",
     "receivedInto": "Received into",
     "paidFrom": "Paid from",
-    "accountPlaceholder": "Choose the account the money moved through",
+    "accountPlaceholder": "Choose account",
     "accountHint": "Bank, company cash, or Owner-paid if you paid it personally.",
     "date": "Date",
     "amount": "Amount",
@@ -182,38 +182,34 @@
     "rateBank": "Actual VND settled",
     "rateManual": "Enter rate",
     "rateDefault": "Default ({rate})",
-    "vndPlaceholder": "VND exactly as on the bank statement",
+    "vndPlaceholder": "As on the bank statement",
     "ratePlaceholder": "VND per {currency}",
-    "rateBankHint": "Most accurate — the rate is worked out from what the bank actually settled.",
+    "rateBankHint": "Most accurate — taken from the bank statement.",
     "rateManualHint": "Use the rate on the receipt or the bank's rate for that day.",
     "rateDefaultHint": "Only an estimate — switch to the bank figure when you have the statement.",
     "category": "Category",
     "categoryPlaceholder": "Select a category",
     "noCategories": "No categories available",
-    "project": "Project (Optional)",
+    "project": "Project (optional)",
     "noProject": "No project",
     "noProjects": "No projects yet",
-    "projectHint": "Tag this entry to a project for per-project profit.",
-    "vendor": "Vendor (Optional)",
+    "vendor": "Vendor (optional)",
     "noVendor": "No vendor",
     "noVendors": "No vendors yet",
-    "vendorHint": "Who you paid — for spend-per-vendor tracking.",
     "unknown": "Unknown",
-    "invoiceNumber": "Invoice Number (Optional)",
+    "invoiceNumber": "Invoice number (optional)",
     "invoiceNumberPlaceholder": "e.g. INV-2026-001",
     "description": "Description",
     "descriptionPlaceholder": "What was this for?",
-    "attachments": "Attachments (Receipts / Invoices)",
+    "attachments": "Attachments (receipts / invoices)",
     "removeReceipt": "Remove receipt",
-    "confirmRemoveReceipt": "Remove this receipt? This deletes the file.",
+    "confirmRemoveReceipt": "Delete this receipt file?",
     "toUpload": "to upload",
     "addMoreFiles": "Add more files",
     "uploadFiles": "Upload files",
     "orTakePhoto": "or take a photo",
     "fileTypes": "PNG, JPG, PDF, ZIP (e.g. original e-invoice) — up to 10 MB per save",
     "review": "Evidence & tax review",
-    "reviewHintExpense": "Kept apart from the books: recording an expense never makes it deductible or its VAT claimable — each stays pending until reviewed.",
-    "reviewHintIncome": "Kept apart from the books: a payment received doesn't establish its invoice.",
     "document": "Document",
     "purpose": "Business purpose",
     "cit": "CIT deductibility",
@@ -221,23 +217,23 @@
     "vatAmount": "VAT on the invoice ({currency})",
     "vatAmountPlaceholder": "As printed — blank if none",
     "reviewNote": "Review notes",
-    "reviewNotePlaceholder": "Purpose evidence, the accountant's basis, open questions",
-    "ownerDecides": "Business purpose, CIT and VAT are recorded by the owner after the accountant's review.",
+    "reviewNotePlaceholder": "Purpose, accountant's basis, open questions",
+    "ownerDecides": "The owner sets purpose, CIT and VAT after review.",
     "reason": "Reason for the change (optional)",
-    "reasonPlaceholder": "Kept in the entry's history",
+    "reasonPlaceholder": "Saved to history",
     "saving": "Saving...",
     "saveReview": "Save review",
-    "update": "Update Transaction",
-    "save": "Save Transaction"
+    "update": "Update entry",
+    "save": "Save entry"
   },
   "errors": {
     "invalidType": "Invalid entry type.",
     "amountDate": "Enter a valid amount and date.",
     "currency": "Unsupported currency.",
-    "chooseAccount": "Choose the account the money moved through.",
-    "unknownAccount": "Unknown account.",
+    "chooseAccount": "Choose an account.",
+    "unknownAccount": "Account not found — choose another.",
     "usdAccount": "{name} is a USD account — enter the amount in USD.",
-    "registerItemExpense": "A register item becomes an expense.",
+    "registerItemExpense": "A cost register item can only be saved as an expense.",
     "correctionNeedsReversal": "Only a reversed entry can be re-entered as a correction.",
     "registerItemTaken": "That register item is already in the ledger or dismissed.",
     "editOnAccounts": "Edit transfers, capital and loans on the Accounts page.",
@@ -253,17 +249,18 @@
     "attachmentCostItem": "This receipt belongs to a cost register item — it stays with the expense.",
     "attachmentFeeEvidence": "This is the evidence for a fee on an invoice — unlink the fee first.",
     "attachmentOwnerOnly": "Only the owner can remove this document.",
-    "feePairLocked": "A bank fee withheld from a receipt stays with it: same account, currency, type, date and project. Change the receipt — the fee follows — or reverse or delete them together.",
+    "feePairLocked": "A withheld bank fee must match its receipt (account, currency, type, date, project). Edit the receipt, or reverse or delete both.",
     "feeExceedsReceipt": "The bank fee must stay less than the receipt it was withheld from.",
-    "pairNotPosted": "Everything that moves with this entry must be posted, and not yet reversed, before it can be reversed.",
+    "pairNotPosted": "Can't reverse yet — its linked entries must all be posted and not reversed.",
     "rejectReasonRequired": "Give the reason for rejecting it.",
-    "onlyDraftsRejected": "Only drafts waiting for review can be rejected."
+    "onlyDraftsRejected": "Only drafts waiting for review can be rejected.",
+    "postedMeanwhile": "This entry was posted meanwhile — reload. To change it, reverse it."
   },
   "revalue": {
     "booked": "Booked at {rate} VND/{currency} → {vnd} VND · {source} rate",
-    "withFee": "Includes the bank fee withheld from it ({fee}); both are revalued together.",
-    "keptHint": "Editing this entry keeps this value. To change it, revalue it — with a reason that goes into the history.",
-    "adminOnly": "Editing this entry keeps this value. Only an admin can revalue it.",
+    "withFee": "Includes the withheld bank fee ({fee}), revalued together.",
+    "keptHint": "Editing keeps this value. Use Revalue to change it.",
+    "adminOnly": "Editing keeps this value. Only an admin can revalue it.",
     "feeHint": "A fee withheld from a receipt is revalued with its receipt.",
     "transferHint": "A transfer keeps the rate its two sides imply.",
     "open": "Revalue…",
@@ -271,7 +268,7 @@
     "netPlaceholder": "VND the bank credited (net of the fee)",
     "preview": "VND value: {before} → {after}",
     "reason": "Reason",
-    "reasonPlaceholder": "Why the value changes — kept in the history",
+    "reasonPlaceholder": "Why it changes",
     "confirm": "Revalue",
     "done": "Entry revalued",
     "errors": {
@@ -281,16 +278,28 @@
       "fee": "Revalue the receipt this fee was withheld from — the fee follows it.",
       "unchanged": "That gives the same VND value — nothing to revalue.",
       "enterValue": "Enter the new rate or VND amount.",
-      "matched": "This entry is matched to a bank line in an account kept in another currency — unmatch it before revaluing, then match it again."
+      "matched": "Matched to a bank line in another currency — unmatch it, revalue, then match again."
     },
-    "postedHint": "Posted: this value is locked. To change it, reverse the entry and enter the correction.",
+    "postedHint": "Posted — locked. To change it, reverse the entry.",
     "reversedHint": "Locked: a reversed entry and its reversal keep this value."
   },
   "reject": {
     "title": "Reject this entry",
-    "body": "It goes back to whoever entered it, with your reason. It stays out of balances and reports until they correct it and save it again — then it comes back to you for review.",
+    "body": "It goes back to whoever entered it, with your reason. Once they fix and save it, it returns for your review.",
     "reason": "Reason",
     "reasonPlaceholder": "e.g. wrong account — this was paid from MB USD",
     "submit": "Reject and send back"
+  },
+  "tips": {
+    "status": {
+      "posted": "To change anything else, reverse it, then enter the correction."
+    },
+    "reverse": {
+      "body": "Its bank match and invoice links are removed — match and link the correction instead."
+    },
+    "form": {
+      "reviewHintExpense": "Recording an expense doesn't make it deductible or its VAT claimable. Each stays pending until reviewed.",
+      "reviewHintIncome": "Receiving money doesn't mean an invoice was issued."
+    }
   }
 }

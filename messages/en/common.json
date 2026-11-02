@@ -1,8 +1,8 @@
 {
   "app": {
-    "title": "Accounting Entry Tracker",
-    "metaTitle": "Workfactory Accounting Entry Tracker",
-    "metaDescription": "Agentic AI Platform Accounting Tool",
+    "title": "Accounting entry tracker",
+    "metaTitle": "Workfactory accounting entry tracker",
+    "metaDescription": "Agentic AI platform accounting tool",
     "logoAlt": "Logo",
     "product": "Accounting"
   },
@@ -11,7 +11,7 @@
     "ledger": "Ledger",
     "invoices": "Invoices",
     "projects": "Projects",
-    "contacts": "Clients & Vendors",
+    "contacts": "Clients & vendors",
     "accounts": "Accounts",
     "bank": "Bank",
     "costs": "Costs",
@@ -20,7 +20,7 @@
     "handover": "Handover",
     "settings": "Settings",
     "openSidebar": "Open sidebar",
-    "menu": "Navigation Menu",
+    "menu": "Navigation menu",
     "gini": "Gini",
     "tagline": "Intelligence, Orchestrated.",
     "groups": {
@@ -37,7 +37,7 @@
   "header": {
     "hello": "Hello, <b>{name}</b>",
     "profile": "Your profile",
-    "signOut": "Sign Out",
+    "signOut": "Sign out",
     "signOutTitle": "Sign out?",
     "signOutBody": "You'll need your password and 2FA code to sign back in.",
     "signOutConfirm": "Yes, sign out"
@@ -71,10 +71,10 @@
   },
   "session": {
     "endedTitle": "You're signed out",
-    "endedBody": "Your session ended, so this wasn't saved. What you typed is still here — sign in again in a new tab, then come back and save.",
+    "endedBody": "Your session ended, so this wasn't saved. Your work is kept — sign in on a new tab, then save again.",
     "signIn": "Sign in",
     "unreachableTitle": "Couldn't reach the app",
-    "unreachableBody": "This wasn't saved — the connection or the server is down. What you typed is still here; check your connection and try again."
+    "unreachableBody": "Not saved — the connection or server is down. Your work is kept; check your connection and try again."
   },
   "type": {
     "INCOME": "Income",
@@ -142,14 +142,14 @@
       "unknownDoc": "Unknown document status.",
       "unknownStatus": "Unknown review status.",
       "vatTooHigh": "The VAT amount must be less than the entry amount.",
-      "confirmPurpose": "Confirm business use before marking it deductible or its VAT claimable.",
-      "needBasis": "There is no invoice or receipt on file — record the accountant's basis for deducting it in the review note.",
+      "confirmPurpose": "Confirm business use before marking it deductible or VAT claimable.",
+      "needBasis": "No invoice or receipt — add the accountant's basis for deducting it in the review note.",
       "vatNeedsInvoice": "Input VAT can only be claimable with the invoice on file.",
       "vatAmountMissing": "Enter the VAT amount printed on the invoice."
     }
   },
   "upload": {
-    "tooBig": "Attachments are limited to {max} MB per save — these come to {mb} MB. Save them in smaller batches."
+    "tooBig": "These files are {mb} MB; the limit is {max} MB per save. Save fewer at a time."
   },
   "theme": {
     "label": "Theme",
@@ -160,6 +160,7 @@
   },
   "view": {
     "usdNote": "USD view · {rate} ₫/USD",
-    "usdHint": "Entries made in USD show their real USD; VND amounts are converted at the Settings rate ({rate} ₫/USD) as an estimate. Change it in your Profile."
-  }
+    "usdHint": "USD entries show their real USD. VND amounts are converted at {rate} ₫/USD, so they're estimates. Switch currency in Profile."
+  },
+  "moreInfo": "More info"
 }

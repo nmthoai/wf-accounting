@@ -58,6 +58,6 @@ test("Excel export of invoices works with the upgraded spreadsheet library", asy
   const res = await GET(new Request("http://test/api/reports/export?type=invoices&from=2026-06-01&to=2026-12-31"));
   assert.equal(res.status, 200);
   const wb = xlsx.read(Buffer.from(await res.arrayBuffer()));
-  assert.deepEqual(wb.SheetNames, ["Invoices & Bills"]);
-  assert.ok(xlsx.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets["Invoices & Bills"]).some((r) => r.Number === "JUN-1"));
+  assert.deepEqual(wb.SheetNames, ["Invoices & bills"]);
+  assert.ok(xlsx.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets["Invoices & bills"]).some((r) => r.Number === "JUN-1"));
 });

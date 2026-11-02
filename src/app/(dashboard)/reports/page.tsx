@@ -139,6 +139,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <PageHeader
         section="reports"
         title={tr("page.title")}
+        info={tr("tips.page.subtitle")}
         description={tr("page.subtitle", { month: period })}
         meta={(view.currency !== "VND" || drafts > 0 || rejected > 0) && (
           <>
@@ -210,8 +211,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         </Card>
 
         <Card className="lg:col-span-8">
-          <PanelHead title={tr("tax.title")} />
-          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{tr("tax.intro")}</p>
+          <PanelHead title={tr("tax.title")} info={tr("tips.tax.intro")} />
           <div className="grid flex-1 md:grid-cols-2 md:divide-x md:divide-border">
             <section aria-labelledby="tax-cit">
               <p id="tax-cit" className="wf-label px-5 pt-4 pb-1">{tr("tax.citTitle")}</p>

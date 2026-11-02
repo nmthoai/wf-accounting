@@ -583,7 +583,7 @@ test("a receipt and its fee can't be moved to another account, currency or type 
   ] as const) {
     assert.equal(res.success, false, `${label} is refused`);
   }
-  assert.match((await editFee({ accountId: other.id })).message!, /same account, currency, type, date and project/);
+  assert.match((await editFee({ accountId: other.id })).message!, /must match its receipt \(account, currency, type, date, project\)/);
 
   // An ordinary edit (the note) is fine and keeps the pair, account and booked rate.
   assert.equal((await editFee({ description: "MB withheld intermediary fee — see bank advice" })).success, true);

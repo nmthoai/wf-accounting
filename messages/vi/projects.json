@@ -8,20 +8,18 @@
   },
   "noClient": "Không có khách hàng",
   "page": {
-    "title": "Dự án",
-    "subtitle": "Lãi lỗ theo dự án — nhấn vào dự án để xem cơ cấu chi phí"
+    "title": "Dự án"
   },
   "list": {
     "title": "Lãi lỗ theo dự án",
-    "description": "Lãi (lỗ) = doanh thu − chi phí từ các bút toán gắn với từng dự án (thực thu, thực chi). Nhấn vào một dự án để xem cơ cấu chi phí.",
     "newProject": "Dự án mới",
     "name": "Tên dự án",
     "namePlaceholder": "Ví dụ: AI Character Dev",
     "client": "Khách hàng",
-    "unpaidTitle": "{count} hóa đơn bán ra/mua vào chưa thanh toán · {amounts}",
+    "unpaidTitle": "{count, plural, other {# hóa đơn chưa thanh toán}} · {amounts}",
     "unpaid": "{count} chưa thanh toán",
     "attachmentsTitle": "{count, plural, other {# tài liệu đính kèm}}",
-    "txnCount": "{count} bút toán",
+    "txnCount": "{count, plural, other {# bút toán}}",
     "archive": "Lưu trữ",
     "reactivate": "Kích hoạt lại",
     "confirmDelete": "Xóa dự án {name}?",
@@ -61,14 +59,13 @@
     "expenses": "Chi phí",
     "netProfit": "Lợi nhuận",
     "outstandingTitle": "Số còn phải thanh toán",
-    "outstandingDescription": "Hóa đơn bán ra & mua vào của dự án này đang chờ thanh toán.",
     "documentsTitle": "Tài liệu",
-    "documentsDescription": "Hợp đồng và tài liệu tham khảo — lưu trữ riêng tư, chỉ xem được khi đã đăng nhập.",
-    "costBreakdown": "Cơ cấu chi phí theo khoản mục",
+    "documentsDescription": "Hợp đồng và tài liệu tham khảo.",
+    "costBreakdown": "Chi phí theo khoản mục",
     "uncategorized": "Chưa có khoản mục",
-    "noCosts": "Chưa có chi phí nào gắn với dự án này.",
+    "noCosts": "Chưa có chi phí.",
     "transactions": "Bút toán",
-    "noTransactions": "Chưa có bút toán nào gắn với dự án này.",
+    "noTransactions": "Chưa có bút toán.",
     "typeBadge": {
       "INCOME": "Thu",
       "EXPENSE": "Chi",
@@ -90,7 +87,7 @@
     }
   },
   "outstanding": {
-    "empty": "Không còn số phải thanh toán — mọi hóa đơn bán ra & mua vào của dự án này đều đã thanh toán đủ.",
+    "empty": "Không còn khoản nào phải thanh toán.",
     "youOwe": "Phải trả nhà cung cấp",
     "owedToYou": "Phải thu khách hàng",
     "overdue": "Quá hạn",
@@ -109,8 +106,13 @@
   "errors": {
     "couldNotCreate": "Không thể tạo dự án.",
     "nameRequired": "Tên dự án không được để trống.",
-    "hasLinked": "Đã có bút toán/hóa đơn gắn với dự án này. Hãy lưu trữ dự án thay vì xóa.",
-    "endBeforeStart": "Ngày kết thúc ({end}) đang trước ngày bắt đầu ({start}) — hãy chọn ngày kết thúc từ {start} trở đi, hoặc bỏ trống một trong hai ngày.",
-    "nameTaken": "Đã có dự án tên “{name}” — hãy dùng dự án đó, hoặc đặt cho dự án này một tên khác."
+    "hasLinked": "Không xóa được — dự án đã có bút toán hoặc hóa đơn. Hãy lưu trữ dự án.",
+    "endBeforeStart": "Ngày kết thúc ({end}) trước ngày bắt đầu ({start}). Hãy chọn ngày kết thúc từ {start} trở đi.",
+    "nameTaken": "Đã có dự án tên “{name}”. Hãy dùng dự án đó hoặc đặt tên khác."
+  },
+  "tips": {
+    "list": {
+      "description": "Lãi/lỗ = doanh thu − chi phí của các bút toán gắn với dự án, tính theo thực thu, thực chi."
+    }
   }
 }

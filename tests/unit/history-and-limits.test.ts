@@ -24,6 +24,6 @@ test("uploads: 10 MB of attachments per save", () => {
   const en = translator("en", "common");
   assert.equal(MAX_UPLOAD_MB, 10);
   assert.equal(uploadProblem([mb(4), mb(6)], en), null);
-  assert.match(uploadProblem([mb(6), mb(5)], en)!, /10 MB per save — these come to 11\.0 MB/);
+  assert.match(uploadProblem([mb(6), mb(5)], en)!, /These files are 11\.0 MB; the limit is 10 MB per save/);
   assert.equal(uploadProblem([], en), null);
 });

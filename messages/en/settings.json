@@ -13,11 +13,10 @@
   "saveChanges": "Save changes",
   "categories": {
     "title": "Categories",
-    "description": "Manage Invoice and Cost types",
-    "namePlaceholder": "e.g. Software License",
+    "namePlaceholder": "e.g. Software license",
     "typePlaceholder": "Select type",
-    "incomeTitle": "Income Categories",
-    "expenseTitle": "Expense Categories",
+    "incomeTitle": "Income categories",
+    "expenseTitle": "Expense categories",
     "noIncome": "No income categories.",
     "noExpense": "No expense categories.",
     "editTitle": "Edit category",
@@ -31,9 +30,9 @@
     }
   },
   "unitRates": {
-    "title": "Unit Rates",
-    "description": "Reference for billing rates (Hours, Projects, Mandays)",
-    "descriptionPlaceholder": "e.g. Senior Developer",
+    "title": "Unit rates",
+    "description": "Reference billing rates",
+    "descriptionPlaceholder": "e.g. Senior developer",
     "ratePlaceholder": "e.g. 50",
     "units": {
       "hours": "Hours",
@@ -56,22 +55,21 @@
     }
   },
   "exchangeRate": {
-    "title": "Global Settings",
-    "description": "Default system values",
-    "current": "Current Rate",
-    "newRate": "Set New Exchange Rate",
-    "hint": "This rate will automatically populate when logging USD transactions.",
-    "submit": "Update Rate",
+    "title": "Default exchange rate",
+    "current": "Current rate",
+    "newRate": "New rate",
+    "hint": "Filled in on new USD entries.",
+    "submit": "Update rate",
     "toast": {
       "updated": "Exchange rate updated"
     }
   },
   "users": {
     "title": "Users",
-    "description": "Invite-only. New users get a default password and onboard themselves (change password + 2FA).",
+    "description": "New users set their own password and 2FA at first sign-in.",
     "username": "Username",
     "usernamePlaceholder": "e.g. accountant1",
-    "defaultPassword": "Default password",
+    "defaultPassword": "Temporary password",
     "passwordPlaceholder": "share this with them",
     "role": "Role",
     "roles": {
@@ -89,19 +87,19 @@
     "resetPassword": {
       "button": "Reset password",
       "title": "Reset password for {username}",
-      "intro": "Sets a new default password. {username} will be forced to change it on next login.",
-      "newLabel": "New default password",
-      "submit": "Set default password"
+      "intro": "{username} must change this password at next sign-in.",
+      "newLabel": "New temporary password",
+      "submit": "Set password"
     },
     "reset2fa": {
       "button": "Reset 2FA",
-      "confirm": "Reset 2FA for {username}? They'll re-enrol on next login."
+      "confirm": "Reset 2FA for {username}? They'll set it up again at next sign-in."
     },
     "activate": "Activate",
     "deactivate": "Deactivate",
     "delete": {
       "button": "Delete user",
-      "confirm": "Delete {username}? This cannot be undone."
+      "confirm": "Delete {username}? This can't be undone."
     },
     "toast": {
       "created": "User created",
@@ -117,12 +115,12 @@
   },
   "errors": {
     "nameTypeRequired": "Name and type are required.",
-    "categoryTypeLocked": "This category is in use, so it can't switch between income and expense.",
-    "categoryInUse": "This category is in use — rename it instead, or move its entries first.",
+    "categoryTypeLocked": "In use — can't switch between income and expense.",
+    "categoryInUse": "Can't delete — it's in use. Rename it, or move its entries first.",
     "rateInvalid": "Enter a rate greater than 0.",
-    "allFieldsRequired": "All fields are required.",
+    "allFieldsRequired": "Fill in all fields.",
     "usernameTooShort": "Username must be at least 3 characters.",
-    "passwordTooShort": "Default password must be at least 8 characters.",
+    "passwordTooShort": "Temporary password must be at least 8 characters.",
     "usernameTaken": "That username is already taken.",
     "cantDeleteSelf": "You can't delete your own account.",
     "cantDeleteLastAdmin": "Can't delete the last active admin.",

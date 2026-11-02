@@ -130,7 +130,6 @@ export default async function DashboardPage() {
       <PageHeader
         section="dashboard"
         title={tr("page.title")}
-        description={tr("page.subtitle")}
         meta={(drafts > 0 || rejected > 0 || view.currency !== "VND") && (
           <>
             <ViewNote view={view} />

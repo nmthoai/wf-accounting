@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { navItem, type NavKey } from "@/components/layout/nav";
+import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
 
 // The opener of every screen: the section's number and group as a mono kicker, the
@@ -10,6 +11,7 @@ export function PageHeader({
   section,
   kicker,
   title,
+  info,
   description,
   meta,
   actions,
@@ -18,6 +20,8 @@ export function PageHeader({
   section?: NavKey;
   kicker?: string;
   title: ReactNode;
+  /** What the screen is for, behind an (i) beside the title. */
+  info?: ReactNode;
   description?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
@@ -36,7 +40,10 @@ export function PageHeader({
             <span>{group}</span>
           </p>
         )}
-        <h1 className="wf-page-header__title">{title}</h1>
+        <h1 className="wf-page-header__title">
+          {title}
+          {info && <InfoTip className="ml-2 -translate-y-1">{info}</InfoTip>}
+        </h1>
         {description && <p className="wf-page-header__lead">{description}</p>}
         {meta && <div className="wf-page-header__meta">{meta}</div>}
       </div>

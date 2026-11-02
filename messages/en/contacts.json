@@ -1,6 +1,6 @@
 {
   "page": {
-    "title": "Clients & Vendors",
+    "title": "Clients & vendors",
     "subtitle": "The parties you invoice and pay"
   },
   "form": {
@@ -10,7 +10,6 @@
   },
   "clients": {
     "title": "Clients",
-    "description": "Who you invoice and run projects for. Revenue is total income received from them.",
     "namePlaceholder": "e.g. Acme Co",
     "meta": "{projects, plural, one {# project} other {# projects}} · {invoices, plural, one {# invoice} other {# invoices}}",
     "revenueTitle": "Revenue received",
@@ -19,7 +18,6 @@
   },
   "vendors": {
     "title": "Vendors",
-    "description": "Who you pay (e.g. subcontractors, services). Spend is total expenses tagged to them.",
     "namePlaceholder": "e.g. ZDN",
     "meta": "{payments, plural, one {# payment} other {# payments}}",
     "confirmDelete": "Delete vendor {name}?",
@@ -42,8 +40,16 @@
     "clientNameRequired": "Client name is required.",
     "clientHasLinks": "Detach projects/invoices before deleting this client.",
     "vendorNameRequired": "Vendor name is required.",
-    "vendorHasLinks": "Detach transactions/bills before deleting this vendor.",
-    "clientNameTaken": "A client called “{name}” already exists — use that client, or give this one a different name.",
-    "vendorNameTaken": "A vendor called “{name}” already exists — use that vendor, or give this one a different name."
+    "vendorHasLinks": "Detach entries/bills before deleting this vendor.",
+    "clientNameTaken": "A client called “{name}” already exists. Use it, or pick another name.",
+    "vendorNameTaken": "A vendor called “{name}” already exists. Use it, or pick another name."
+  },
+  "tips": {
+    "clients": {
+      "description": "Each figure is the income received from that client."
+    },
+    "vendors": {
+      "description": "Each figure is the total paid to that vendor."
+    }
   }
 }

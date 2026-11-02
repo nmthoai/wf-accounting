@@ -1,14 +1,13 @@
 {
   "page": {
     "title": "Tax declarations",
-    "subtitle": "What your accountant declared each quarter, kept apart from the books and compared with them — for your own tracking.",
+    "subtitle": "What your accountant filed each quarter, checked against the books.",
     "ownerOnly": "Only the owner can see the tax declarations.",
-    "disclaimer": "Your own record of the declarations your accountant filed, typed from the filed PDFs. It is kept apart from your entries, invoices and their files, and is only compared with the books, quarter by quarter, to show gaps. It is not a declaration and not a statement of compliance — the flags are questions, not conclusions. Only you can see this page.",
     "addReturn": "Record a declaration"
   },
   "stats": {
     "severityCount": "{count} {severity}",
-    "knownDetail": "Set apart, each with your note",
+    "knownDetail": "With your notes",
     "returns": "Declarations recorded",
     "quarters": "{count, plural, one {# quarter} other {# quarters}} in the table",
     "difference": "Books − declared [34]",
@@ -16,22 +15,22 @@
   },
   "flags": {
     "title": "To look at",
-    "subtitle": "Gaps between the declarations and the books. When you've looked at one, mark it as known with your note — it stays here, set apart.",
+    "subtitle": "Gaps between the declarations and the books. Checked one? Mark it as known.",
     "none": "Nothing to look at.",
     "known": "Known",
     "markKnown": "Mark as known",
     "reopen": "Reopen",
-    "reopenConfirm": "Reopen this flag? Your note comes off it; the history keeps it.",
+    "reopenConfirm": "Reopen this flag and remove your note?",
     "editNote": "Edit note",
     "noteTitle": "Mark as known",
     "noteLabel": "Your note",
-    "notePlaceholder": "Why it stands — e.g. your decision and when to look again",
+    "notePlaceholder": "Why it stands, when to recheck",
     "saveNote": "Save",
     "by": "{user}, {date}",
     "toastNoted": "Marked as known",
     "toastReopened": "Flag reopened",
-    "changed": "The figure has moved since your note (it was {was}) — worth another look.",
-    "provisionalPart": "{amount} of the books' figure is at a provisional exchange rate, so the difference may still move.",
+    "changed": "Figure changed since your note (was {was}). Check again.",
+    "provisionalPart": "{amount} is at a provisional rate, so the gap may still change.",
     "recordIt": "Record it",
     "severity": {
       "high": "Important",
@@ -41,45 +40,45 @@
     "kinds": {
       "notDeclared": {
         "title": "{period}: the books show {amount} more sales than the VAT declaration",
-        "body": "Sales booked in {period} are above total sales declared in [34] — see Books vs declarations below. Part may be timing or exchange rates; whether the rest belongs on a declaration is a question for you and your accountant. (WF-TTT-03, WF-REC-04)"
+        "body": "Part may be timing or exchange rates. Ask your accountant if the rest should be declared."
       },
       "declaredMore": {
         "title": "{period}: the VAT declaration shows {amount} more sales than the books",
-        "body": "Usually exchange rates (the declaration uses the rate on each invoice date) or an invoice issued in a different quarter from the money. Worth a look if it keeps growing."
+        "body": "Usually exchange rates, or an invoice dated in a different quarter from the payment. Check if it keeps growing."
       },
       "missingReturn": {
         "title": "{period}: no {form} recorded here",
-        "body": "If one was filed, record it with its PDF so the quarter is complete. If none was needed, mark it as known with a note."
+        "body": "Filed? Record it with its PDF. Not needed? Mark it as known."
       },
       "creditChain": {
         "title": "{period}: [22] doesn't match the credit carried from last quarter",
-        "body": "[22] here is {actual}, but the previous quarter carried {expected} forward in [43]. A typing slip, a supplementary declaration not recorded here, or a difference adjusted through [37]/[38]?"
+        "body": "[22] is {actual}, but last quarter's [43] carried {expected}. A typo, an unrecorded supplement, or an adjustment in [37]/[38]?"
       },
       "math": {
         "title": "{form} {period}: line [{code}] doesn't add up",
-        "body": "The form's own arithmetic gives {expected}; the record says {actual}. Check the figure against the filed PDF."
+        "body": "The form's formula gives {expected}, not {actual}. Check against the filed PDF."
       },
       "bhxhNoStaff": {
         "title": "{period}: social insurance paid, but no employees on the PIT declaration",
-        "body": "Social insurance (BHXH) contributions paid from the bank this quarter: {amount}. The 05/KK-TNCN declaration shows 0 employees — who is insured, and is a salary paid? (WF-TTT-05)"
+        "body": "BHXH paid this quarter: {amount}, but 05/KK-TNCN shows 0 employees. Who is insured, and is a salary paid?"
       },
       "bhxhMonthMissing": {
         "title": "{month}: no BHXH contribution found",
-        "body": "Social insurance is paid every month, but no BHXH contribution for {month} is in the imported bank statements. If it was paid, import that month's statement; if not, ask your accountant — a late contribution can draw interest. (WF-TTT-05)"
+        "body": "No BHXH payment for {month} in the imported statements. Paid? Import that statement. Not paid? Ask your accountant — late payment can incur interest."
       },
       "filedLate": {
         "title": "{form} {period}: filed after the due date",
-        "body": "Filed {days, plural, one {# day} other {# days}} after the due date recorded here ({date}). Is a late-filing penalty expected? Your accountant will know."
+        "body": "Filed {days, plural, one {# day} other {# days}} late (due {date}). Ask your accountant about a late-filing penalty."
       },
       "notFiled": {
         "title": "{form} {period}: due {date}, not marked as filed",
-        "body": "The due date recorded here passed {days, plural, one {# day} other {# days}} ago and no filing date is recorded. If it was filed, add the date and the PDF; if not, ask your accountant."
+        "body": "Overdue by {days, plural, one {# day} other {# days}}. Filed? Add the date and PDF. Not filed? Ask your accountant."
       }
     }
   },
   "returns": {
     "title": "Declarations by quarter",
-    "subtitle": "Key lines of the latest filing for each quarter. Open a declaration to see every line and its files.",
+    "subtitle": "Key lines of the latest filing per quarter. Open one for all lines and files.",
     "quarter": "Quarter",
     "sales": "Sales",
     "purchases": "Purchases",
@@ -100,15 +99,14 @@
   },
   "compare": {
     "title": "Books vs declarations",
-    "subtitle": "Sales booked in each quarter (income reviewed or posted, in VND) against total sales declared in [34]. Bank interest is financial income, not a sale: it is left out of the books figure and shown apart. Totals only — no entry is linked to a declaration.",
+    "subtitle": "Sales in the books each quarter vs sales declared in [34].",
     "books": "Sales in the books",
     "declared": "Declared [34]",
     "difference": "Difference",
     "outside": "of which outside the bank",
     "provisional": "at a provisional rate",
     "interest": "bank interest, not in sales",
-    "none": "Record a VAT declaration to compare it with the books.",
-    "note": "Differences are shown, never offset. The books are cash-basis at each entry's rate; the declaration follows invoice dates and the invoice-date exchange rate."
+    "none": "Record a VAT declaration to compare it with the books."
   },
   "forms": {
     "gtgt": "01/GTGT — VAT declaration",
@@ -125,22 +123,22 @@
     "supplementHint": "0 for the original filing",
     "filedDate": "Date filed",
     "dueDate": "Due date",
-    "dueHint": "As your accountant gives it",
+    "dueHint": "From your accountant",
     "template": "Form version",
     "submissionRef": "Submission code",
     "submissionRefPlaceholder": "e.g. L00…",
     "preparedBy": "Prepared by",
-    "figures": "Figures as printed on the declaration",
-    "figuresHint": "Whole đồng (or people), no decimals. Leave blank for 0. Only [36] can be negative — type it in brackets or with a minus.",
+    "figures": "Figures as filed",
+    "figuresHint": "Whole numbers; leave blank for 0. Only [36] can be negative (brackets or minus).",
     "valueColumn": "Value of goods and services (before VAT)",
     "vatColumn": "VAT",
     "notes": "Notes",
-    "files": "Files: the filed PDF, the XML, your accountant's lists",
-    "filesHint": "PDF, XML, Excel, ZIP or images. Kept with the declaration only; only you can open them.",
+    "files": "Files (filed PDF, XML, schedules)",
+    "filesHint": "PDF, XML, Excel, ZIP or images. Only you can open them.",
     "delete": "Delete",
-    "deleteConfirm": "Delete the {form} declaration for {period}? Its files are deleted too; the history keeps a note.",
+    "deleteConfirm": "Delete the {form} declaration for {period} and its files? This can't be undone.",
     "removeFile": "Delete {name}",
-    "removeFileConfirm": "Delete {name}? The file is deleted for good; the history keeps a note.",
+    "removeFileConfirm": "Delete {name}? This can't be undone.",
     "submitAdd": "Save declaration"
   },
   "lines": {
@@ -204,11 +202,20 @@
     "form": "Choose the form.",
     "period": "Enter the year and quarter.",
     "template": "Unknown form version.",
-    "supplement": "The supplement number is 0 (original) to 20.",
+    "supplement": "Supplement no. must be 0–20.",
     "figure": "Line [{code}]: whole numbers only (only [36] can be negative).",
     "duplicate": "A {form} declaration for {period} with that supplement number is already recorded.",
     "gone": "That record no longer exists — reload the page.",
     "noteRequired": "Write a short note.",
     "fileType": "{name}: only PDF, XML, Excel, ZIP or image files."
+  },
+  "tips": {
+    "page": {
+      "disclaimer": "Your record of what was filed, typed from the PDFs. Flags are questions for your accountant, not conclusions."
+    },
+    "compare": {
+      "subtitle": "Books count income that is reviewed or posted, in VND. Bank interest is financial income (TK 515), not sales, so it has its own column.",
+      "note": "Books follow payment dates and each entry's rate; declarations follow invoice dates and rates. Differences are shown, never offset."
+    }
   }
 }

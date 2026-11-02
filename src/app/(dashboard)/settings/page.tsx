@@ -85,10 +85,9 @@ export default async function SettingsPage() {
           <div className="grid content-start gap-6 lg:col-span-6">
             <Card>
               <PanelHead title={t("categories.title")} />
-              <CardContent className="grid gap-4 border-b border-border">
-                <p className="text-[14.5px] text-muted-foreground">{t("categories.description")}</p>
-                {/* Changing settings is admin-only (the actions refuse staff). */}
-                {isAdmin && <ActionForm action={createCategory} success={t("categories.toast.added")} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
+              {/* Changing settings is admin-only (the actions refuse staff). */}
+              {isAdmin && <CardContent className="grid gap-4 border-b border-border">
+                <ActionForm action={createCategory} success={t("categories.toast.added")} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
                   <div className="grid gap-2">
                     <Label htmlFor="name">{t("fields.name")}</Label>
                     <Input id="name" name="name" placeholder={t("categories.namePlaceholder")} required />
@@ -106,8 +105,8 @@ export default async function SettingsPage() {
                     </Select>
                   </div>
                   <Button type="submit">{tc("actions.add")}</Button>
-                </ActionForm>}
-              </CardContent>
+                </ActionForm>
+              </CardContent>}
               {categoryGroup(t("categories.incomeTitle"), "pos", incomeCategories, t("categories.noIncome"))}
               {categoryGroup(t("categories.expenseTitle"), "neg", expenseCategories, t("categories.noExpense"))}
             </Card>
@@ -163,7 +162,6 @@ export default async function SettingsPage() {
 
           <Card className="self-start lg:col-span-6">
             <PanelHead title={t("exchangeRate.title")} />
-            <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("exchangeRate.description")}</p>
             <div className={cn("flex flex-wrap items-end justify-between gap-4 bg-muted/40 px-5 py-4", isAdmin && "border-b border-border")}>
               <div className="grid gap-2">
                 <p className="wf-label">{t("exchangeRate.current")}</p>

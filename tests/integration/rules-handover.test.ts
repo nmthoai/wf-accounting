@@ -40,7 +40,7 @@ test("the download refuses a month that hasn't started, saying which months can 
     assert.equal(res.status, 400, month);
     assert.notEqual(res.headers.get("Content-Type"), "application/zip");
     const text = await res.text();
-    assert.equal(text, `${F.fmtMonth(month, "en")} hasn't started yet, so there's nothing to hand over. Download ${F.fmtMonth(shift(0), "en")} (the current month, still in progress) or an earlier month.`);
+    assert.equal(text, `${F.fmtMonth(month, "en")} hasn't started. Download ${F.fmtMonth(shift(0), "en")} or an earlier month.`);
   }
   assert.equal((await download("2026-13")).status, 400, "not a month at all");
   // The current and earlier months still download.
@@ -70,7 +70,7 @@ test("an entry with several open issues is listed once, with all of them, on the
   assert.equal(row.length, 1, "one row in the workbook too");
   assert.equal(row[0].Area, "Not posted, Tax review, Note");
   assert.equal(row[0]["Question / detail"],
-    "Not posted: Reviewed but not yet posted, so not locked yet — posting locks it. · Tax review: CIT: Pending review; input VAT: Pending review. · Note: Is this a gift or a client cost?");
+    "Not posted: Reviewed, not locked — posting locks it. · Tax review: CIT: Pending review; input VAT: Pending review. · Note: Is this a gift or a client cost?");
 });
 
 test("separate items stay separate: a single-issue entry reads as before, and no-statement rows don't merge", async () => {
@@ -84,8 +84,8 @@ test("separate items stay separate: a single-issue entry reads as before, and no
   const d = await H.collect("2026-09");
   const open = H.openQuestions(d);
   const one = open.find((q) => q.ref === draft.id)!;
-  assert.deepEqual(H.questionCells(one), { area: "Not reviewed", detail: "Draft — excluded from this package's figures until the owner reviews it." });
-  const noStatement = open.filter((q) => q.issues.some((i) => i.detail === "No bank statement imported for this month."));
+  assert.deepEqual(H.questionCells(one), { area: "Not reviewed", detail: "Draft — not counted until the owner reviews it." });
+  const noStatement = open.filter((q) => q.issues.some((i) => i.detail === "Statement not imported."));
   assert.deepEqual(noStatement.map((q) => q.item).sort(), ["MB USD", "MB VND"], "one row per account without a statement");
 });
 
@@ -99,7 +99,7 @@ test("a reviewed entry isn't called locked; only posted ones are", async () => {
     const q = H.questions(d, locale).find((x) => x.ref === t.id)!;
     assert.ok(!/\(locked\)|\(đã khóa\)/i.test(q.detail), q.detail);
   }
-  assert.equal(H.questions(d).find((x) => x.ref === t.id)?.detail, "Reviewed but not yet posted, so not locked yet — posting locks it.");
+  assert.equal(H.questions(d).find((x) => x.ref === t.id)?.detail, "Reviewed, not locked — posting locks it.");
 });
 
 // Open questions are grouped by what they are about, not by the displayed

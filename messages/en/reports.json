@@ -2,10 +2,10 @@
   "uncategorized": "Uncategorized",
   "noProject": "(No project)",
   "page": {
-    "title": "Profit & Loss",
-    "subtitle": "{month} · cash-basis (paid income & expenses) · reviewed and posted entries",
-    "draftsNotIncluded": "{count, plural, one {# draft entry} other {# draft entries}} in this period not included — waiting for review →",
-    "rejectedNotIncluded": "{count, plural, one {# rejected entry} other {# rejected entries}} in this period not included — waiting for correction →"
+    "title": "Profit & loss",
+    "subtitle": "{month} · cash basis",
+    "draftsNotIncluded": "{count, plural, one {# draft entry} other {# draft entries}} to review — not counted yet →",
+    "rejectedNotIncluded": "{count, plural, one {# rejected entry} other {# rejected entries}} to fix — not counted yet →"
   },
   "lines": {
     "empty": "No entries in this period.",
@@ -14,10 +14,10 @@
   "cards": {
     "income": "Income",
     "expenses": "Expenses",
-    "netProfit": "Net Profit",
-    "perMonth": "{amount} per month on average",
+    "netProfit": "Net profit",
+    "perMonth": "Avg {amount}/month",
     "vsPrevious": "{arrow} {amount} vs {count, plural, =1 {the previous month} other {the previous # months}}",
-    "noEarlier": "No earlier months in the books to compare with"
+    "noEarlier": "No earlier months to compare"
   },
   "byProject": {
     "title": "Profit by project",
@@ -29,14 +29,13 @@
   },
   "tax": {
     "title": "Tax review",
-    "intro": "Kept apart from the P&L: recording an expense doesn't make it deductible or its VAT claimable. These are the decisions recorded so far.",
-    "citTitle": "CIT deductibility of this period's expenses",
+    "citTitle": "CIT deductibility",
     "inputVat": "Input VAT",
     "claimable": "Claimable (invoice on file)",
-    "vatPending": "Expenses with VAT not yet reviewed",
-    "docsTitle": "Documents still to find",
+    "vatPending": "VAT not yet reviewed",
+    "docsTitle": "Documents to find",
     "entryCount": "{count, plural, one {# entry} other {# entries}}",
-    "allDocs": "Every entry in this period has its invoice or receipt.",
+    "allDocs": "Every entry has its invoice or receipt.",
     "openLedger": "Open in the ledger →"
   },
   "monthPicker": {
@@ -46,16 +45,15 @@
   },
   "downloads": {
     "title": "Excel downloads",
-    "description": "Export raw data for a date range. Ledger uses the transaction date; invoices use the issue date.",
     "from": "From",
     "to": "To",
-    "invalidRange": "Pick a valid range (From must be on or before To).",
+    "invalidRange": "Pick both dates, with From on or before To.",
     "entries": "Ledger entries (.xlsx)",
     "invoices": "Invoices & bills (.xlsx)"
   },
   "export": {
     "entries": {
-      "sheet": "Ledger Entries",
+      "sheet": "Ledger entries",
       "columns": {
         "date": "Date",
         "status": "Status",
@@ -82,15 +80,15 @@
         "entryId": "Entry ID"
       },
       "reversal": "{status} (reversal)",
-      "totalIncome": "TOTAL Income",
-      "totalExpense": "TOTAL Expense",
+      "totalIncome": "Total income",
+      "totalExpense": "Total expense",
       "net": "NET"
     },
     "invoices": {
-      "sheet": "Invoices & Bills",
+      "sheet": "Invoices & bills",
       "columns": {
-        "issueDate": "Issue Date",
-        "dueDate": "Due Date",
+        "issueDate": "Issue date",
+        "dueDate": "Due date",
         "direction": "Direction",
         "number": "Number",
         "party": "Party",
@@ -102,7 +100,7 @@
         "fees": "Evidenced fees",
         "difference": "Unmatched difference",
         "status": "Status",
-        "paidDate": "Paid Date",
+        "paidDate": "Paid date",
         "notes": "Notes"
       },
       "receivable": "Receivable (AR)",
@@ -125,7 +123,7 @@
   },
   "trend": {
     "title": "Monthly trend",
-    "subtitle": "Revenue and costs per month in {currency}, with the profit line. Hover or tab to a month for its figures.",
+    "subtitle": "Amounts in {currency}.",
     "revenue": "Revenue",
     "cost": "Costs",
     "net": "Profit (loss)",
@@ -134,8 +132,8 @@
   },
   "detail": {
     "title": "Month by month",
-    "subtitle": "Every revenue and cost category per month in {currency}. Open a category to see its entries; click an entry to open it.",
-    "provisionalNote": "{count, plural, one {# foreign-currency entry is} other {# foreign-currency entries are}} valued at a default or manual rate, not the VND actually settled — marked “provisional” below until revalued.",
+    "subtitle": "Amounts in {currency}.",
+    "provisionalNote": "{count, plural, one {# foreign-currency entry is} other {# foreign-currency entries are}} provisional until revalued.",
     "revenue": "Revenue",
     "cost": "Costs",
     "net": "Profit (loss)",
@@ -148,6 +146,20 @@
     "none": "None in this period",
     "noDescription": "(no description)",
     "provisional": "provisional",
-    "provisionalTitle": "Valued at a default or manual exchange rate — revalue it with the VND actually settled"
+    "provisionalTitle": "Default or manual rate — revalue with the VND actually settled"
+  },
+  "tips": {
+    "page": {
+      "subtitle": "Counts money actually received and paid, from reviewed and posted entries only."
+    },
+    "tax": {
+      "intro": "Recording an expense doesn't make it deductible or its VAT claimable. This shows the review so far."
+    },
+    "downloads": {
+      "description": "Ledger uses the entry date; invoices use the issue date."
+    },
+    "detail": {
+      "provisionalNote": "Valued at a default or manual rate, not the VND actually settled. Revalue them to get the real figures."
+    }
   }
 }

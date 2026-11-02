@@ -1,20 +1,19 @@
 {
   "page": {
     "title": "Dashboard",
-    "subtitle": "Financial overview for WorkFactory",
-    "draftsWaiting": "{count, plural, one {{count} entry} other {{count} entries}} waiting for review — not counted below yet →",
-    "newEntry": "New Entry",
-    "rejectedWaiting": "{count, plural, one {# entry} other {# entries}} rejected — waiting for correction →"
+    "draftsWaiting": "{count, plural, one {{count} entry} other {{count} entries}} to review — not counted yet →",
+    "newEntry": "New entry",
+    "rejectedWaiting": "{count, plural, one {# rejected entry} other {# rejected entries}} to fix — not counted yet →"
   },
   "cards": {
-    "cashTitle": "Cash & Bank",
-    "cashSubtitle": "Bank + cash across {count} accounts",
+    "cashTitle": "Cash & bank",
+    "cashSubtitle": "{count, plural, one {# account} other {# accounts}}",
     "cashNoAccounts": "Add your accounts on the Accounts page",
-    "netSurplusTitle": "Net Surplus",
-    "netSurplusSubtitle": "Income − Expenses (all time)",
-    "totalIncomeTitle": "Total Income",
-    "totalExpensesTitle": "Total Expenses",
-    "entries": "{count} entries"
+    "netSurplusTitle": "Net surplus",
+    "netSurplusSubtitle": "Income − expenses (all time)",
+    "totalIncomeTitle": "Total income",
+    "totalExpensesTitle": "Total expenses",
+    "entries": "{count, plural, one {# entry} other {# entries}}"
   },
   "accounts": {
     "title": "Accounts",
@@ -22,13 +21,13 @@
     "empty": "No accounts yet.",
     "companyOwesOwner": "Company owes the owner {amount}",
     "ownerHolds": "Owner holds {amount} of company money",
-    "needClassifying": "{count, plural, one {{count} movement} other {{count} movements}} need classifying →"
+    "needClassifying": "{count, plural, one {{count} movement needs} other {{count} movements need}} classifying →"
   },
   "coming": {
-    "title": "Coming Payments",
+    "title": "Coming payments",
     "viewAll": "View all",
-    "goingOut": "Going out — you pay",
-    "comingIn": "Coming in — you receive",
+    "goingOut": "To pay",
+    "comingIn": "To receive",
     "vendor": "Vendor",
     "client": "Client",
     "partPaid": "part paid",
@@ -39,21 +38,21 @@
     "viewTotal": "≈ {amount} in total"
   },
   "topProjects": {
-    "title": "Top Projects by Profit",
+    "title": "Top projects by profit",
     "projects": "Projects",
-    "empty": "Tag transactions to a project to see profit here."
+    "empty": "Tag entries to a project to see its profit."
   },
   "recent": {
-    "title": "Recent Entries",
-    "viewAll": "View All",
+    "title": "Recent entries",
+    "viewAll": "View all",
     "uncategorized": "Uncategorized",
     "draft": "draft",
-    "empty": "No transactions yet."
+    "empty": "No entries yet."
   },
   "quickActions": {
-    "title": "Quick Actions",
-    "logIncome": "Log Income",
-    "logExpense": "Log Expense",
+    "title": "Quick actions",
+    "logIncome": "Log income",
+    "logExpense": "Log expense",
     "transfers": "Transfers, capital & loans",
     "gini": "Gini",
     "giniSub": "Assistant",

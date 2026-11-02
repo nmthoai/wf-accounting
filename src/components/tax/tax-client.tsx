@@ -18,7 +18,8 @@ import { FORMS, LINES, VAT_ROWS, TEMPLATES, formKey, lineKey, periodLabel, type 
 import { saveTaxReturn, deleteTaxReturn, deleteTaxReturnFile, setTaxFlagNote, clearTaxFlagNote } from "@/app/actions/tax";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/wf/page-header";
-import { Chip, Notice, PanelHead, Stat, StatStrip, type Tone } from "@/components/wf/ledger-ui";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Chip, PanelHead, Stat, StatStrip, type Tone } from "@/components/wf/ledger-ui";
 
 export type FlagView = Flag & { note: { text: string; user: string | null; at: string } | null; changedFrom: number | null };
 export type ReturnView = {
@@ -349,6 +350,7 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
       <PageHeader
         section="tax"
         title={t("page.title")}
+        info={t("tips.page.disclaimer")}
         description={t("page.subtitle")}
         actions={<ReturnDialog defaultPeriod={defaultPeriod} locale={locale} trigger={<Button><Plus aria-hidden="true" />{t("page.addReturn")}</Button>} />}
       />
@@ -378,8 +380,6 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
           {gap ? vnd(latest.difference) : "–"}
         </Stat>
       </StatStrip>
-
-      <Notice tone="info" className="mt-6">{t("page.disclaimer")}</Notice>
 
       <div className="mt-6 grid gap-6">
         <Card>
@@ -476,14 +476,14 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
 
         <Card>
           <PanelHead title={t("compare.title")} />
-          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("compare.subtitle")}</p>
+          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("compare.subtitle")} <InfoTip>{t("tips.compare.subtitle")}</InfoTip></p>
           <Table>
             <TableHeader>
               <TableRow className="[&>th]:h-auto [&>th]:py-2 [&>th]:align-bottom [&>th]:whitespace-normal">
                 <TableHead>{t("returns.quarter")}</TableHead>
                 <TableHead className="text-right">{t("compare.books")}</TableHead>
                 <TableHead className="text-right">{t("compare.declared")}</TableHead>
-                <TableHead className="text-right">{t("compare.difference")}</TableHead>
+                <TableHead className="text-right">{t("compare.difference")} <InfoTip>{t("tips.compare.note")}</InfoTip></TableHead>
                 <TableHead className="border-l border-border text-right">{t("compare.outside")}</TableHead>
                 <TableHead className="text-right">{t("compare.provisional")}</TableHead>
                 <TableHead className="border-l border-border text-right">{t("compare.interest")}</TableHead>
@@ -504,7 +504,6 @@ export function TaxClient({ flags, returns, periods, comparison, defaultPeriod, 
               {comparison.length === 0 && <TableRow><TableCell colSpan={7} className="py-6 text-center text-muted-foreground">{t("compare.none")}</TableCell></TableRow>}
             </TableBody>
           </Table>
-          <p className="border-t border-border px-5 py-3 text-[13.5px] text-muted-foreground">{t("compare.note")}</p>
         </Card>
       </div>
     </div>

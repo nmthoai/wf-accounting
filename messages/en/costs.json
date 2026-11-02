@@ -1,12 +1,12 @@
 {
   "page": {
     "title": "Cost register",
-    "subtitle": "Cloud services and costs the owner paid — pending until reviewed, then into the ledger once"
+    "subtitle": "Cloud services and costs the owner paid"
   },
   "payer": {
     "COMPANY": "Company",
     "OWNER": "Owner, personally",
-    "UNKNOWN": "Not established"
+    "UNKNOWN": "Unknown"
   },
   "reimbursement": {
     "UNRESOLVED": "Unresolved",
@@ -21,11 +21,10 @@
   },
   "summary": {
     "pendingTitle": "Pending review",
-    "pendingNote": "{count} receipts — evidence, not yet expenses",
+    "pendingNote": "{count, plural, one {# receipt} other {# receipts}}",
     "owedTitle": "Owed to the owner",
-    "owedNote": "Owner-paid costs not yet reimbursed",
-    "renewalsTitle": "Renewals in the next 30 days",
-    "renewalsNote": "From the renewal dates recorded"
+    "owedNote": "Not yet paid back",
+    "renewalsTitle": "Renewals in the next 30 days"
   },
   "views": {
     "label": "View",
@@ -40,11 +39,10 @@
     "number": "#{number}",
     "billedTo": "billed to {name}",
     "paidBy": "Paid by {payer}",
-    "payerUnknown": "Payer not established",
+    "payerUnknown": "Payer unknown",
     "renews": "renews {date}",
-    "toLedgerTitle": "Review and add to the ledger (once)",
-    "toLedger": "To ledger",
-    "expense": "Expense",
+    "toLedger": "Add to ledger",
+    "expense": "Open expense",
     "dismissTitle": "Not a company cost",
     "dismissPrompt": "Why is this not a company cost?",
     "reopenTitle": "Back to pending",
@@ -62,8 +60,8 @@
     "couldNotLink": "Could not link."
   },
   "form": {
-    "addTitle": "Add a receipt to the register",
-    "locked": "In the ledger — the receipt's details stay as recorded; the review fields can still change.",
+    "addTitle": "Add receipt",
+    "locked": "In the ledger — only the review fields can change.",
     "provider": "Provider",
     "providerPlaceholder": "e.g. Google Workspace, OpenAI, Contabo",
     "receiptDate": "Receipt date",
@@ -89,7 +87,7 @@
   "duplicates": {
     "intro": "Already in the ledger? These expenses look like the same payment:",
     "link": "Link this one",
-    "otherwise": "Otherwise, fill in the form below to add it as a new expense."
+    "otherwise": "Otherwise, add it below as a new expense."
   },
   "errors": {
     "providerRequired": "Who is the provider?",
@@ -99,14 +97,22 @@
     "periodReversed": "The service period ends before it starts.",
     "duplicate": "Already in the register: {provider} {ref}.",
     "reasonRequired": "Give the reason.",
-    "onlyPendingDismiss": "Only pending items can be dismissed.",
+    "onlyPendingDismiss": "This receipt is no longer pending.",
     "ledgerItemsNoDelete": "Items in the ledger can't be deleted.",
-    "onlyPendingLink": "Only pending items can be linked.",
+    "onlyPendingLink": "This receipt is no longer pending.",
     "chooseExpense": "Choose an expense.",
     "expenseReversed": "That expense has been reversed — link its correction.",
-    "expenseTaken": "That expense already comes from another register item.",
-    "itemTaken": "That register item is already in the ledger or dismissed.",
-    "itemGone": "That register item no longer exists.",
-    "expenseRejected": "That expense was rejected — link the receipt once it is corrected and resubmitted."
+    "expenseTaken": "That expense is already linked to another receipt.",
+    "itemTaken": "This receipt is already in the ledger or marked not a company cost.",
+    "itemGone": "This receipt no longer exists.",
+    "expenseRejected": "That expense was rejected — fix and resubmit it, then link."
+  },
+  "tips": {
+    "page": {
+      "subtitle": "Each receipt waits here until reviewed, then goes into the ledger once."
+    },
+    "summary": {
+      "pendingNote": "Evidence only. They become expenses once added to the ledger."
+    }
   }
 }

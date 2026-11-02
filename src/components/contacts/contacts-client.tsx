@@ -78,11 +78,10 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
   return (
     <div className="grid gap-6 lg:grid-cols-12">
       <Card className="lg:col-span-6">
-        <PanelHead title={t("clients.title")} count={clients.length} />
+        <PanelHead title={t("clients.title")} count={clients.length} info={t("tips.clients.description")} />
         <CardContent>
-          <p className="text-text-secondary">{t("clients.description")}</p>
           {/* The name has its own row, so email and phone get room to be read. */}
-          <form onSubmit={(e) => handleAdd(e, "client")} className="mt-4 flex flex-wrap items-end gap-3">
+          <form onSubmit={(e) => handleAdd(e, "client")} className="flex flex-wrap items-end gap-3">
             <div className="grid basis-full gap-2">
               <Label htmlFor="cname">{t("form.name")}</Label>
               <Input id="cname" name="name" placeholder={t("clients.namePlaceholder")} required />
@@ -125,10 +124,9 @@ export function ContactsClient({ clients, vendors, isAdmin }: {
       </Card>
 
       <Card className="lg:col-span-6">
-        <PanelHead title={t("vendors.title")} count={vendors.length} />
+        <PanelHead title={t("vendors.title")} count={vendors.length} info={t("tips.vendors.description")} />
         <CardContent>
-          <p className="text-text-secondary">{t("vendors.description")}</p>
-          <form onSubmit={(e) => handleAdd(e, "vendor")} className="mt-4 flex flex-wrap items-end gap-3">
+          <form onSubmit={(e) => handleAdd(e, "vendor")} className="flex flex-wrap items-end gap-3">
             <div className="grid basis-full gap-2">
               <Label htmlFor="vname">{t("form.name")}</Label>
               <Input id="vname" name="name" placeholder={t("vendors.namePlaceholder")} required />

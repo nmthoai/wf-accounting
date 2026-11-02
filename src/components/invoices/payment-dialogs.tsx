@@ -14,6 +14,7 @@ import { AccountSelect, type AccountOpt } from "@/components/accounts/account-se
 import { fmtMoney , vnToday } from "@/lib/money";
 import { notify, notifyFailure } from "@/components/ui/toast";
 import { uploadProblem } from "@/lib/upload-limit";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type Inv = { id: string; number: string | null; direction: string; currency: string; difference: number };
 export type Candidate = {
@@ -107,9 +108,10 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
           <DialogTitle>{t("payment.title", { label: label(invoice, t) })}</DialogTitle>
           <DialogDescription>
             {t.rich("payment.intro", {
-              direction: invoice.direction, label: label(invoice, t), amount: fmtMoney(invoice.difference, invoice.currency),
+              amount: fmtMoney(invoice.difference, invoice.currency),
               b: (c) => <span className="wf-num font-semibold text-foreground">{c}</span>,
-            })}
+            })}{" "}
+            <InfoTip>{t("tips.payment.intro")}</InfoTip>
           </DialogDescription>
         </DialogHeader>
         <form className="grid gap-4" onChange={clearErr} onSubmit={(e) => {
@@ -162,7 +164,7 @@ export function RecordPaymentDialog({ invoice, accounts, defaultUsdRate, feeCate
               </div>
             </dl>
           )}
-          <p className="text-[13.5px] text-muted-foreground">{receipt ? t("payment.feeNote") : t("payment.shortfallNote")}</p>
+          <p className="text-[13.5px] text-muted-foreground">{receipt ? <>{t("payment.feeNote")} <InfoTip>{t("tips.payment.feeNote")}</InfoTip></> : t("payment.shortfallNote")}</p>
           {foreign && (
             <div className="grid gap-2 border-t border-border pt-4">
               <Label htmlFor={mode === "DEFAULT" ? undefined : `pv-${invoice.id}`}>{t("payment.vndValue")}</Label>
@@ -224,7 +226,7 @@ export function LinkEntryDialog({ invoice, candidates }: { invoice: Inv; candida
             <p className="text-[13.5px] text-muted-foreground">
               {kind === "PAYMENT"
                 ? t("link.paymentHelp")
-                : t("link.feeHelp")}
+                : <>{t("link.feeHelp")} <InfoTip>{t("tips.link.feeHelp")}</InfoTip></>}
             </p>
           </div>
           <div className="grid gap-2">

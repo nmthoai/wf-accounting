@@ -1,18 +1,18 @@
 {
   "page": {
     "title": "Accountant handover",
-    "subtitle": "{month} · ledger, invoices, bank reconciliation, missing documents and open questions — with the evidence",
+    "subtitle": "{month} package for the accountant",
     "checks": {
-      "noDrafts": "No drafts waiting for review",
-      "drafts": "{count, plural, one {# draft entry not reviewed — excluded from the figures} other {# draft entries not reviewed — excluded from the figures}}",
+      "noDrafts": "No drafts to review",
+      "drafts": "{count, plural, one {# draft to review — not counted yet} other {# drafts to review — not counted yet}}",
       "allPosted": "Every reviewed entry is posted",
-      "notPosted": "{count, plural, one {# reviewed entry is not posted yet — post the month from the ledger} other {# reviewed entries are not posted yet — post the month from the ledger}}",
-      "bankNoStatement": "{name}: no bank statement imported for this month",
+      "notPosted": "{count, plural, one {# reviewed entry to post} other {# reviewed entries to post}}",
+      "bankNoStatement": "{name}: statement not imported",
       "bankAgrees": "{name}: statement and app agree ({closing})",
       "bankDiffers": "{name}: statement {closing} vs app {app} · {open} lines to reconcile",
       "allDocs": "Every entry has its document",
       "missingDocs": "{count, plural, one {# entry still missing documents} other {# entries still missing documents}}",
-      "rejected": "{count, plural, one {# rejected entry} other {# rejected entries}} waiting for correction — excluded from the figures"
+      "rejected": "{count, plural, one {# rejected entry} other {# rejected entries}} to fix — not counted yet"
     },
     "cards": {
       "entries": "Entries",
@@ -23,20 +23,19 @@
       "areaCount": "{count} {area}",
       "nothingOpen": "Nothing open",
       "evidence": "Evidence files",
-      "evidenceDetail": "Included in the package, linked from each entry"
+      "evidenceDetail": "Linked from each entry"
     },
     "send": {
       "title": "Before you send it",
-      "description": "The package can go at any time; these show what the accountant will see as open.",
       "download": "Download {month} package (.zip)"
     },
     "open": {
-      "title": "Open questions in the package",
-      "description": "Also listed in the workbook's “{sheet}” sheet.",
+      "title": "Open questions",
+      "description": "Also in the “{sheet}” sheet.",
       "more": "…and {count} more in the package.",
       "none": "Nothing open for this month."
     },
-    "futureMonth": "{month} hasn't started yet, so there's nothing to hand over. Showing {current} instead — the current month, still in progress, so its package may not be complete yet."
+    "futureMonth": "{month} hasn't started. Showing {current}, still in progress."
   },
   "questions": {
     "area": {
@@ -49,18 +48,18 @@
       "invoice": "Invoice",
       "costRegister": "Cost register"
     },
-    "draft": "Draft — excluded from this package's figures until the owner reviews it.",
-    "notPosted": "Reviewed but not yet posted, so not locked yet — posting locks it.",
+    "draft": "Draft — not counted until the owner reviews it.",
+    "notPosted": "Reviewed, not locked — posting locks it.",
     "tax": "CIT: {cit}; input VAT: {vat}.",
-    "unmatchedBank": "On a bank account but not matched to any bank statement line yet.",
+    "unmatchedBank": "Not matched to a statement line yet.",
     "reverses": "Reverses a posted entry: {note}",
     "bankLine": "{status}: {party}",
-    "noStatement": "No bank statement imported for this month.",
+    "noStatement": "Statement not imported.",
     "invoiceItem": "{kind} {number}",
     "invoiceItemNoNumber": "{kind} without a number · {party} · issued {date}",
-    "noInvoiceYet": "No invoice yet — {direction, select, PAYABLE {the vendor's invoice hasn't arrived} other {the invoice hasn't been issued}}.",
+    "noInvoiceYet": "{direction, select, PAYABLE {Vendor's invoice not received yet} other {Invoice not issued yet}}.",
     "costPending": "Receipt pending review — not in the ledger yet.",
-    "rejected": "Rejected and sent back for correction — excluded from this package's figures until it is corrected and reviewed.",
+    "rejected": "Rejected — not counted until corrected and reviewed.",
     "invoiceStillOpen": "Gross {gross}, received {received}, evidenced fees {fees} — {direction, select, PAYABLE {still to pay} other {still to receive}} {difference}.",
     "invoiceOverpaid": "Gross {gross}, received {received}, evidenced fees {fees} — overpaid by {difference}."
   },
@@ -85,7 +84,7 @@
     "generatedAt": "{when} UTC",
     "generatedBy": "{when} UTC by {user}",
     "entries": "Entries in the month",
-    "drafts": "— drafts (not reviewed; excluded from figures)",
+    "drafts": "— drafts (not counted)",
     "reviewed": "— reviewed, not yet posted",
     "posted": "— posted (locked)",
     "income": "Income (VND, reviewed and posted)",
@@ -97,10 +96,10 @@
     "bank": "Bank {name} ({currency})",
     "bankAgrees": "statement closing {closing} · app {app} · agrees · {open} lines to reconcile",
     "bankDiffers": "statement closing {closing} · app {app} · DIFFERS · {open} lines to reconcile",
-    "bankNoStatement": "no statement imported for this month",
+    "bankNoStatement": "no statement imported",
     "notes": "Notes",
-    "notesText": "Amounts are in the original currency; VND values use each entry's own rate (bank-settled where known). Currencies are never added together. Recording an expense doesn't make it deductible or its VAT claimable — see the CIT / Input VAT columns. Evidence paths in the Ledger sheet point into the evidence folder of this ZIP.",
-    "rejected": "— rejected (sent back for correction; excluded from figures)"
+    "notesText": "Amounts are in the original currency; VND uses each entry's own rate (the bank's actual VND where known). Currencies are never added together. A recorded expense isn't automatically deductible or VAT-claimable — see the CIT and Input VAT columns. Evidence paths point into this ZIP's evidence folder.",
+    "rejected": "— rejected (not counted)"
   },
   "ledger": {
     "reversal": "{status} (reversal)",
@@ -113,7 +112,7 @@
     "receivable": "Invoice (AR)"
   },
   "bank": {
-    "noStatement": "No statement imported for this month",
+    "noStatement": "No statement imported",
     "opening": "Statement opening",
     "closing": "Statement closing",
     "app": "App balance at month end",
@@ -172,6 +171,14 @@
     "reason": "Reason"
   },
   "errors": {
-    "futureMonth": "{month} hasn't started yet, so there's nothing to hand over. Download {current} (the current month, still in progress) or an earlier month."
+    "futureMonth": "{month} hasn't started. Download {current} or an earlier month."
+  },
+  "tips": {
+    "page": {
+      "subtitle": "Includes the ledger, invoices, bank reconciliation, missing documents and open questions, with evidence files.",
+      "send": {
+        "description": "Send it any time. Anything still open is listed in the package for the accountant."
+      }
+    }
   }
 }

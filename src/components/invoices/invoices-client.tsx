@@ -18,6 +18,7 @@ import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import type { AccountOpt } from "@/components/accounts/account-select";
 import { EPS, fmtMoney, totalsList, type Totals , vnToday } from "@/lib/money";
 import { Chip, ENTRY_STATUS_TONE, INVOICE_STATUS_TONE, PanelHead, Stat, StatStrip } from "@/components/wf/ledger-ui";
+import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
 
 type Invoice = {
@@ -204,10 +205,13 @@ export function InvoicesClient({
               <div className="grid gap-2">
                 <Label htmlFor="number">{direction === "PAYABLE" ? t("edit.billNumber") : t("edit.invoiceNumber")}</Label>
                 <Input id="number" name="number" placeholder={t("form.numberPlaceholder")} required={!noInvoiceYet} disabled={noInvoiceYet} />
-                <label className="flex items-start gap-2 text-[14.5px] text-text-secondary">
-                  <input type="checkbox" name="noInvoiceYet" className="mt-0.5 size-4 shrink-0 accent-primary" checked={noInvoiceYet} onChange={(e) => setNoInvoiceYet(e.target.checked)} />
-                  {t("form.noInvoiceYet")}
-                </label>
+                <div className="flex items-start gap-1">
+                  <label className="flex items-start gap-2 text-[14.5px] text-text-secondary">
+                    <input type="checkbox" name="noInvoiceYet" className="mt-0.5 size-4 shrink-0 accent-primary" checked={noInvoiceYet} onChange={(e) => setNoInvoiceYet(e.target.checked)} />
+                    {t("form.noInvoiceYet")}
+                  </label>
+                  <InfoTip>{t("tips.form.noInvoiceYet")}</InfoTip>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="amount">{t("form.amount")}</Label>

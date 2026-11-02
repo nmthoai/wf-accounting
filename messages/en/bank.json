@@ -15,7 +15,7 @@
     "agrees": "Agrees ✓",
     "toReconcile": "{open} of {lines} bank lines to reconcile",
     "toReconcileNotOnStatement": "{open} of {lines} bank lines to reconcile · {count, plural, one {# app entry} other {# app entries}} not on the statement",
-    "drafts": "{count, plural, one {# draft entry} other {# draft entries}} not counted in the app balance until reviewed",
+    "drafts": "{count, plural, one {# draft} other {# drafts}} not counted until reviewed",
     "rejected": "{count, plural, one {# rejected entry} other {# rejected entries}} not counted until corrected"
   },
   "tabs": {
@@ -74,7 +74,7 @@
   "match": {
     "trigger": "Match to ledger entries",
     "title": "Match bank line — {amount} on {date}",
-    "help": "Pick the ledger entries on {account} that make up this line — several if it covers more than one. Transfers, capital and loans are recorded on the Accounts page first.",
+    "help": "Pick the entries on {account} that make up this line.",
     "noneIn": "No unmatched money-in entries on {account}.",
     "noneOut": "No unmatched money-out entries on {account}.",
     "selected": "Selected {total} of {remaining} still open",
@@ -89,7 +89,6 @@
   },
   "imports": {
     "title": "Imported statements",
-    "description": "Each file was accepted only because opening + money in − money out equals its closing balance.",
     "meta": "{file} · {lines} lines, {added} new · imported {date}",
     "metaBy": "{file} · {lines} lines, {added} new · imported {date} by {name}",
     "undo": "Undo this import",
@@ -109,19 +108,19 @@
     "unmatched": "Entry unmatched",
     "suggested": "Suggested: {label} · {date}",
     "match": "Match",
-    "newEntry": "New income/expense entry from this line",
+    "newEntry": "New entry from this line",
     "empty": "No statement lines yet — import a statement to start.",
     "allMatched": "Every bank line is matched to the ledger."
   },
   "notOnStatement": {
     "title": "In the app but not on the bank statement",
-    "description": "Entries on a bank account, inside the statement period, that no bank line explains — check the account and date, or match them above."
+    "description": "No bank line explains these. Check the account and date, or match them above."
   },
   "statement": {
     "unreadable": "This file couldn't be read — export the statement as Excel (.xlsx) or CSV.",
     "noTable": "No transaction table found — the file needs a header row with a date column and debit/credit (or amount) columns.",
     "warnings": {
-      "order": "The running balance doesn't follow the line order everywhere — check the totals above against the bank.",
+      "order": "The running balance is out of order in places — check the totals against the bank.",
       "opening": "The stated opening balance differs from the running balance.",
       "closing": "The stated closing balance differs from the running balance."
     }
@@ -136,15 +135,23 @@
     "entryGone": "An entry no longer exists — refresh the page.",
     "reversed": "A reversed entry can't be matched — match its correction instead.",
     "alreadyMatched": "\"{name}\" is already matched to another bank line.",
-    "alreadyMatchedUnnamed": "\"That entry\" is already matched to another bank line.",
+    "alreadyMatchedUnnamed": "That entry is already matched to another bank line.",
     "postedUnmatch": "That entry is posted — only the owner can unmatch it.",
-    "statementMatched": "Some of its lines are matched to ledger entries — unmatch them first.",
+    "statementMatched": "Some lines of this statement are matched — unmatch them first.",
     "statementOverlaps": "Another imported statement overlaps this period — undo that one first.",
-    "lineGone": "That bank line no longer exists.",
+    "lineGone": "That bank line no longer exists — refresh the page.",
     "otherAccount": "The bank line is on {account} — the entry must be too.",
     "lineInEntryOut": "The bank line is money in; this entry is money out.",
     "lineOutEntryIn": "The bank line is money out; this entry is money in.",
     "moreThanLine": "That's more than the bank line ({amount}).",
-    "rejected": "A rejected entry can't be matched — it is matched again once corrected and resubmitted."
+    "rejected": "A rejected entry can't be matched — fix and resubmit it first."
+  },
+  "tips": {
+    "match": {
+      "help": "Missing a transfer, capital or loan? Record it on the Accounts page first."
+    },
+    "imports": {
+      "description": "Every statement here was checked: opening + money in − money out = closing."
+    }
   }
 }

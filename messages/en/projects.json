@@ -1,6 +1,6 @@
 {
   "status": {
-    "NOT_STARTED": "Not Started",
+    "NOT_STARTED": "Not started",
     "ACTIVE": "Active",
     "PENDING": "Pending",
     "DONE": "Done",
@@ -8,20 +8,18 @@
   },
   "noClient": "No client",
   "page": {
-    "title": "Projects",
-    "subtitle": "Per-project profitability — click in for the cost breakdown"
+    "title": "Projects"
   },
   "list": {
     "title": "Project profitability",
-    "description": "Net = income − expenses from transactions tagged to each project (actual cash). Click a project for its cost breakdown.",
     "newProject": "New project",
     "name": "Project name",
     "namePlaceholder": "e.g. AI Character Dev",
     "client": "Client",
-    "unpaidTitle": "{count} unpaid invoice/bill · {amounts}",
+    "unpaidTitle": "{count, plural, one {# unpaid invoice or bill} other {# unpaid invoices and bills}} · {amounts}",
     "unpaid": "{count} unpaid",
     "attachmentsTitle": "{count, plural, one {# attached document} other {# attached documents}}",
-    "txnCount": "{count} txns",
+    "txnCount": "{count, plural, one {# entry} other {# entries}}",
     "archive": "Archive",
     "reactivate": "Reactivate",
     "confirmDelete": "Delete project {name}?",
@@ -59,16 +57,15 @@
   "detail": {
     "income": "Income",
     "expenses": "Expenses",
-    "netProfit": "Net Profit",
-    "outstandingTitle": "Outstanding (unpaid)",
-    "outstandingDescription": "Invoices & bills on this project awaiting payment.",
+    "netProfit": "Net profit",
+    "outstandingTitle": "Outstanding",
     "documentsTitle": "Documents",
-    "documentsDescription": "Contracts & reference files — stored privately, only viewable while signed in.",
-    "costBreakdown": "Cost breakdown by category",
+    "documentsDescription": "Contracts and reference files.",
+    "costBreakdown": "Costs by category",
     "uncategorized": "Uncategorized",
-    "noCosts": "No costs tagged to this project yet.",
-    "transactions": "Transactions",
-    "noTransactions": "No transactions tagged to this project yet.",
+    "noCosts": "No costs yet.",
+    "transactions": "Entries",
+    "noTransactions": "No entries yet.",
     "typeBadge": {
       "INCOME": "INCOME",
       "EXPENSE": "EXPENSE",
@@ -90,7 +87,7 @@
     }
   },
   "outstanding": {
-    "empty": "Nothing outstanding — all invoices & bills on this project are settled.",
+    "empty": "Nothing outstanding.",
     "youOwe": "You owe",
     "owedToYou": "Owed to you",
     "overdue": "Overdue",
@@ -99,7 +96,7 @@
     "openOf": "open of {amount}"
   },
   "documents": {
-    "add": "Add document(s)",
+    "add": "Add documents",
     "upload": "Upload",
     "hint": "PDF, Word, Excel or images.",
     "confirmRemove": "Remove this document? This deletes the file.",
@@ -109,8 +106,13 @@
   "errors": {
     "couldNotCreate": "Could not create project.",
     "nameRequired": "Project name is required.",
-    "hasLinked": "This project has linked transactions/invoices. Archive it instead.",
-    "endBeforeStart": "The end date ({end}) is before the start date ({start}) — pick an end date on or after {start}, or clear one of the dates.",
-    "nameTaken": "A project called “{name}” already exists — use that project, or give this one a different name."
+    "hasLinked": "Can't delete — this project has entries or invoices. Archive it instead.",
+    "endBeforeStart": "End date ({end}) is before start date ({start}). Pick an end date on or after {start}.",
+    "nameTaken": "A project called “{name}” already exists. Use it, or pick another name."
+  },
+  "tips": {
+    "list": {
+      "description": "Net profit = income − expenses on entries tagged to the project, counted when cash moves."
+    }
   }
 }

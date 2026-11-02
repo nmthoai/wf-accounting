@@ -17,6 +17,7 @@ import { uploadProblem } from "@/lib/upload-limit";
 import { notify, notifyResult, notifyFailure } from "@/components/ui/toast";
 import { BookedRate } from "@/components/ledger/booked-rate";
 import { Chip, Notice } from "@/components/wf/ledger-ui";
+import { InfoTip } from "@/components/ui/info-tip";
 
 const hint = "text-[13.5px] text-muted-foreground";
 
@@ -358,7 +359,6 @@ export function EntryForm({
                   {projects.length === 0 && <SelectItem value="empty" disabled>{t("form.noProjects")}</SelectItem>}
                 </SelectContent>
               </Select>
-              <p className={hint}>{t("form.projectHint")}</p>
             </div>
 
             {type === "EXPENSE" && (
@@ -378,7 +378,6 @@ export function EntryForm({
                     {vendors.length === 0 && <SelectItem value="empty" disabled>{t("form.noVendors")}</SelectItem>}
                   </SelectContent>
                 </Select>
-                <p className={hint}>{t("form.vendorHint")}</p>
               </div>
             )}
 
@@ -464,14 +463,10 @@ export function EntryForm({
         </section>
 
         <section className="grid gap-4 border-t border-border p-5">
-          <div className="grid gap-1.5">
-            <h2 className="wf-label">{t("form.review")}</h2>
-            <p className={hint}>
-              {type === "EXPENSE"
-                ? t("form.reviewHintExpense")
-                : t("form.reviewHintIncome")}
-            </p>
-          </div>
+          <h2 className="wf-label flex items-center gap-1">
+            {t("form.review")}
+            <InfoTip>{type === "EXPENSE" ? t("tips.form.reviewHintExpense") : t("tips.form.reviewHintIncome")}</InfoTip>
+          </h2>
           <div className="grid gap-4 md:grid-cols-2">
             <StatusSelect id="docStatus" label={t("form.document")} options={reviewOptions("doc", DOC_STATUS)} value={docStatus} onChange={setDocStatus} />
             {type === "EXPENSE" && (

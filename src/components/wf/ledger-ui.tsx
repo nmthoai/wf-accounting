@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from "lucide-react";
+import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
 
 // The system's small parts: Chip, StatStrip/Stat, Notice and PanelHead, with the
@@ -112,12 +113,15 @@ export function Notice({
 export function PanelHead({
   title,
   count,
+  info,
   actions,
   as: Heading = "h2",
   className,
 }: {
   title: ReactNode;
   count?: ReactNode;
+  /** An explanation behind an (i) beside the title. */
+  info?: ReactNode;
   actions?: ReactNode;
   as?: "h2" | "h3";
   className?: string;
@@ -127,6 +131,7 @@ export function PanelHead({
       <Heading className="wf-panel__title">
         {title}
         {count !== undefined && count !== null && <span className="wf-panel__count">{count}</span>}
+        {info && <InfoTip>{info}</InfoTip>}
       </Heading>
       {actions && <div className="wf-panel__actions">{actions}</div>}
     </div>

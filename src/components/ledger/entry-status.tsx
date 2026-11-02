@@ -13,6 +13,7 @@ import { postEntries, reverseEntry, reviewEntries } from "@/app/actions/ledger";
 import { notify, notifyFailure } from "@/components/ui/toast";
 import { RejectDialog } from "@/components/ledger/reject-dialog";
 import { Notice } from "@/components/wf/ledger-ui";
+import { InfoTip } from "@/components/ui/info-tip";
 
 type Ref = { id: string; label: string } | null;
 
@@ -70,7 +71,7 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
     <Notice tone={tone} icon={status === "POSTED" ? Lock : undefined}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 basis-64">
-          <p>{text}</p>
+          <p>{text}{status === "POSTED" && !reversalOf && !reversedBy && <> <InfoTip>{t("tips.status.posted")}</InfoTip></>}</p>
           {status === "REJECTED" && rejection && (
             <p className="mt-1 font-semibold text-neg">
               {rejection.by ? t("status.rejectedReasonBy", { reason: rejection.reason, name: rejection.by }) : t("status.rejectedReason", { reason: rejection.reason })}
@@ -98,7 +99,7 @@ export function EntryStatus({ id, status, isAdmin, reversalOf, reversedBy, corre
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>{t("reverse.title")}</DialogTitle>
-                    <DialogDescription>{t("reverse.body")}</DialogDescription>
+                    <DialogDescription>{t("reverse.body")} <InfoTip>{t("tips.reverse.body")}</InfoTip></DialogDescription>
                     {withFee && <p className="text-[15px] text-text-secondary">{t("reverse.withFee")}</p>}
                   </DialogHeader>
                   {/* A form, like the Reject dialog, so Enter in the reason submits. */}

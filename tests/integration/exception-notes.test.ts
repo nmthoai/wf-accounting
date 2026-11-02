@@ -93,7 +93,7 @@ async function exported() {
   const total = (label: string) => entries.find((r) => r.Type === label)?.["Amount (VND)"];
   const open = (label: string) => Object.fromEntries(invoices.filter((r) => r.Direction === label && r.Currency).map((r) => [r.Currency, r["Unmatched difference"]]));
   return {
-    income: total("TOTAL Income"), expense: total("TOTAL Expense"), net: total("NET"),
+    income: total("Total income"), expense: total("Total expense"), net: total("NET"),
     openAr: open("Open AR (owed to you)"), openAp: open("Open AP (you owe)"),
     invoiceRows: invoices.filter((r) => r.Number).map((r) => [r.Number, r.Project, r.Status, r.Received, r["Unmatched difference"]]),
   };

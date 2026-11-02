@@ -1,18 +1,18 @@
 {
   "page": {
     "title": "Bàn giao cho kế toán",
-    "subtitle": "{month} · sổ thu chi, hóa đơn, đối chiếu ngân hàng, chứng từ cần bổ sung và vấn đề cần làm rõ — kèm tệp chứng từ",
+    "subtitle": "Bộ hồ sơ {month} gửi kế toán",
     "checks": {
-      "noDrafts": "Không có bút toán nháp nào chờ duyệt",
-      "drafts": "{count, plural, other {# bút toán nháp chưa duyệt — không được tính vào số liệu}}",
+      "noDrafts": "Không có bút toán nháp chờ duyệt",
+      "drafts": "{count, plural, other {# bút toán nháp chờ duyệt — chưa được tính}}",
       "allPosted": "Mọi bút toán đã duyệt đều đã ghi sổ",
-      "notPosted": "{count, plural, other {# bút toán đã duyệt nhưng chưa ghi sổ — hãy ghi sổ tháng này tại sổ thu chi}}",
-      "bankNoStatement": "{name}: chưa nhập sao kê ngân hàng cho tháng này",
+      "notPosted": "{count, plural, other {# bút toán đã duyệt cần ghi sổ}}",
+      "bankNoStatement": "{name}: chưa nhập sao kê",
       "bankAgrees": "{name}: sao kê khớp với sổ ({closing})",
       "bankDiffers": "{name}: theo sao kê {closing}, theo sổ {app} · {open} dòng cần đối chiếu",
       "allDocs": "Mọi bút toán đều đã có chứng từ",
       "missingDocs": "{count, plural, other {# bút toán còn thiếu chứng từ}}",
-      "rejected": "{count, plural, other {# bút toán bị từ chối}} đang chờ sửa — không được tính vào số liệu"
+      "rejected": "{count, plural, other {# bút toán bị từ chối}} cần sửa — chưa được tính"
     },
     "cards": {
       "entries": "Bút toán",
@@ -23,20 +23,19 @@
       "areaCount": "{count} {area}",
       "nothingOpen": "Không có vấn đề nào",
       "evidence": "Tệp chứng từ",
-      "evidenceDetail": "Có trong bộ hồ sơ, dẫn chiếu theo từng bút toán"
+      "evidenceDetail": "Dẫn chiếu theo từng bút toán"
     },
     "send": {
       "title": "Trước khi gửi",
-      "description": "Bộ hồ sơ có thể gửi bất cứ lúc nào; các mục dưới đây cho biết kế toán dịch vụ sẽ thấy những gì còn tồn đọng.",
       "download": "Tải bộ hồ sơ {month} (.zip)"
     },
     "open": {
-      "title": "Vấn đề cần làm rõ trong bộ hồ sơ",
-      "description": "Cũng được liệt kê ở trang tính “{sheet}” của tệp Excel.",
+      "title": "Vấn đề cần làm rõ",
+      "description": "Cũng có ở trang tính “{sheet}”.",
       "more": "…và còn {count} vấn đề khác trong bộ hồ sơ.",
       "none": "Tháng này không có vấn đề nào cần làm rõ."
     },
-    "futureMonth": "Chưa thể bàn giao {month} vì tháng này chưa bắt đầu. Đang hiển thị {current} — tháng hiện tại, chưa kết thúc nên bộ hồ sơ có thể chưa đầy đủ."
+    "futureMonth": "{month} chưa bắt đầu. Đang hiển thị {current}, tháng chưa kết thúc."
   },
   "questions": {
     "area": {
@@ -49,18 +48,18 @@
       "invoice": "Hóa đơn",
       "costRegister": "Bảng kê chi phí"
     },
-    "draft": "Nháp — không được tính vào số liệu của bộ hồ sơ này cho đến khi chủ doanh nghiệp duyệt.",
-    "notPosted": "Đã duyệt nhưng chưa ghi sổ nên chưa khóa — ghi sổ sẽ khóa bút toán.",
+    "draft": "Nháp — chưa được tính cho đến khi chủ doanh nghiệp duyệt.",
+    "notPosted": "Đã duyệt, chưa khóa — ghi sổ sẽ khóa bút toán.",
     "tax": "Thuế TNDN: {cit}; thuế GTGT đầu vào: {vat}.",
-    "unmatchedBank": "Thuộc tài khoản ngân hàng nhưng chưa khớp với dòng sao kê nào.",
+    "unmatchedBank": "Chưa khớp với dòng sao kê nào.",
     "reverses": "Đảo bút toán đã ghi sổ: {note}",
     "bankLine": "{status}: {party}",
-    "noStatement": "Chưa nhập sao kê ngân hàng cho tháng này.",
+    "noStatement": "Chưa nhập sao kê.",
     "invoiceItem": "{kind} {number}",
     "invoiceItemNoNumber": "{kind} chưa có số · {party} · ngày lập {date}",
-    "noInvoiceYet": "Chưa có hóa đơn — {direction, select, PAYABLE {chưa nhận được hóa đơn của nhà cung cấp} other {chưa xuất hóa đơn}}.",
+    "noInvoiceYet": "{direction, select, PAYABLE {Chưa nhận hóa đơn của nhà cung cấp} other {Chưa xuất hóa đơn}}.",
     "costPending": "Chứng từ chờ hạch toán — chưa có trên sổ thu chi.",
-    "rejected": "Bị từ chối và đã trả lại để sửa — không được tính vào số liệu của bộ hồ sơ này cho đến khi được sửa và duyệt.",
+    "rejected": "Bị từ chối — chưa được tính cho đến khi được sửa và duyệt lại.",
     "invoiceStillOpen": "Tổng tiền thanh toán {gross}, đã thanh toán {received}, phí có chứng từ {fees} — {direction, select, PAYABLE {còn phải trả} other {còn phải thu}} {difference}.",
     "invoiceOverpaid": "Tổng tiền thanh toán {gross}, đã thanh toán {received}, phí có chứng từ {fees} — thanh toán thừa {difference}."
   },
@@ -85,7 +84,7 @@
     "generatedAt": "{when} UTC",
     "generatedBy": "{when} UTC, do {user} lập",
     "entries": "Bút toán trong tháng",
-    "drafts": "— nháp (chưa duyệt; không tính vào số liệu)",
+    "drafts": "— nháp (không tính vào số liệu)",
     "reviewed": "— đã duyệt, chưa ghi sổ",
     "posted": "— đã ghi sổ (đã khóa)",
     "income": "Doanh thu (VND, đã duyệt và đã ghi sổ)",
@@ -97,10 +96,10 @@
     "bank": "Ngân hàng {name} ({currency})",
     "bankAgrees": "số dư cuối kỳ theo sao kê {closing} · theo sổ {app} · khớp · {open} dòng cần đối chiếu",
     "bankDiffers": "số dư cuối kỳ theo sao kê {closing} · theo sổ {app} · CÓ CHÊNH LỆCH · {open} dòng cần đối chiếu",
-    "bankNoStatement": "chưa nhập sao kê cho tháng này",
+    "bankNoStatement": "chưa nhập sao kê",
     "notes": "Ghi chú",
-    "notesText": "Số tiền ghi theo nguyên tệ; giá trị quy đổi VND dùng tỷ giá riêng của từng bút toán (theo số VND thực tế ngân hàng ghi nhận, nếu có). Không bao giờ cộng gộp các loại tiền với nhau. Việc ghi nhận một khoản chi không có nghĩa là khoản chi đó được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT — xem các cột TNDN / GTGT đầu vào. Đường dẫn tệp chứng từ trong trang tính Sổ thu chi trỏ tới thư mục evidence của tệp ZIP này.",
-    "rejected": "— bị từ chối (đã trả lại để sửa; không được tính vào số liệu)"
+    "notesText": "Số tiền ghi theo nguyên tệ; quy đổi VND theo tỷ giá của từng bút toán (theo số VND thực tế ngân hàng ghi nhận, nếu có). Không cộng gộp các loại tiền. Khoản chi đã ghi nhận chưa chắc được trừ khi tính thuế TNDN hay được khấu trừ GTGT — xem cột TNDN và GTGT đầu vào. Đường dẫn chứng từ trỏ tới thư mục evidence trong tệp ZIP này.",
+    "rejected": "— bị từ chối (không tính vào số liệu)"
   },
   "ledger": {
     "reversal": "{status} (bút toán đảo)",
@@ -113,7 +112,7 @@
     "receivable": "Hóa đơn bán ra"
   },
   "bank": {
-    "noStatement": "Chưa nhập sao kê cho tháng này",
+    "noStatement": "Chưa nhập sao kê",
     "opening": "Số dư đầu kỳ theo sao kê",
     "closing": "Số dư cuối kỳ theo sao kê",
     "app": "Số dư theo sổ cuối tháng",
@@ -172,6 +171,14 @@
     "reason": "Lý do"
   },
   "errors": {
-    "futureMonth": "Chưa thể bàn giao {month} vì tháng này chưa bắt đầu. Hãy tải {current} (tháng hiện tại, chưa kết thúc) hoặc một tháng trước đó."
+    "futureMonth": "{month} chưa bắt đầu. Hãy tải {current} hoặc một tháng trước đó."
+  },
+  "tips": {
+    "page": {
+      "subtitle": "Gồm sổ thu chi, hóa đơn, đối chiếu ngân hàng, chứng từ cần bổ sung và vấn đề cần làm rõ, kèm tệp chứng từ.",
+      "send": {
+        "description": "Gửi lúc nào cũng được. Mục nào còn tồn đọng sẽ được liệt kê trong bộ hồ sơ cho kế toán."
+      }
+    }
   }
 }

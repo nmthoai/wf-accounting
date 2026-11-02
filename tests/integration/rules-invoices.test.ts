@@ -31,8 +31,8 @@ test("a due date before the issue date is refused on create and edit, naming bot
   const before = await count();
   const res = await I.createInvoice(receivable({ number: "D-1", issueDate: "2026-10-31", dueDate: "2026-10-15" }));
   assert.equal(res.success, false);
-  assert.match(res.message!, /due date \(2026-10-15\) is before the issue date \(2026-10-31\)/);
-  assert.match(res.message!, /on or after 2026-10-31/);
+  assert.match(res.message!, /Due date \(2026-10-15\) is before the issue date \(2026-10-31\)/);
+  assert.match(res.message!, /pick 2026-10-31 or later/);
   assert.equal(await count(), before, "nothing was written");
 
   // The same day is fine.
@@ -47,13 +47,13 @@ test("a due date before the issue date is refused on create and edit, naming bot
 test("a receivable needs a client and an invoice number; a bill needs a vendor and its number (trimmed)", async () => {
   as.staff();
   const before = await count();
-  assert.match((await I.createInvoice(receivable({ clientId: "" }))).message!, /Choose the client/);
+  assert.match((await I.createInvoice(receivable({ clientId: "" }))).message!, /Choose a client/);
   assert.match((await I.createInvoice(receivable({ number: "   " }))).message!, /Enter the invoice number/);
-  assert.match((await I.createInvoice(bill({ vendorId: "" }))).message!, /Choose the vendor/);
+  assert.match((await I.createInvoice(bill({ vendorId: "" }))).message!, /Choose a vendor/);
   assert.match((await I.createInvoice(bill({ number: "   " }))).message!, /Enter the bill number.*No invoice yet/);
   // A receivable's vendor (or a bill's client) doesn't count as its party.
-  assert.match((await I.createInvoice(receivable({ clientId: "", vendorId: S.vendor.id }))).message!, /Choose the client/);
-  assert.match((await I.createInvoice(bill({ vendorId: "", clientId }))).message!, /Choose the vendor/);
+  assert.match((await I.createInvoice(receivable({ clientId: "", vendorId: S.vendor.id }))).message!, /Choose a client/);
+  assert.match((await I.createInvoice(bill({ vendorId: "", clientId }))).message!, /Choose a vendor/);
   // A party that no longer exists is named as such, not a crash.
   assert.match((await I.createInvoice(receivable({ clientId: "gone" }))).message!, /client no longer exists/);
   assert.match((await I.createInvoice(bill({ vendorId: "gone" }))).message!, /vendor no longer exists/);
@@ -67,9 +67,9 @@ test("a receivable needs a client and an invoice number; a bill needs a vendor a
   assert.equal(b.vendorId, S.vendor.id);
 
   // Editing can't take them away either.
-  assert.match((await I.updateInvoice(r.id, receivable({ number: "R-OK", clientId: "" }))).message!, /Choose the client/);
+  assert.match((await I.updateInvoice(r.id, receivable({ number: "R-OK", clientId: "" }))).message!, /Choose a client/);
   assert.match((await I.updateInvoice(r.id, receivable({ number: "" }))).message!, /Enter the invoice number/);
-  assert.match((await I.updateInvoice(b.id, bill({ number: "B-OK", vendorId: "" }))).message!, /Choose the vendor/);
+  assert.match((await I.updateInvoice(b.id, bill({ number: "B-OK", vendorId: "" }))).message!, /Choose a vendor/);
   const [r2, b2] = await Promise.all([r, b].map((x) => S.prisma.invoice.findUniqueOrThrow({ where: { id: x.id } })));
   assert.deepEqual([r2.number, r2.clientId, b2.number, b2.vendorId], ["R-OK", clientId, "B-OK", S.vendor.id]);
 
@@ -86,14 +86,14 @@ test("\"no invoice yet\" saves a bill or receivable without a number, flagged in
   const pending = await S.prisma.invoice.findFirstOrThrow({ where: { notes: "e-invoice to issue" } });
   assert.equal(pending.number, null);
   // The rest of the rules still hold.
-  assert.match((await I.createInvoice(bill({ noInvoiceYet: "on", vendorId: "" }))).message!, /Choose the vendor/);
+  assert.match((await I.createInvoice(bill({ noInvoiceYet: "on", vendorId: "" }))).message!, /Choose a vendor/);
 
   // The handover asks about each one, in its own words, until the number is in.
   const { collect, openQuestions } = await import("@/lib/handover");
-  const asked = async () => openQuestions(await collect("2026-10"), "en").filter((q) => q.issues.some((i) => /No invoice yet/.test(i.detail)));
+  const asked = async () => openQuestions(await collect("2026-10"), "en").filter((q) => q.issues.some((i) => /invoice not (received|issued) yet/i.test(i.detail)));
   const details = (await asked()).flatMap((q) => q.issues.map((i) => i.detail));
-  assert.ok(details.includes("No invoice yet — the vendor's invoice hasn't arrived."));
-  assert.ok(details.includes("No invoice yet — the invoice hasn't been issued."));
+  assert.ok(details.includes("Vendor's invoice not received yet."));
+  assert.ok(details.includes("Invoice not issued yet."));
   // Each row says which one it is: no number, so the party and issue date.
   const items = (await asked()).map((q) => q.item);
   assert.ok(items.includes(`Bill without a number · ${S.vendor.name} · issued 2026-10-01`), items.join(" | "));
@@ -136,7 +136,7 @@ test("an old row that breaks the rules still lists and takes payments; it meets 
 
   const keep = { direction: "RECEIVABLE", issueDate: "2026-06-30", dueDate: "2026-06-01", currency: "VND", amount: 1000000 };
   assert.match((await I.updateInvoice(old.id, fd(keep))).message!, /before the issue date/);
-  assert.match((await I.updateInvoice(old.id, fd({ ...keep, dueDate: "2026-07-30" }))).message!, /Choose the client/);
+  assert.match((await I.updateInvoice(old.id, fd({ ...keep, dueDate: "2026-07-30" }))).message!, /Choose a client/);
   assert.match((await I.updateInvoice(old.id, fd({ ...keep, dueDate: "2026-07-30", clientId }))).message!, /Enter the invoice number/);
   const res = await I.updateInvoice(old.id, fd({ ...keep, dueDate: "2026-07-30", clientId, number: "OLD-7" }));
   assert.equal(res.success, true, res.message);

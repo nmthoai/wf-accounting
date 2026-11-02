@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
 import {
   Wallet, PiggyBank, User, Landmark, ArrowLeftRight, ArrowDownLeft, ArrowUpRight, Plus, Pencil, Trash2, Lock, Undo2,
 } from "lucide-react";
@@ -103,7 +104,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
             ? <span key={c}>{fmtMoney(Math.abs(v), c)}</span>
             : <small key={c}>{fmtMoney(Math.abs(v), c)}</small>))}
         </Stat>
-        <Stat label={t("stats.capital")} icon={Landmark} tone="violet" sub={t("stats.capitalSub")}>
+        <Stat label={t("stats.capital")} icon={Landmark} tone="violet">
           {lines(position.capital)}
         </Stat>
       </StatStrip>
@@ -118,7 +119,7 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
       {unclassified.length > 0 && (
         <Card className="border-warn/50">
           <Notice tone="warning" title={t("unclassified.title", { count: unclassified.length })} className="rounded-none border-0 px-5 py-4">
-            <p>{t("unclassified.description")}</p>
+            <p>{t("unclassified.description")} <InfoTip>{t("tips.unclassified.description")}</InfoTip></p>
           </Notice>
           <ul className="wf-rows border-t border-border">
             {unclassified.map((m) => (
@@ -174,8 +175,8 @@ export function AccountsClient({ isAdmin, position, accounts, loans, categories,
             <h2 className="wf-panel__title">
               {t("movements.title")}
               <span className="wf-panel__count">{movements.length}</span>
+              <InfoTip>{t("tips.movements.description")}</InfoTip>
             </h2>
-            <CardDescription>{t("movements.description")}</CardDescription>
           </CardHeader>
           <ul className="wf-rows">
             {movements.map((m) => {

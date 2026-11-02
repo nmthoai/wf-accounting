@@ -55,7 +55,7 @@ test("an edit whose entry is posted between reading and saving is refused; the p
   race.restore();
   assert.equal(race.hook.mock.callCount(), 1, "the race hook ran");
   assert.equal(res.success, false);
-  assert.match(res.message ?? "", /Posted/);
+  assert.match(res.message ?? "", /posted meanwhile/);
   const after = await entry(t.id);
   assert.deepEqual([after?.amount, after?.description, after?.status], [500000, "race edit", "POSTED"]);
   assert.deepEqual((await history(t.id)).map((h) => h.action), ["CREATE"]);

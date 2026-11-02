@@ -407,7 +407,7 @@ test("the handover lists a rejected entry as an open question and leaves it out 
   assert.deepEqual(mine, [{
     area: "Not reviewed",
     item: "2026-10-05 · RJ13 October rejected",
-    detail: "Rejected and sent back for correction — excluded from this package's figures until it is corrected and reviewed.",
+    detail: "Rejected — not counted until corrected and reviewed.",
     amount: "400000 VND",
     ref: t.id,
     key: t.id,
@@ -440,7 +440,7 @@ test("the ledger export labels a rejected entry \"Rejected\" and leaves it out o
   assert.equal(byDesc("RJ14 rejected income").Status, "Rejected");
   assert.equal(byDesc("RJ14 reviewed expense").Status, "Reviewed");
   const total = (label: string) => sheet.find((r) => r.Type === label)?.["Amount (VND)"];
-  assert.deepEqual([total("TOTAL Income"), total("TOTAL Expense"), total("NET")], [1_000_000, 200_000, 800_000]);
+  assert.deepEqual([total("Total income"), total("Total expense"), total("NET")], [1_000_000, 200_000, 800_000]);
 
   // In Vietnamese, the label follows the language.
   await S.prisma.user.update({ where: { id: "u-admin" }, data: { locale: "vi" } });

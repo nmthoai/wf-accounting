@@ -18,6 +18,7 @@ import { PAYER, REIMBURSEMENT } from "@/lib/costs";
 import { uploadProblem } from "@/lib/upload-limit";
 import { notify, notifyFailure } from "@/components/ui/toast";
 import { Chip, DOC_TONE, Stat, StatStrip } from "@/components/wf/ledger-ui";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export type CostRow = {
   id: string; ref: string | null; provider: string; receiptDate: string; amount: number; currency: string;
@@ -195,13 +196,13 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
   return (
     <div className="space-y-6">
       <StatStrip className="lg:grid-cols-3">
-        <Stat label={t("summary.pendingTitle")} icon={Hourglass} emphasis sub={t("summary.pendingNote", { count: counts.pending ?? 0 })}>
+        <Stat label={t("summary.pendingTitle")} icon={Hourglass} emphasis sub={<>{t("summary.pendingNote", { count: counts.pending ?? 0 })} <InfoTip>{t("tips.summary.pendingNote")}</InfoTip></>}>
           {totalsLines(summary.pending)}
         </Stat>
         <Stat label={t("summary.owedTitle")} icon={HandCoins} tone={totalsList(summary.owed).length > 0 ? "warn" : "neutral"} sub={t("summary.owedNote")}>
           {totalsLines(summary.owed)}
         </Stat>
-        <Stat label={t("summary.renewalsTitle")} icon={CalendarClock} sub={t("summary.renewalsNote")}>
+        <Stat label={t("summary.renewalsTitle")} icon={CalendarClock}>
           {summary.renewals}
         </Stat>
       </StatStrip>
@@ -256,7 +257,7 @@ export function CostsClient({ isAdmin, view, counts, summary, items }: {
                 <span className="wf-figure mr-2 text-[17px]">{fmtMoney(i.amount, i.currency)}</span>
                 <ItemDialog item={i} trigger={<Button variant="ghost" size="icon-sm" aria-label={tc("actions.edit")} title={tc("actions.edit")}><Pencil /></Button>} />
                 {i.status === "PENDING" && (
-                  <Button variant="outline" size="sm" className="text-pos" render={<Link href={`/entry?costItem=${i.id}`} />} nativeButton={false} title={t("list.toLedgerTitle")}>
+                  <Button variant="outline" size="sm" className="text-pos" render={<Link href={`/entry?costItem=${i.id}`} />} nativeButton={false}>
                     {t("list.toLedger")} <ArrowRight aria-hidden="true" />
                   </Button>
                 )}

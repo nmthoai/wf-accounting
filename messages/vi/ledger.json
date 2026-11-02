@@ -4,7 +4,7 @@
     "subtitle": "Tất cả bút toán đã ghi nhận",
     "newEntry": "Thêm bút toán",
     "emptyView": "Không có mục nào — đã xử lý hết.",
-    "empty": "Không tìm thấy bút toán nào. Nhấn “Thêm bút toán” để thêm mới."
+    "empty": "Chưa có bút toán nào."
   },
   "tabs": {
     "all": "Tất cả",
@@ -31,13 +31,13 @@
     "noAccount": "— không có —",
     "uncategorized": "Chưa có khoản mục",
     "feeTitle": "Phí có chứng từ đã liên kết với hóa đơn bán ra/mua vào này",
-    "settlesTitle": "Đối trừ cho hóa đơn bán ra/mua vào này — đừng nhập thủ công thêm một bút toán trùng",
+    "settlesTitle": "Đối trừ cho hóa đơn này",
     "feeLink": "phí → {ref}",
     "settlesLink": "→ {ref}",
     "bill": "HĐ mua vào",
     "invoice": "HĐ bán ra",
     "notMatched": "chưa liên kết",
-    "notMatchedTitle": "Chưa liên kết với hóa đơn nào — hãy liên kết tại trang Hóa đơn",
+    "notMatchedTitle": "Chưa liên kết hóa đơn — hãy liên kết tại trang Hóa đơn",
     "onStatement": "khớp sao kê",
     "onStatementTitle": "Đã khớp với một dòng sao kê ngân hàng",
     "citTitle": "Tình trạng được trừ (thuế TNDN)",
@@ -48,14 +48,14 @@
     "rejectedReason": "Bị từ chối: {reason}"
   },
   "rowActions": {
-    "approve": "Duyệt (chuyển sang Đã duyệt)",
+    "approve": "Duyệt",
     "openPosted": "Mở (đã ghi sổ — đã khóa)",
-    "confirmDelete": "Xóa bút toán này? Với bút toán chuyển tiền, cả hai bên đều bị xóa; với khoản thu, phí ngân hàng bị trừ từ nó cũng bị xóa.",
-    "reject": "Từ chối (trả lại kèm lý do)"
+    "confirmDelete": "Xóa bút toán này? Bên còn lại của bút toán chuyển tiền, hoặc phí ngân hàng bị trừ, cũng bị xóa theo.",
+    "reject": "Từ chối"
   },
   "postThrough": {
     "label": "Ghi sổ các bút toán đã duyệt đến ngày",
-    "confirm": "Ghi sổ tất cả bút toán đã duyệt có ngày đến hết {date}? Bút toán đã ghi sổ sẽ bị khóa — khi đó mọi điều chỉnh phải thực hiện qua bút toán đảo.",
+    "confirm": "Ghi sổ mọi bút toán đã duyệt đến hết {date}? Bút toán sẽ bị khóa — muốn sửa phải đảo bút toán.",
     "done": "{count, plural, other {Đã ghi sổ # bút toán}}",
     "failed": "Không thể ghi sổ."
   },
@@ -75,35 +75,35 @@
     "saved": "Đã lưu bút toán",
     "receiptRemoved": "Đã xóa tệp",
     "receiptRemoveFailed": "Không thể xóa tệp.",
-    "somethingWrong": "Đã xảy ra lỗi",
+    "somethingWrong": "Chưa lưu được bút toán — hãy thử lại.",
     "rejected": "Đã từ chối bút toán"
   },
   "status": {
-    "reversalOf": "Bút toán đảo này triệt tiêu bút toán <link>{label}</link>. Bút toán này đã ghi sổ và không thể thay đổi.",
-    "reversedBy": "Đã ghi sổ, sau đó bị đảo bằng bút toán <link>{label}</link> — bút toán này không còn được tính.",
-    "draft": "Nháp — chờ chủ doanh nghiệp duyệt. Chưa được tính vào số dư hay báo cáo.",
-    "reviewed": "Đã duyệt — được tính vào số dư và báo cáo. Ghi sổ sẽ khóa bút toán này lại cho kế toán dịch vụ.",
-    "posted": "Đã ghi sổ — đã khóa. Vẫn có thể cập nhật chứng từ và rà soát thuế; để thay đổi nội dung khác, hãy đảo bút toán và nhập bút toán điều chỉnh.",
+    "reversalOf": "Bút toán đảo của <link>{label}</link>. Đã ghi sổ — đã khóa.",
+    "reversedBy": "Đã bị đảo bằng <link>{label}</link> — không còn được tính.",
+    "draft": "Nháp — chờ duyệt. Chưa tính vào số dư và báo cáo.",
+    "reviewed": "Đã duyệt — đã tính vào số dư và báo cáo.",
+    "posted": "Đã ghi sổ — đã khóa. Vẫn sửa được chứng từ và rà soát thuế.",
     "correctionOf": "Điều chỉnh cho bút toán <link>{label}</link>.",
-    "confirmPost": "Ghi sổ bút toán này? Bút toán sẽ bị khóa; khi đó mọi điều chỉnh phải thực hiện qua bút toán đảo.",
+    "confirmPost": "Ghi sổ bút toán này? Bút toán sẽ bị khóa — muốn sửa phải đảo bút toán.",
     "reverseFailed": "Không thể đảo bút toán.",
-    "rejected": "Bị từ chối — đã trả lại để sửa. Chưa được tính vào số dư hay báo cáo; lưu bản đã sửa sẽ gửi lại để duyệt.",
+    "rejected": "Bị từ chối — hãy sửa và lưu để gửi duyệt lại.",
     "rejectedReason": "Lý do: {reason}",
     "rejectedReasonBy": "{name} từ chối với lý do: {reason}",
-    "rejectedOwner": "Bị từ chối — đã trả lại để sửa. Chưa được tính vào số dư hay báo cáo; bút toán quay lại thành nháp khi được sửa, hoặc bạn có thể tự duyệt."
+    "rejectedOwner": "Bị từ chối — chưa được tính. Bút toán quay lại chờ bạn duyệt khi được sửa, hoặc bạn duyệt ngay."
   },
   "reverse": {
     "title": "Đảo bút toán đã ghi sổ",
-    "body": "Một bút toán đảo đã ghi sổ sẽ triệt tiêu toàn bộ bút toán này; cả hai vẫn được lưu trên sổ. Bút toán này sẽ được bỏ khớp sao kê và bỏ liên kết hóa đơn để bút toán điều chỉnh — được nhập ở bước tiếp theo — có thể khớp và liên kết thay.",
+    "body": "Bút toán đảo triệt tiêu toàn bộ bút toán này. Cả hai vẫn lưu trên sổ; tiếp theo bạn nhập bút toán điều chỉnh.",
     "reason": "Lý do",
     "reasonPlaceholder": "Ví dụ: sai số tiền — ngân hàng ghi 8.221.200",
     "submit": "Đảo và nhập bút toán điều chỉnh",
     "descPrefix": "Đảo: {description}",
-    "withFee": "Khoản thu này và phí ngân hàng bị trừ từ nó được đảo cùng lúc. Hóa đơn của nó được mở lại — hãy ghi nhận lại khoản thanh toán đúng từ hóa đơn."
+    "withFee": "Phí ngân hàng bị trừ cũng được đảo. Hóa đơn được mở lại — hãy ghi nhận lại thanh toán tại hóa đơn."
   },
   "new": {
     "title": "Bút toán mới",
-    "subtitle": "Nhập một khoản thu hoặc khoản chi mới",
+    "subtitle": "Ghi một khoản thu hoặc chi",
     "costPeriod": "{provider} — từ {from} đến {to}"
   },
   "edit": {
@@ -116,7 +116,7 @@
     "title": "Lịch sử thay đổi",
     "actionField": "{action} · {field}",
     "reason": "Lý do: {reason}",
-    "empty": "Chưa có thay đổi nào được ghi nhận kể từ khi bắt đầu lưu lịch sử (04/10/2026).",
+    "empty": "Chưa có thay đổi nào (lịch sử lưu từ 04/10/2026).",
     "reasons": {
       "correction": "Điều chỉnh cho bút toán đã đảo",
       "matchedEntryDeleted": "Bút toán đã khớp bị xóa"
@@ -150,8 +150,8 @@
       "categoryId": "Khoản mục",
       "projectId": "Dự án",
       "vendorId": "Nhà cung cấp",
-      "docStatus": "Tình trạng chứng từ",
-      "purposeStatus": "Mục đích phục vụ sản xuất, kinh doanh",
+      "docStatus": "Chứng từ",
+      "purposeStatus": "Mục đích KD",
       "citStatus": "Thuế TNDN",
       "vatStatus": "Thuế GTGT đầu vào",
       "vatAmount": "Tiền thuế GTGT",
@@ -167,13 +167,13 @@
     }
   },
   "form": {
-    "fromBankLine": "Từ dòng sao kê <b>{label}</b> — khi lưu, bút toán này sẽ được khớp với dòng sao kê đó.",
-    "fromCostItem": "Từ bảng kê chi phí: <b>{label}</b> — khi lưu, khoản này được thêm vào sổ thu chi một lần duy nhất, kèm tệp chứng từ.",
-    "correcting": "Đang điều chỉnh bút toán đã đảo <b>{label}</b> — hãy nhập các giá trị đúng. Khi lưu, bút toán này được ghi nhận là bút toán điều chỉnh cho bút toán đó.",
+    "fromBankLine": "Từ dòng sao kê <b>{label}</b> — tự khớp khi lưu.",
+    "fromCostItem": "Từ bảng kê chi phí: <b>{label}</b> — lưu kèm tệp chứng từ.",
+    "correcting": "Điều chỉnh bút toán đã đảo <b>{label}</b> — hãy nhập giá trị đúng.",
     "entryType": "Loại nghiệp vụ",
     "receivedInto": "Thu vào tài khoản",
     "paidFrom": "Chi từ tài khoản",
-    "accountPlaceholder": "Chọn tài khoản tiền đã dùng để thu hoặc chi khoản tiền này",
+    "accountPlaceholder": "Chọn tài khoản",
     "accountHint": "Ngân hàng, tiền mặt của công ty, hoặc chủ DN chi hộ nếu bạn tự trả bằng tiền cá nhân.",
     "date": "Ngày giao dịch",
     "amount": "Số tiền (nguyên tệ)",
@@ -182,9 +182,9 @@
     "rateBank": "VND thực tế",
     "rateManual": "Nhập tỷ giá",
     "rateDefault": "Mặc định ({rate})",
-    "vndPlaceholder": "Số VND đúng như trên sao kê ngân hàng",
+    "vndPlaceholder": "Như trên sao kê ngân hàng",
     "ratePlaceholder": "Số VND cho mỗi {currency}",
-    "rateBankHint": "Chính xác nhất — tỷ giá được tính từ số VND thực tế ngân hàng ghi nhận.",
+    "rateBankHint": "Chính xác nhất — lấy theo sao kê ngân hàng.",
     "rateManualHint": "Dùng tỷ giá trên chứng từ hoặc tỷ giá của ngân hàng trong ngày đó.",
     "rateDefaultHint": "Chỉ là ước tính — hãy chuyển sang số liệu của ngân hàng khi có sao kê.",
     "category": "Khoản mục",
@@ -193,11 +193,9 @@
     "project": "Dự án (không bắt buộc)",
     "noProject": "Không thuộc dự án",
     "noProjects": "Chưa có dự án nào",
-    "projectHint": "Gắn bút toán này với một dự án để theo dõi lãi lỗ theo dự án.",
     "vendor": "Nhà cung cấp (không bắt buộc)",
     "noVendor": "Không có nhà cung cấp",
     "noVendors": "Chưa có nhà cung cấp nào",
-    "vendorHint": "Bên nhận tiền — để theo dõi số đã chi theo từng nhà cung cấp.",
     "unknown": "Không xác định",
     "invoiceNumber": "Số hóa đơn (không bắt buộc)",
     "invoiceNumberPlaceholder": "Ví dụ: INV-2026-001",
@@ -205,26 +203,24 @@
     "descriptionPlaceholder": "Khoản này dùng cho việc gì?",
     "attachments": "Chứng từ đính kèm (hóa đơn, biên lai)",
     "removeReceipt": "Xóa tệp",
-    "confirmRemoveReceipt": "Xóa chứng từ này? Thao tác này sẽ xóa tệp.",
+    "confirmRemoveReceipt": "Xóa tệp chứng từ này?",
     "toUpload": "chờ tải lên",
     "addMoreFiles": "Thêm tệp",
     "uploadFiles": "Tải tệp lên",
     "orTakePhoto": "hoặc chụp ảnh",
     "fileTypes": "PNG, JPG, PDF, ZIP (ví dụ: hóa đơn điện tử gốc) — tối đa 10 MB mỗi lần lưu",
     "review": "Chứng từ và rà soát thuế",
-    "reviewHintExpense": "Tách riêng khỏi sổ sách: việc ghi nhận khoản chi không bao giờ tự làm khoản chi được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT — từng mục giữ trạng thái chờ rà soát cho đến khi được rà soát.",
-    "reviewHintIncome": "Tách riêng khỏi sổ sách: đã nhận tiền không có nghĩa là đã có hóa đơn tương ứng.",
     "document": "Tình trạng chứng từ",
-    "purpose": "Mục đích phục vụ sản xuất, kinh doanh",
+    "purpose": "Mục đích KD",
     "cit": "Tình trạng được trừ (thuế TNDN)",
     "vat": "Thuế GTGT đầu vào",
     "vatAmount": "Tiền thuế GTGT trên hóa đơn ({currency})",
     "vatAmountPlaceholder": "Như ghi trên hóa đơn — để trống nếu không có",
     "reviewNote": "Ghi chú rà soát",
-    "reviewNotePlaceholder": "Chứng từ chứng minh mục đích, căn cứ của kế toán dịch vụ, vấn đề cần làm rõ",
-    "ownerDecides": "Mục đích phục vụ SXKD, thuế TNDN và thuế GTGT do chủ doanh nghiệp ghi nhận sau khi kế toán dịch vụ rà soát.",
+    "reviewNotePlaceholder": "Mục đích, căn cứ của kế toán, vấn đề cần làm rõ",
+    "ownerDecides": "Chủ DN chọn mục đích KD, TNDN và GTGT sau khi rà soát.",
     "reason": "Lý do thay đổi (không bắt buộc)",
-    "reasonPlaceholder": "Được lưu trong lịch sử thay đổi của bút toán",
+    "reasonPlaceholder": "Lưu vào lịch sử",
     "saving": "Đang lưu...",
     "saveReview": "Lưu rà soát",
     "update": "Cập nhật bút toán",
@@ -234,10 +230,10 @@
     "invalidType": "Loại nghiệp vụ không hợp lệ.",
     "amountDate": "Hãy nhập số tiền và ngày hợp lệ.",
     "currency": "Loại tiền không được hỗ trợ.",
-    "chooseAccount": "Hãy chọn tài khoản tiền đã dùng để thu hoặc chi khoản tiền này.",
-    "unknownAccount": "Không tìm thấy tài khoản tiền.",
+    "chooseAccount": "Chọn tài khoản tiền.",
+    "unknownAccount": "Không tìm thấy tài khoản này — hãy chọn tài khoản khác.",
     "usdAccount": "{name} là tài khoản USD — hãy nhập số tiền bằng USD.",
-    "registerItemExpense": "Chứng từ trong bảng kê chi phí được hạch toán thành khoản chi.",
+    "registerItemExpense": "Chứng từ trong bảng kê chi phí chỉ lưu được thành khoản chi.",
     "correctionNeedsReversal": "Chỉ bút toán đã đảo mới có thể được nhập lại thành bút toán điều chỉnh.",
     "registerItemTaken": "Chứng từ này trong bảng kê đã có trên sổ thu chi hoặc đã được đánh dấu không phải chi phí công ty.",
     "editOnAccounts": "Sửa bút toán chuyển tiền, vốn góp và vay tại trang Tài khoản tiền.",
@@ -253,17 +249,18 @@
     "attachmentCostItem": "Tệp này thuộc một chứng từ trong bảng kê chi phí — tệp được giữ cùng khoản chi.",
     "attachmentFeeEvidence": "Đây là chứng từ của một khoản phí trên hóa đơn — hãy bỏ liên kết khoản phí trước.",
     "attachmentOwnerOnly": "Chỉ chủ doanh nghiệp mới được xóa chứng từ này.",
-    "feePairLocked": "Phí ngân hàng bị trừ từ một khoản thu luôn đi cùng khoản thu đó: cùng tài khoản, loại tiền, loại nghiệp vụ, ngày và dự án. Hãy sửa khoản thu — phí sẽ theo — hoặc đảo hay xóa cả hai cùng lúc.",
+    "feePairLocked": "Phí ngân hàng bị trừ phải trùng khoản thu (tài khoản, loại tiền, loại nghiệp vụ, ngày, dự án). Hãy sửa khoản thu, hoặc đảo hay xóa cả hai.",
     "feeExceedsReceipt": "Phí ngân hàng phải nhỏ hơn khoản thu mà phí đó bị trừ.",
-    "pairNotPosted": "Mọi bút toán đi cùng bút toán này phải đã ghi sổ và chưa bị đảo thì mới đảo được.",
+    "pairNotPosted": "Chưa đảo được — các bút toán đi kèm phải đã ghi sổ và chưa bị đảo.",
     "rejectReasonRequired": "Hãy nhập lý do từ chối.",
-    "onlyDraftsRejected": "Chỉ có thể từ chối bút toán nháp đang chờ duyệt."
+    "onlyDraftsRejected": "Chỉ có thể từ chối bút toán nháp đang chờ duyệt.",
+    "postedMeanwhile": "Bút toán vừa được ghi sổ — hãy tải lại trang. Muốn sửa, hãy đảo bút toán."
   },
   "revalue": {
     "booked": "Đã ghi nhận theo tỷ giá {rate} VND/{currency} → {vnd} VND · tỷ giá {source}",
-    "withFee": "Bao gồm phí ngân hàng bị trừ ({fee}); cả hai được đánh giá lại cùng lúc.",
-    "keptHint": "Khi sửa bút toán, giá trị này được giữ nguyên. Muốn thay đổi, hãy đánh giá lại tỷ giá — kèm lý do được lưu vào lịch sử.",
-    "adminOnly": "Khi sửa bút toán, giá trị này được giữ nguyên. Chỉ quản trị viên mới được đánh giá lại tỷ giá.",
+    "withFee": "Gồm phí ngân hàng bị trừ ({fee}), đánh giá lại cùng lúc.",
+    "keptHint": "Sửa bút toán vẫn giữ giá trị này. Muốn đổi, hãy đánh giá lại tỷ giá.",
+    "adminOnly": "Sửa bút toán vẫn giữ giá trị này. Chỉ quản trị viên được đánh giá lại.",
     "feeHint": "Phí bị trừ từ khoản thu được đánh giá lại cùng khoản thu đó.",
     "transferHint": "Chuyển tiền nội bộ giữ tỷ giá suy ra từ hai bên.",
     "open": "Đánh giá lại tỷ giá…",
@@ -271,7 +268,7 @@
     "netPlaceholder": "Số VND ngân hàng ghi có (sau phí)",
     "preview": "Giá trị quy đổi VND: {before} → {after}",
     "reason": "Lý do",
-    "reasonPlaceholder": "Vì sao giá trị thay đổi — được lưu vào lịch sử",
+    "reasonPlaceholder": "Vì sao thay đổi",
     "confirm": "Đánh giá lại",
     "done": "Đã đánh giá lại bút toán",
     "errors": {
@@ -281,16 +278,28 @@
       "fee": "Hãy đánh giá lại khoản thu có phí này bị trừ — phí sẽ được đánh giá lại theo.",
       "unchanged": "Giá trị quy đổi VND không thay đổi — không có gì để đánh giá lại.",
       "enterValue": "Nhập tỷ giá mới hoặc số tiền VND.",
-      "matched": "Bút toán đã khớp với một dòng sao kê của tài khoản theo dõi bằng loại tiền khác — hãy bỏ khớp trước khi đánh giá lại tỷ giá, rồi khớp lại."
+      "matched": "Đã khớp dòng sao kê của tài khoản khác loại tiền — hãy bỏ khớp, đánh giá lại, rồi khớp lại."
     },
-    "postedHint": "Đã ghi sổ: giá trị này đã khóa. Muốn thay đổi, hãy đảo bút toán và nhập bút toán điều chỉnh.",
+    "postedHint": "Đã ghi sổ — đã khóa. Muốn đổi, hãy đảo bút toán.",
     "reversedHint": "Đã khóa: bút toán đã đảo và bút toán đảo của nó giữ nguyên giá trị này."
   },
   "reject": {
     "title": "Từ chối bút toán này",
-    "body": "Bút toán được trả lại cho người đã nhập, kèm lý do của bạn. Bút toán không được tính vào số dư và báo cáo cho đến khi người đó sửa và lưu lại — sau đó bút toán quay lại để bạn duyệt.",
+    "body": "Bút toán được trả lại cho người nhập, kèm lý do. Khi họ sửa và lưu, bút toán quay lại để bạn duyệt.",
     "reason": "Lý do từ chối",
     "reasonPlaceholder": "Ví dụ: sai tài khoản — khoản này chi từ MB USD",
     "submit": "Từ chối và trả lại"
+  },
+  "tips": {
+    "status": {
+      "posted": "Muốn sửa nội dung khác, hãy đảo bút toán rồi nhập bút toán điều chỉnh."
+    },
+    "reverse": {
+      "body": "Bút toán này được bỏ khớp sao kê và bỏ liên kết hóa đơn — hãy khớp và liên kết bút toán điều chỉnh thay thế."
+    },
+    "form": {
+      "reviewHintExpense": "Ghi nhận khoản chi chưa có nghĩa là được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT. Từng mục chờ đến khi rà soát.",
+      "reviewHintIncome": "Đã nhận tiền không có nghĩa là đã xuất hóa đơn."
+    }
   }
 }

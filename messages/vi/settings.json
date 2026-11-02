@@ -13,7 +13,6 @@
   "saveChanges": "Lưu thay đổi",
   "categories": {
     "title": "Khoản mục",
-    "description": "Quản lý khoản mục cho hóa đơn và chi phí",
     "namePlaceholder": "Ví dụ: Bản quyền phần mềm",
     "typePlaceholder": "Chọn loại",
     "incomeTitle": "Khoản mục doanh thu",
@@ -32,7 +31,7 @@
   },
   "unitRates": {
     "title": "Đơn giá",
-    "description": "Đơn giá tham khảo khi tính phí (Giờ, Dự án, Ngày công)",
+    "description": "Đơn giá tham khảo khi tính phí",
     "descriptionPlaceholder": "Ví dụ: Lập trình viên cấp cao",
     "ratePlaceholder": "Ví dụ: 50",
     "units": {
@@ -56,11 +55,10 @@
     }
   },
   "exchangeRate": {
-    "title": "Cài đặt chung",
-    "description": "Giá trị mặc định của hệ thống",
+    "title": "Tỷ giá mặc định",
     "current": "Tỷ giá hiện tại",
-    "newRate": "Đặt tỷ giá mới",
-    "hint": "Tỷ giá này sẽ được tự động điền khi thêm bút toán bằng USD.",
+    "newRate": "Tỷ giá mới",
+    "hint": "Tự điền khi thêm bút toán USD.",
     "submit": "Cập nhật tỷ giá",
     "toast": {
       "updated": "Đã cập nhật tỷ giá"
@@ -68,7 +66,7 @@
   },
   "users": {
     "title": "Người dùng",
-    "description": "Không tự đăng ký — quản trị viên tạo tài khoản. Người dùng mới nhận mật khẩu tạm và tự hoàn tất thiết lập (đổi mật khẩu + 2FA).",
+    "description": "Người dùng mới tự đặt mật khẩu và 2FA ở lần đăng nhập đầu.",
     "username": "Tên đăng nhập",
     "usernamePlaceholder": "Ví dụ: ketoan1",
     "defaultPassword": "Mật khẩu tạm",
@@ -89,25 +87,25 @@
     "resetPassword": {
       "button": "Đặt lại mật khẩu",
       "title": "Đặt lại mật khẩu cho {username}",
-      "intro": "Đặt mật khẩu tạm mới. {username} sẽ phải đổi mật khẩu này ở lần đăng nhập tiếp theo.",
+      "intro": "{username} sẽ phải đổi mật khẩu này ở lần đăng nhập sau.",
       "newLabel": "Mật khẩu tạm mới",
-      "submit": "Đặt mật khẩu tạm"
+      "submit": "Đặt mật khẩu"
     },
     "reset2fa": {
-      "button": "Đặt lại xác thực 2 bước",
-      "confirm": "Đặt lại xác thực 2 bước cho {username}? Người dùng này sẽ thiết lập lại ở lần đăng nhập tiếp theo."
+      "button": "Đặt lại 2FA",
+      "confirm": "Đặt lại 2FA cho {username}? Họ sẽ thiết lập lại ở lần đăng nhập sau."
     },
     "activate": "Kích hoạt",
     "deactivate": "Vô hiệu hóa",
     "delete": {
       "button": "Xóa người dùng",
-      "confirm": "Xóa {username}? Thao tác này không thể hoàn tác."
+      "confirm": "Xóa {username}? Không thể hoàn tác."
     },
     "toast": {
       "created": "Đã tạo người dùng",
       "unlocked": "Đã mở khóa {username}",
       "passwordReset": "Đã đặt lại mật khẩu cho {username}",
-      "twoFactorReset": "Đã đặt lại xác thực 2 bước cho {username}",
+      "twoFactorReset": "Đã đặt lại 2FA cho {username}",
       "activated": "Đã kích hoạt {username}",
       "deactivated": "Đã vô hiệu hóa {username}",
       "deleted": "Đã xóa {username}",
@@ -117,10 +115,10 @@
   },
   "errors": {
     "nameTypeRequired": "Tên và loại không được để trống.",
-    "categoryTypeLocked": "Khoản mục này đang được sử dụng nên không thể chuyển đổi giữa thu và chi.",
-    "categoryInUse": "Khoản mục này đang được sử dụng — hãy đổi tên thay vì xóa, hoặc chuyển các bút toán sang khoản mục khác trước.",
+    "categoryTypeLocked": "Khoản mục đang được dùng nên không đổi được giữa thu và chi.",
+    "categoryInUse": "Không xóa được — khoản mục đang được dùng. Hãy đổi tên, hoặc chuyển bút toán sang khoản mục khác trước.",
     "rateInvalid": "Nhập tỷ giá lớn hơn 0.",
-    "allFieldsRequired": "Vui lòng nhập đầy đủ các trường.",
+    "allFieldsRequired": "Hãy nhập đủ các trường.",
     "usernameTooShort": "Tên đăng nhập phải có ít nhất 3 ký tự.",
     "passwordTooShort": "Mật khẩu tạm phải có ít nhất 8 ký tự.",
     "usernameTaken": "Tên đăng nhập này đã được sử dụng.",

@@ -12,6 +12,7 @@ import { CircleAlert, Pencil, Loader2 } from "lucide-react";
 import { Notice } from "@/components/wf/ledger-ui";
 import { updateInvoice } from "@/app/actions/invoices";
 import { notify, notifyFailure } from "@/components/ui/toast";
+import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
 
 type Opt = { id: string; name: string };
@@ -115,10 +116,13 @@ export function EditInvoiceDialog({
           <div className="grid gap-2">
             <Label htmlFor={`num-${invoice.id}`}>{isReceivable ? t("edit.invoiceNumber") : t("edit.billNumber")}</Label>
             <Input id={`num-${invoice.id}`} name="number" defaultValue={invoice.number ?? ""} placeholder={t("form.numberPlaceholder")} required={!noInvoiceYet} disabled={noInvoiceYet} />
-            <label className="flex items-start gap-2 text-[14.5px] text-text-secondary">
-              <input type="checkbox" name="noInvoiceYet" className="mt-0.5 size-4 shrink-0 accent-primary" checked={noInvoiceYet} onChange={(e) => setNoInvoiceYet(e.target.checked)} />
-              {t("form.noInvoiceYet")}
-            </label>
+            <div className="flex items-start gap-1">
+              <label className="flex items-start gap-2 text-[14.5px] text-text-secondary">
+                <input type="checkbox" name="noInvoiceYet" className="mt-0.5 size-4 shrink-0 accent-primary" checked={noInvoiceYet} onChange={(e) => setNoInvoiceYet(e.target.checked)} />
+                {t("form.noInvoiceYet")}
+              </label>
+              <InfoTip>{t("tips.form.noInvoiceYet")}</InfoTip>
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor={`amt-${invoice.id}`}>{t("form.amount")}</Label>

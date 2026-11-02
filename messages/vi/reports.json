@@ -3,9 +3,9 @@
   "noProject": "(Không thuộc dự án)",
   "page": {
     "title": "Báo cáo lãi lỗ",
-    "subtitle": "{month} · theo cơ sở tiền (doanh thu đã thu, chi phí đã chi) · bút toán đã duyệt và đã ghi sổ",
-    "draftsNotIncluded": "{count, plural, other {# bút toán nháp}} trong kỳ này chưa được tính — đang chờ duyệt →",
-    "rejectedNotIncluded": "{count, plural, other {# bút toán bị từ chối}} trong kỳ này chưa được tính — đang chờ sửa →"
+    "subtitle": "{month} · thực thu, thực chi",
+    "draftsNotIncluded": "{count, plural, other {# bút toán nháp}} chờ duyệt — chưa được tính →",
+    "rejectedNotIncluded": "{count, plural, other {# bút toán bị từ chối}} cần sửa — chưa được tính →"
   },
   "lines": {
     "empty": "Không có bút toán nào trong kỳ này.",
@@ -15,9 +15,9 @@
     "income": "Doanh thu",
     "expenses": "Chi phí",
     "netProfit": "Lợi nhuận",
-    "perMonth": "Bình quân {amount} mỗi tháng",
+    "perMonth": "Bình quân {amount}/tháng",
     "vsPrevious": "{arrow} {amount} so với {count, plural, =1 {tháng trước} other {# tháng trước đó}}",
-    "noEarlier": "Sổ sách chưa có các tháng trước đó để so sánh"
+    "noEarlier": "Chưa có tháng trước để so sánh"
   },
   "byProject": {
     "title": "Lãi lỗ theo dự án",
@@ -29,14 +29,13 @@
   },
   "tax": {
     "title": "Rà soát thuế",
-    "intro": "Tách riêng khỏi lãi lỗ: ghi nhận một khoản chi không có nghĩa là khoản chi đó được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT. Đây là các quyết định đã ghi nhận đến nay.",
-    "citTitle": "Chi phí trong kỳ theo tình trạng được trừ khi tính thuế TNDN",
+    "citTitle": "Tình trạng được trừ (thuế TNDN)",
     "inputVat": "Thuế GTGT đầu vào",
     "claimable": "Được khấu trừ (đã có hóa đơn)",
-    "vatPending": "Khoản chi chưa rà soát thuế GTGT",
+    "vatPending": "Chưa rà soát thuế GTGT",
     "docsTitle": "Chứng từ cần bổ sung",
     "entryCount": "{count, plural, other {# bút toán}}",
-    "allDocs": "Mọi bút toán trong kỳ này đều đã có hóa đơn hoặc biên lai.",
+    "allDocs": "Mọi bút toán đều đã có hóa đơn hoặc biên lai.",
     "openLedger": "Mở trong sổ thu chi →"
   },
   "monthPicker": {
@@ -46,10 +45,9 @@
   },
   "downloads": {
     "title": "Tải về tệp Excel",
-    "description": "Xuất dữ liệu gốc theo khoảng thời gian. Sổ thu chi lấy theo ngày giao dịch; hóa đơn lấy theo ngày lập hóa đơn.",
     "from": "Từ ngày",
     "to": "Đến ngày",
-    "invalidRange": "Chọn khoảng thời gian hợp lệ (Từ ngày không được sau Đến ngày).",
+    "invalidRange": "Chọn đủ hai ngày; Từ ngày không được sau Đến ngày.",
     "entries": "Sổ thu chi (.xlsx)",
     "invoices": "Hóa đơn bán ra & mua vào (.xlsx)"
   },
@@ -125,7 +123,7 @@
   },
   "trend": {
     "title": "Xu hướng theo tháng",
-    "subtitle": "Doanh thu và chi phí mỗi tháng, quy đổi {currency}, kèm đường lãi lỗ. Rê chuột hoặc dùng phím Tab vào một tháng để xem số liệu.",
+    "subtitle": "Số tiền quy đổi {currency}.",
     "revenue": "Doanh thu",
     "cost": "Chi phí",
     "net": "Lãi (lỗ)",
@@ -134,8 +132,8 @@
   },
   "detail": {
     "title": "Chi tiết theo tháng",
-    "subtitle": "Từng khoản mục doanh thu và chi phí theo tháng, quy đổi {currency}. Mở một khoản mục để xem các bút toán; bấm vào bút toán để mở.",
-    "provisionalNote": "{count, plural, other {# bút toán ngoại tệ}} đang quy đổi theo tỷ giá mặc định hoặc nhập tay, chưa phải số VND thực tế — được đánh dấu “tạm tính” bên dưới cho đến khi đánh giá lại tỷ giá.",
+    "subtitle": "Số tiền quy đổi {currency}.",
+    "provisionalNote": "{count, plural, other {# bút toán ngoại tệ}} đang tạm tính, chờ đánh giá lại tỷ giá.",
     "revenue": "Doanh thu",
     "cost": "Chi phí",
     "net": "Lãi (lỗ)",
@@ -148,6 +146,20 @@
     "none": "Không có trong kỳ này",
     "noDescription": "(không có diễn giải)",
     "provisional": "tạm tính",
-    "provisionalTitle": "Quy đổi theo tỷ giá mặc định hoặc nhập tay — đánh giá lại tỷ giá theo số VND thực tế đã thanh toán"
+    "provisionalTitle": "Tỷ giá mặc định hoặc nhập tay — cần đánh giá lại theo số VND thực tế"
+  },
+  "tips": {
+    "page": {
+      "subtitle": "Chỉ tính tiền đã thực thu, thực chi, từ bút toán đã duyệt và đã ghi sổ."
+    },
+    "tax": {
+      "intro": "Ghi nhận khoản chi chưa có nghĩa là được trừ khi tính thuế TNDN hay được khấu trừ thuế GTGT. Đây là kết quả rà soát đến nay."
+    },
+    "downloads": {
+      "description": "Sổ thu chi lọc theo ngày giao dịch; hóa đơn lọc theo ngày lập."
+    },
+    "detail": {
+      "provisionalNote": "Đang quy đổi theo tỷ giá mặc định hoặc nhập tay, chưa phải số VND thực tế đã thanh toán. Đánh giá lại tỷ giá để có số đúng."
+    }
   }
 }

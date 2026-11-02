@@ -11,6 +11,7 @@ import { PanelHead } from "@/components/wf/ledger-ui";
 
 export function ReportDownloads({ defaultFrom, defaultTo, className }: { defaultFrom: string; defaultTo: string; className?: string }) {
   const t = useTranslations("reports.downloads");
+  const tip = useTranslations("reports.tips");
   const [from, setFrom] = useState(defaultFrom);
   const [to, setTo] = useState(defaultTo);
 
@@ -23,8 +24,7 @@ export function ReportDownloads({ defaultFrom, defaultTo, className }: { default
 
   return (
     <Card className={className}>
-      <PanelHead title={<><FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />{t("title")}</>} />
-      <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("description")}</p>
+      <PanelHead title={<><FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />{t("title")}</>} info={tip("downloads.description")} />
       <CardContent className="grid gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">

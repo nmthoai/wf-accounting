@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,7 +118,6 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
 
       <Card>
         <PanelHead title={t("list.title")} count={projects.length} />
-        <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("list.description")}</p>
         <Table>
           <TableHeader>
             <TableRow>
@@ -125,7 +125,7 @@ export function ProjectsClient({ projects, clients, isAdmin, currency }: {
               <TableHead>{t("list.columns.client")}</TableHead>
               <TableHead className="text-right">{t("list.columns.income")}</TableHead>
               <TableHead className="text-right">{t("list.columns.expenses")}</TableHead>
-              <TableHead className="text-right">{t("list.columns.net")}</TableHead>
+              <TableHead className="text-right">{t("list.columns.net")} <InfoTip>{t("tips.list.description")}</InfoTip></TableHead>
               <TableHead><span className="sr-only">{t("list.columns.actions")}</span></TableHead>
             </TableRow>
           </TableHeader>

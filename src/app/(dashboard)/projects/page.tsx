@@ -36,7 +36,7 @@ export default async function ProjectsPage() {
 
   return (
     <div>
-      <PageHeader section="projects" title={t("page.title")} description={t("page.subtitle")} meta={view.currency === "USD" && <ViewNote view={view} />} />
+      <PageHeader section="projects" title={t("page.title")} meta={view.currency === "USD" && <ViewNote view={view} />} />
       <ProjectsClient projects={projectRows} clients={clients} isAdmin={session.user.role === "ADMIN"} currency={view.currency} />
     </div>
   );

@@ -123,7 +123,6 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-6">
           <PanelHead title={t("detail.outstandingTitle")} />
-          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("detail.outstandingDescription")}</p>
           <ProjectOutstanding items={outstanding} accounts={accounts} defaultUsdRate={usdRate} feeCategories={feeCategories} />
         </Card>
 

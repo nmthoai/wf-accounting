@@ -1,14 +1,13 @@
 {
   "page": {
     "title": "Tờ khai thuế",
-    "subtitle": "Các tờ khai thuế do kế toán dịch vụ nộp mỗi quý, lưu riêng với sổ sách và đối chiếu với sổ sách — để chủ doanh nghiệp tự nắm.",
+    "subtitle": "Tờ khai kế toán dịch vụ đã nộp mỗi quý, đối chiếu với sổ sách.",
     "ownerOnly": "Chỉ chủ doanh nghiệp xem được các tờ khai thuế.",
-    "disclaimer": "Sổ theo dõi nội bộ các tờ khai thuế do kế toán dịch vụ đã nộp, nhập từ bản PDF đã nộp. Tờ khai được lưu riêng, không liên kết với bút toán, hóa đơn hay tệp đính kèm của sổ sách, và chỉ dùng để đối chiếu với sổ sách theo từng quý nhằm thấy chênh lệch. Đây không phải tờ khai thuế và không phải xác nhận tuân thủ — các mục cần lưu ý là câu hỏi, không phải kết luận. Chỉ chủ doanh nghiệp xem được trang này.",
     "addReturn": "Ghi nhận tờ khai"
   },
   "stats": {
     "severityCount": "{count} {severity}",
-    "knownDetail": "Đã để riêng, kèm ghi chú của bạn",
+    "knownDetail": "Kèm ghi chú của bạn",
     "returns": "Tờ khai đã ghi nhận",
     "quarters": "{count, plural, other {# quý}} trong bảng",
     "difference": "Sổ sách − kê khai [34]",
@@ -16,22 +15,22 @@
   },
   "flags": {
     "title": "Cần lưu ý",
-    "subtitle": "Các chênh lệch giữa tờ khai và sổ sách. Khi đã xem xét, hãy đánh dấu đã biết kèm ghi chú — mục đó vẫn được lưu, để riêng bên dưới.",
+    "subtitle": "Chênh lệch giữa tờ khai và sổ sách. Đã xem xét thì đánh dấu đã biết.",
     "none": "Không có mục nào cần lưu ý.",
     "known": "Đã biết",
     "markKnown": "Đánh dấu đã biết",
     "reopen": "Mở lại",
-    "reopenConfirm": "Mở lại mục này? Ghi chú sẽ được gỡ khỏi mục; lịch sử thay đổi vẫn lưu lại.",
+    "reopenConfirm": "Mở lại mục này và gỡ ghi chú?",
     "editNote": "Sửa ghi chú",
     "noteTitle": "Đánh dấu đã biết",
     "noteLabel": "Ghi chú",
-    "notePlaceholder": "Lý do — ví dụ quyết định của bạn và khi nào xem lại",
+    "notePlaceholder": "Lý do, khi nào xem lại",
     "saveNote": "Lưu",
     "by": "{user}, {date}",
     "toastNoted": "Đã đánh dấu đã biết",
     "toastReopened": "Đã mở lại",
-    "changed": "Số liệu đã thay đổi so với lúc ghi chú (khi đó là {was}) — nên xem lại.",
-    "provisionalPart": "Trong số liệu sổ sách có {amount} theo tỷ giá tạm tính, nên chênh lệch còn có thể thay đổi.",
+    "changed": "Số liệu đã đổi so với lúc ghi chú (trước là {was}). Nên xem lại.",
+    "provisionalPart": "Có {amount} theo tỷ giá tạm tính, nên chênh lệch còn có thể thay đổi.",
     "recordIt": "Ghi nhận",
     "severity": {
       "high": "Quan trọng",
@@ -41,45 +40,45 @@
     "kinds": {
       "notDeclared": {
         "title": "{period}: doanh thu trên sổ sách cao hơn tờ khai GTGT {amount}",
-        "body": "Doanh thu ghi sổ trong {period} cao hơn tổng doanh thu kê khai tại chỉ tiêu [34] — xem phần Sổ sách và tờ khai bên dưới. Một phần có thể do thời điểm hoặc tỷ giá; phần còn lại có cần kê khai hay không là câu hỏi để bạn trao đổi với kế toán. (WF-TTT-03, WF-REC-04)"
+        "body": "Một phần có thể do thời điểm hoặc tỷ giá. Hỏi kế toán phần còn lại có cần kê khai không."
       },
       "declaredMore": {
         "title": "{period}: tờ khai GTGT kê khai nhiều hơn sổ sách {amount}",
-        "body": "Thường do tỷ giá (tờ khai dùng tỷ giá ngày lập hóa đơn) hoặc hóa đơn lập khác quý với ngày nhận tiền. Nên xem lại nếu chênh lệch tiếp tục tăng."
+        "body": "Thường do tỷ giá, hoặc hóa đơn lập khác quý với ngày nhận tiền. Xem lại nếu chênh lệch tiếp tục tăng."
       },
       "missingReturn": {
         "title": "{period}: chưa ghi nhận tờ khai {form}",
-        "body": "Nếu đã nộp, hãy ghi nhận kèm bản PDF để quý này đầy đủ. Nếu không phải nộp, hãy đánh dấu đã biết kèm ghi chú."
+        "body": "Nếu đã nộp, ghi nhận kèm bản PDF. Nếu không phải nộp, đánh dấu đã biết."
       },
       "creditChain": {
         "title": "{period}: chỉ tiêu [22] không khớp số chuyển sang từ quý trước",
-        "body": "Chỉ tiêu [22] kỳ này là {actual}, nhưng quý trước chuyển sang {expected} tại chỉ tiêu [43]. Nhập nhầm, còn tờ khai bổ sung chưa ghi nhận, hay chênh lệch đã được điều chỉnh qua [37]/[38]?"
+        "body": "[22] kỳ này là {actual}, nhưng quý trước chuyển sang {expected} tại [43]. Nhập nhầm, chưa ghi nhận tờ khai bổ sung, hay đã điều chỉnh qua [37]/[38]?"
       },
       "math": {
         "title": "{form} {period}: chỉ tiêu [{code}] không khớp công thức",
-        "body": "Theo công thức trên tờ khai là {expected}; đang ghi nhận {actual}. Đối chiếu lại với bản PDF đã nộp."
+        "body": "Theo công thức là {expected}, không phải {actual}. Đối chiếu với bản PDF đã nộp."
       },
       "bhxhNoStaff": {
         "title": "{period}: có đóng BHXH nhưng tờ khai TNCN ghi 0 người lao động",
-        "body": "Các khoản đóng BHXH qua ngân hàng trong quý: {amount}. Tờ khai 05/KK-TNCN ghi 0 người lao động — ai đang được đóng bảo hiểm, và có trả lương không? (WF-TTT-05)"
+        "body": "Đã đóng BHXH trong quý: {amount}, nhưng 05/KK-TNCN ghi 0 người lao động. Ai đang được đóng bảo hiểm, có trả lương không?"
       },
       "bhxhMonthMissing": {
         "title": "{month}: chưa thấy khoản đóng BHXH",
-        "body": "BHXH đóng hằng tháng, nhưng sao kê ngân hàng đã nhập chưa có khoản đóng BHXH cho {month}. Nếu đã đóng, hãy nhập sao kê tháng đó; nếu chưa, hãy hỏi kế toán — đóng chậm có thể bị tính lãi. (WF-TTT-05)"
+        "body": "Sao kê đã nhập chưa có khoản đóng BHXH cho {month}. Nếu đã đóng, nhập sao kê tháng đó. Nếu chưa, hỏi kế toán — đóng chậm có thể bị tính lãi."
       },
       "filedLate": {
         "title": "{form} {period}: nộp sau hạn",
-        "body": "Nộp sau hạn nộp ghi nhận tại đây ({date}) {days, plural, other {# ngày}}. Có khả năng bị phạt nộp chậm không? Kế toán sẽ nắm rõ."
+        "body": "Nộp chậm {days, plural, other {# ngày}} (hạn {date}). Hỏi kế toán về khả năng bị phạt nộp chậm."
       },
       "notFiled": {
         "title": "{form} {period}: hạn nộp {date}, chưa ghi nhận đã nộp",
-        "body": "Hạn nộp ghi nhận tại đây đã qua {days, plural, other {# ngày}} nhưng chưa có ngày nộp. Nếu đã nộp, hãy thêm ngày nộp và bản PDF; nếu chưa, hãy hỏi kế toán."
+        "body": "Đã quá hạn {days, plural, other {# ngày}}. Nếu đã nộp, thêm ngày nộp và bản PDF. Nếu chưa, hỏi kế toán."
       }
     }
   },
   "returns": {
     "title": "Tờ khai theo quý",
-    "subtitle": "Các chỉ tiêu chính của lần nộp mới nhất mỗi quý. Mở tờ khai để xem đầy đủ chỉ tiêu và tệp đính kèm.",
+    "subtitle": "Chỉ tiêu chính của lần nộp mới nhất mỗi quý. Mở tờ khai để xem đủ chỉ tiêu và tệp.",
     "quarter": "Quý",
     "sales": "Doanh thu",
     "purchases": "Mua vào",
@@ -100,15 +99,14 @@
   },
   "compare": {
     "title": "Sổ sách và tờ khai",
-    "subtitle": "Doanh thu ghi sổ trong quý (khoản thu đã duyệt hoặc đã ghi sổ, quy đổi VND) so với tổng doanh thu kê khai tại chỉ tiêu [34]. Lãi tiền gửi ngân hàng là doanh thu hoạt động tài chính, không phải doanh thu bán hàng: không tính vào doanh thu trên sổ sách và được hiển thị riêng. Chỉ so sánh số tổng — không bút toán nào được liên kết với tờ khai.",
+    "subtitle": "Doanh thu trên sổ sách mỗi quý so với doanh thu kê khai tại [34].",
     "books": "Doanh thu trên sổ sách",
     "declared": "Đã kê khai [34]",
     "difference": "Chênh lệch",
     "outside": "trong đó ngoài ngân hàng",
     "provisional": "theo tỷ giá tạm tính",
     "interest": "lãi tiền gửi, không tính vào doanh thu",
-    "none": "Ghi nhận một tờ khai GTGT để đối chiếu với sổ sách.",
-    "note": "Chênh lệch chỉ được hiển thị, không bù trừ. Sổ sách theo cơ sở tiền và tỷ giá từng bút toán; tờ khai theo ngày lập và tỷ giá trên hóa đơn."
+    "none": "Ghi nhận một tờ khai GTGT để đối chiếu với sổ sách."
   },
   "forms": {
     "gtgt": "01/GTGT — Tờ khai thuế GTGT",
@@ -125,22 +123,22 @@
     "supplementHint": "0 nếu là tờ khai lần đầu",
     "filedDate": "Ngày nộp",
     "dueDate": "Hạn nộp",
-    "dueHint": "Theo thông báo của kế toán dịch vụ",
+    "dueHint": "Theo kế toán dịch vụ",
     "template": "Mẫu theo",
     "submissionRef": "Mã giao dịch nộp",
     "submissionRefPlaceholder": "ví dụ L00…",
     "preparedBy": "Người lập",
     "figures": "Số liệu theo tờ khai đã nộp",
-    "figuresHint": "Nhập số nguyên đồng (hoặc số người), không có phần thập phân; để trống nếu bằng 0. Riêng chỉ tiêu [36] có thể âm — nhập trong ngoặc đơn hoặc có dấu trừ.",
+    "figuresHint": "Nhập số nguyên; để trống là 0. Chỉ [36] được âm (ghi trong ngoặc hoặc có dấu trừ).",
     "valueColumn": "Giá trị HHDV (chưa có thuế GTGT)",
     "vatColumn": "Thuế GTGT",
     "notes": "Ghi chú",
-    "files": "Tệp: bản PDF đã nộp, tệp XML, bảng kê của kế toán",
-    "filesHint": "PDF, XML, Excel, ZIP hoặc ảnh. Chỉ lưu kèm tờ khai; chỉ chủ doanh nghiệp mở được.",
+    "files": "Tệp (PDF đã nộp, XML, bảng kê)",
+    "filesHint": "PDF, XML, Excel, ZIP hoặc ảnh. Chỉ chủ doanh nghiệp mở được.",
     "delete": "Xóa",
-    "deleteConfirm": "Xóa tờ khai {form} kỳ {period}? Tệp đính kèm cũng bị xóa; lịch sử thay đổi vẫn lưu lại.",
+    "deleteConfirm": "Xóa tờ khai {form} kỳ {period} cùng tệp đính kèm? Không thể hoàn tác.",
     "removeFile": "Xóa {name}",
-    "removeFileConfirm": "Xóa tệp {name}? Tệp sẽ bị xóa vĩnh viễn; lịch sử thay đổi vẫn ghi lại.",
+    "removeFileConfirm": "Xóa tệp {name}? Không thể hoàn tác.",
     "submitAdd": "Lưu tờ khai"
   },
   "lines": {
@@ -204,11 +202,20 @@
     "form": "Chọn mẫu tờ khai.",
     "period": "Nhập năm và quý.",
     "template": "Mẫu tờ khai không hợp lệ.",
-    "supplement": "Lần bổ sung từ 0 (lần đầu) đến 20.",
+    "supplement": "Lần bổ sung phải từ 0 đến 20.",
     "figure": "Chỉ tiêu [{code}]: chỉ nhập số nguyên (chỉ [36] được âm).",
     "duplicate": "Đã có tờ khai {form} kỳ {period} với lần bổ sung này.",
     "gone": "Bản ghi không còn — tải lại trang.",
     "noteRequired": "Hãy ghi chú ngắn.",
     "fileType": "{name}: chỉ nhận tệp PDF, XML, Excel, ZIP hoặc ảnh."
+  },
+  "tips": {
+    "page": {
+      "disclaimer": "Sổ theo dõi tờ khai đã nộp, nhập từ bản PDF. Mục cần lưu ý là câu hỏi cho kế toán, không phải kết luận."
+    },
+    "compare": {
+      "subtitle": "Sổ sách tính các khoản thu đã duyệt hoặc đã ghi sổ, quy đổi VND. Lãi tiền gửi là doanh thu hoạt động tài chính (TK 515), không phải doanh thu bán hàng, nên tách cột riêng.",
+      "note": "Sổ sách theo ngày thu tiền và tỷ giá từng bút toán; tờ khai theo ngày lập và tỷ giá trên hóa đơn. Chênh lệch chỉ hiển thị, không bù trừ."
+    }
   }
 }

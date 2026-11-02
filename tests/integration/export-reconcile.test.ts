@@ -46,7 +46,7 @@ test("each entry shows the bank line it is reconciled to and its ID; an unmatche
   assert.equal(byDesc("hosting")["Bank line"], "");
   assert.equal(byDesc("hosting")["Entry ID"], hosting.id);
   // The totals rows stay as they were — blank in the new columns.
-  const total = rows.find((r) => r.Type === "TOTAL Expense")!;
+  const total = rows.find((r) => r.Type === "Total expense")!;
   assert.deepEqual([total["Bank line"], total["Entry ID"], total["Amount (VND)"]], ["", "", 250725]);
 });
 

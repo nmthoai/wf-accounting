@@ -335,7 +335,7 @@ export async function editTransaction(id: string, formData: FormData) {
       await record(changes, me.name, tx);
     });
   } catch (e) {
-    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText(id, t("status.posted")) };
+    if (e instanceof ChangedMeanwhile) return { success: false, message: await changedText(id, t("errors.postedMeanwhile")) };
     throw e;
   }
   await refreshInvoiceStatus(await invoicesOf([id, ...(partner ? [partner.id] : [])]));

@@ -8,6 +8,7 @@ import { intlLocale } from "@/i18n/config";
 import { getTranslations, getLocale } from "next-intl/server";
 import { fmtDate } from "@/lib/format";
 import { PageHeader } from "@/components/wf/page-header";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Chip, PanelHead } from "@/components/wf/ledger-ui";
 
 export default async function ProfilePage() {
@@ -33,7 +34,7 @@ export default async function ProfilePage() {
 
   return (
     <div>
-      <PageHeader kicker={tc("header.profile")} title={t("page.title")} description={t("page.subtitle")} />
+      <PageHeader kicker={tc("header.profile")} title={t("page.title")} />
 
       <div className="grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-6">
@@ -47,7 +48,7 @@ export default async function ProfilePage() {
         <Card className="lg:col-span-6">
           <PanelHead title={t("currency.title")} />
           <CardContent className="grid gap-4">
-            <p className="text-[14.5px] text-muted-foreground">{t("currency.description", { rate })}</p>
+            <p className="text-[14.5px] text-muted-foreground">{t("currency.description")} <InfoTip>{t("tips.currency.description", { rate })}</InfoTip></p>
             <CurrencyForm current={user.displayCurrency} />
           </CardContent>
         </Card>

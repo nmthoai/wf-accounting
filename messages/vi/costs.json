@@ -1,7 +1,7 @@
 {
   "page": {
     "title": "Bảng kê chi phí",
-    "subtitle": "Dịch vụ đám mây và chi phí do chủ DN chi hộ — chờ đến khi được rà soát, sau đó hạch toán vào sổ một lần duy nhất"
+    "subtitle": "Dịch vụ đám mây và chi phí chủ DN chi hộ"
   },
   "payer": {
     "COMPANY": "Công ty",
@@ -21,11 +21,10 @@
   },
   "summary": {
     "pendingTitle": "Chờ hạch toán",
-    "pendingNote": "{count} chứng từ — mới là chứng từ, chưa phải khoản chi",
+    "pendingNote": "{count, plural, other {# chứng từ}}",
     "owedTitle": "Phải trả chủ DN",
-    "owedNote": "Chi phí chủ DN đã chi hộ, chưa được hoàn trả",
-    "renewalsTitle": "Gia hạn trong 30 ngày tới",
-    "renewalsNote": "Theo các ngày gia hạn đã ghi nhận"
+    "owedNote": "Chưa hoàn trả",
+    "renewalsTitle": "Gia hạn trong 30 ngày tới"
   },
   "views": {
     "label": "Chế độ xem",
@@ -42,9 +41,8 @@
     "paidBy": "Người thanh toán: {payer}",
     "payerUnknown": "Chưa xác định người thanh toán",
     "renews": "gia hạn ngày {date}",
-    "toLedgerTitle": "Rà soát và hạch toán vào sổ (chỉ một lần)",
     "toLedger": "Hạch toán",
-    "expense": "Khoản chi",
+    "expense": "Xem khoản chi",
     "dismissTitle": "Không phải chi phí công ty",
     "dismissPrompt": "Vì sao đây không phải chi phí công ty?",
     "reopenTitle": "Chuyển lại chờ hạch toán",
@@ -62,8 +60,8 @@
     "couldNotLink": "Không thể liên kết."
   },
   "form": {
-    "addTitle": "Thêm chứng từ vào bảng kê",
-    "locked": "Đã hạch toán — thông tin trên chứng từ giữ nguyên như đã ghi nhận; các trường rà soát vẫn có thể thay đổi.",
+    "addTitle": "Thêm chứng từ",
+    "locked": "Đã hạch toán — chỉ sửa được các trường rà soát.",
     "provider": "Nhà cung cấp dịch vụ",
     "providerPlaceholder": "Ví dụ: Google Workspace, OpenAI, Contabo",
     "receiptDate": "Ngày chứng từ",
@@ -89,7 +87,7 @@
   "duplicates": {
     "intro": "Đã có trên sổ? Các khoản chi sau có vẻ là cùng một khoản thanh toán:",
     "link": "Liên kết",
-    "otherwise": "Nếu không, điền biểu mẫu bên dưới để hạch toán thành khoản chi mới."
+    "otherwise": "Nếu không, nhập bên dưới để hạch toán thành khoản chi mới."
   },
   "errors": {
     "providerRequired": "Nhà cung cấp dịch vụ là ai?",
@@ -99,14 +97,22 @@
     "periodReversed": "Kỳ dịch vụ có ngày kết thúc trước ngày bắt đầu.",
     "duplicate": "Đã có trong bảng kê: {provider} {ref}.",
     "reasonRequired": "Nhập lý do.",
-    "onlyPendingDismiss": "Chỉ chứng từ đang chờ hạch toán mới có thể đánh dấu không phải chi phí công ty.",
+    "onlyPendingDismiss": "Chứng từ này không còn chờ hạch toán.",
     "ledgerItemsNoDelete": "Không thể xóa chứng từ đã hạch toán.",
-    "onlyPendingLink": "Chỉ chứng từ đang chờ hạch toán mới có thể liên kết.",
+    "onlyPendingLink": "Chứng từ này không còn chờ hạch toán.",
     "chooseExpense": "Chọn một khoản chi.",
     "expenseReversed": "Khoản chi này đã bị đảo — hãy liên kết bút toán điều chỉnh tương ứng.",
-    "expenseTaken": "Khoản chi này đã được tạo từ một chứng từ khác trong bảng kê.",
-    "itemTaken": "Chứng từ này trong bảng kê đã có trên sổ thu chi hoặc đã được đánh dấu không phải chi phí công ty.",
+    "expenseTaken": "Khoản chi này đã liên kết với chứng từ khác.",
+    "itemTaken": "Chứng từ này đã hạch toán hoặc đã đánh dấu không phải CP công ty.",
     "itemGone": "Chứng từ này không còn trong bảng kê.",
-    "expenseRejected": "Khoản chi đó đã bị từ chối — hãy liên kết chứng từ sau khi khoản chi được sửa và gửi lại."
+    "expenseRejected": "Khoản chi đó đã bị từ chối — sửa và gửi lại rồi mới liên kết."
+  },
+  "tips": {
+    "page": {
+      "subtitle": "Mỗi chứng từ chờ ở đây đến khi rà soát xong, rồi hạch toán vào sổ một lần."
+    },
+    "summary": {
+      "pendingNote": "Mới là chứng từ, chưa phải khoản chi cho đến khi hạch toán vào sổ."
+    }
   }
 }

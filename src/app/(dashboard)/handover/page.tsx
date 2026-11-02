@@ -57,6 +57,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
         section="handover"
         title={t("page.title")}
         description={t("page.subtitle", { month: label })}
+        info={t("tips.page.subtitle")}
         actions={<MonthPicker month={month} basePath="/handover" max={currentMonth()} />}
       />
 
@@ -84,8 +85,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-5 lg:self-start">
-          <PanelHead title={t("page.send.title")} />
-          <p className="border-b border-border px-5 py-3 text-[14.5px] text-muted-foreground">{t("page.send.description")}</p>
+          <PanelHead title={t("page.send.title")} info={t("tips.page.send.description")} />
           <ol className="wf-rows">
             {checks.map((c, i) => (
               <li key={c.text} className="p-0!">

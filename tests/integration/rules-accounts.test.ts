@@ -95,10 +95,10 @@ test("money in can't become an expense, nor money out income", async () => {
 
   const r1 = await classify(inn.id, { type: "EXPENSE", categoryId: S.expense.id });
   assert.equal(r1.success, false);
-  assert.match(r1.message ?? "", /came into the account.*can't be an expense/i);
+  assert.match(r1.message ?? "", /came in.*can't be an expense/i);
   const r2 = await classify(out.id, { type: "INCOME", categoryId: interest.id });
   assert.equal(r2.success, false);
-  assert.match(r2.message ?? "", /went out of the account.*can't be income/i);
+  assert.match(r2.message ?? "", /went out.*can't be income/i);
   assert.equal((await row(inn.id)).type, "OTHER_IN");
 });
 
@@ -180,7 +180,7 @@ test("a loan with movements keeps its currency, but its lender and notes can cha
 
   const res = await A.updateLoan(loan.id, fd({ lender: "Bank A", currency: "USD" }));
   assert.equal(res.success, false);
-  assert.match(res.message ?? "", /1 movement is recorded against this loan, so its currency stays VND/);
+  assert.match(res.message ?? "", /1 movement uses this loan, so its currency stays VND/);
 
   assert.equal((await A.updateLoan(loan.id, fd({ lender: "Bank A (renamed)", currency: "VND", notes: "12 months" }))).success, true);
   const now = await S.prisma.loan.findUniqueOrThrow({ where: { id: loan.id } });
@@ -200,7 +200,7 @@ test("a loan is deleted only while no movement uses it, and the refusal says how
   }
   const res = await A.deleteLoan(used.id);
   assert.equal(res.success, false);
-  assert.match(res.message ?? "", /2 movements are recorded against it/);
+  assert.match(res.message ?? "", /2 movements use this loan/);
   assert.equal(await S.prisma.loan.count({ where: { id: used.id } }), 1);
   assert.equal(await S.prisma.transaction.count({ where: { loanId: used.id } }), 2);
 });
@@ -222,7 +222,7 @@ test("a loan used by a movement recorded meanwhile is not deleted", async () => 
   const res = await A.deleteLoan(loan.id).finally(() => { delegate.count = original; });
   assert.ok(calls > 0);
   assert.equal(res.success, false);
-  assert.match(res.message ?? "", /1 movement is recorded against it/);
+  assert.match(res.message ?? "", /1 movement uses this loan/);
   assert.equal(await S.prisma.loan.count({ where: { id: loan.id } }), 1);
 });
 
@@ -243,7 +243,7 @@ test("bank, cash and term-deposit accounts refuse a negative opening balance; ow
   for (const type of ["BANK", "CASH", "TERM_DEPOSIT"]) {
     const res = await A.saveAccount(null, fd({ name: `Negative ${type}`, type, currency: "VND", openingBalance: -1 }));
     assert.equal(res.success, false, type);
-    assert.match(res.message ?? "", /can't have a negative opening balance — enter 0 or more/);
+    assert.match(res.message ?? "", /can't have a negative opening balance\. Only an owner account can\./);
     assert.equal(await S.prisma.account.count({ where: { name: `Negative ${type}` } }), 0);
   }
   assert.equal((await A.saveAccount(null, fd({ name: "Zero bank", type: "BANK", currency: "VND", openingBalance: 0 }))).success, true);

@@ -71,10 +71,10 @@
   },
   "session": {
     "endedTitle": "Bạn đã bị đăng xuất",
-    "endedBody": "Phiên đăng nhập đã kết thúc nên thao tác này chưa được lưu. Nội dung bạn nhập vẫn còn ở đây — hãy đăng nhập lại ở một thẻ mới, rồi quay lại và lưu.",
+    "endedBody": "Phiên đăng nhập đã hết nên chưa lưu được. Nội dung vẫn còn — đăng nhập lại ở thẻ mới rồi quay lại lưu.",
     "signIn": "Đăng nhập",
     "unreachableTitle": "Không kết nối được với ứng dụng",
-    "unreachableBody": "Thao tác này chưa được lưu — mất kết nối mạng hoặc máy chủ đang gặp sự cố. Nội dung bạn nhập vẫn còn ở đây; hãy kiểm tra kết nối rồi thử lại."
+    "unreachableBody": "Chưa lưu — mất mạng hoặc máy chủ đang lỗi. Nội dung vẫn còn; kiểm tra kết nối rồi thử lại."
   },
   "type": {
     "INCOME": "Thu",
@@ -142,14 +142,14 @@
       "unknownDoc": "Tình trạng chứng từ không xác định.",
       "unknownStatus": "Tình trạng rà soát không xác định.",
       "vatTooHigh": "Tiền thuế GTGT phải nhỏ hơn số tiền của bút toán.",
-      "confirmPurpose": "Xác nhận khoản chi phục vụ SXKD trước khi đánh dấu là được trừ hoặc thuế GTGT là được khấu trừ.",
-      "needBasis": "Chưa có hóa đơn hoặc biên lai — ghi chú rà soát cần nêu căn cứ để kế toán dịch vụ tính khoản chi này vào chi phí được trừ.",
+      "confirmPurpose": "Xác nhận khoản chi phục vụ SXKD trước khi chọn được trừ hoặc được khấu trừ thuế GTGT.",
+      "needBasis": "Chưa có hóa đơn hoặc biên lai — ghi căn cứ được trừ của kế toán vào ghi chú rà soát.",
       "vatNeedsInvoice": "Thuế GTGT đầu vào chỉ được khấu trừ khi đã có hóa đơn.",
       "vatAmountMissing": "Nhập tiền thuế GTGT ghi trên hóa đơn."
     }
   },
   "upload": {
-    "tooBig": "Mỗi lần lưu chỉ được đính kèm tối đa {max} MB — các tệp này có tổng dung lượng {mb} MB. Hãy chia nhỏ và lưu làm nhiều lần."
+    "tooBig": "Các tệp nặng {mb} MB, mỗi lần lưu tối đa {max} MB. Hãy lưu ít tệp hơn mỗi lần."
   },
   "theme": {
     "label": "Giao diện",
@@ -160,6 +160,7 @@
   },
   "view": {
     "usdNote": "Xem bằng USD · {rate} ₫/USD",
-    "usdHint": "Khoản ghi bằng USD giữ đúng số USD; số tiền VND quy đổi theo tỷ giá hiện tại trong Cài đặt ({rate} ₫/USD), chỉ là số ước tính. Đổi lại trong Hồ sơ."
-  }
+    "usdHint": "Bút toán USD giữ đúng số USD. Số tiền VND được quy đổi theo {rate} ₫/USD, chỉ là ước tính. Đổi tiền tệ hiển thị trong Hồ sơ."
+  },
+  "moreInfo": "Thêm thông tin"
 }

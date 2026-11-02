@@ -1,11 +1,11 @@
 {
   "page": {
-    "title": "Invoices & Bills",
+    "title": "Invoices & bills",
     "subtitle": "What clients owe you, and what you owe vendors"
   },
   "summary": {
-    "owedToYou": "Owed to you (AR)",
-    "youOwe": "You owe (AP)",
+    "owedToYou": "Owed to you",
+    "youOwe": "You owe",
     "overdue": "{amount} overdue",
     "nothingOverdue": "Nothing overdue",
     "viewTotal": "≈ {amount} in total"
@@ -13,7 +13,7 @@
   "filter": {
     "all": "All",
     "openOnly": "Open only",
-    "label": "Which invoices and bills to show"
+    "label": "Show"
   },
   "newButton": "New invoice / bill",
   "label": {
@@ -22,7 +22,7 @@
   },
   "kind": {
     "PAYMENT": "Payment",
-    "FEE": "Evidenced fee"
+    "FEE": "Fee"
   },
   "form": {
     "direction": "Direction",
@@ -32,7 +32,7 @@
     "vendor": "Vendor",
     "selectClient": "Select client",
     "selectVendor": "Select vendor",
-    "addPartyFirst": "Add one in Clients & Vendors first",
+    "addPartyFirst": "Add one in Clients & vendors first",
     "project": "Project (optional)",
     "noProject": "No project",
     "category": "Category (optional)",
@@ -40,7 +40,7 @@
     "addIncomeCategories": "Add income categories in Settings",
     "addExpenseCategories": "Add expense categories in Settings",
     "numberPlaceholder": "from the PDF",
-    "noInvoiceYet": "No invoice yet — the number is added when it arrives",
+    "noInvoiceYet": "No invoice yet",
     "amount": "Amount",
     "currency": "Currency",
     "issueDate": "Issue date",
@@ -70,15 +70,15 @@
     "showLinked": "{count, plural, one {Show # linked entry} other {Show # linked entries}}",
     "hideLinked": "{count, plural, one {Hide # linked entry} other {Hide # linked entries}}",
     "draftBadge": "draft — counts once reviewed",
-    "unlinkTitle": "Unlink (the ledger entry stays)",
-    "emptyOpen": "Nothing outstanding — all settled.",
-    "empty": "Nothing yet. Add a receivable (client owes you) or a payable (you owe a vendor).",
+    "unlinkTitle": "Unlink",
+    "emptyOpen": "All settled.",
+    "empty": "No invoices or bills yet.",
     "feeDeducted": "Fee deducted {fee} · net {net} into {account}"
   },
   "confirm": {
-    "void": "Void this?",
+    "void": "Void this in the app? The e-invoice is not cancelled with the tax office.",
     "delete": "Delete this?",
-    "unlink": "Unlink this entry from the invoice? The ledger entry itself stays."
+    "unlink": "Unlink this entry? It stays in the ledger."
   },
   "toast": {
     "invoiceCreated": "Invoice created",
@@ -98,23 +98,23 @@
     "titleBill": "Edit bill",
     "invoiceNumber": "Invoice number",
     "billNumber": "Bill number",
-    "paidNote": "Payments already recorded keep their amounts; the paid status is recalculated against the new total.",
+    "paidNote": "Recorded payments don't change; paid status is rechecked against the new total.",
     "save": "Save changes"
   },
   "payment": {
     "record": "Record payment",
     "title": "Record payment — {label}",
-    "intro": "Adds the {direction, select, PAYABLE {payment} other {receipt}} to the ledger and links it to this {label}. Still open: <b>{amount}</b>",
+    "intro": "Still open: <b>{amount}</b>",
     "paidFrom": "Paid from",
     "receivedInto": "Received into",
     "amount": "Amount ({currency})",
     "date": "Payment date",
-    "shortfallNote": "Enter what actually arrived. Any shortfall stays open, shown as still to pay — it is never assumed to be a fee.",
+    "shortfallNote": "Enter what you actually paid. Any shortfall shows as still to pay.",
     "vndValue": "VND value",
     "rateBank": "Actual VND settled",
     "rateManual": "Enter rate",
     "rateDefault": "Default ({rate})",
-    "vndPlaceholder": "VND exactly as on the bank statement",
+    "vndPlaceholder": "As on the bank statement",
     "ratePlaceholder": "VND per {currency}",
     "descReceived": "Payment received",
     "descReceivedNo": "Payment received — Invoice {number}",
@@ -130,43 +130,43 @@
       "fee": "Fee deducted",
       "net": "Net received into {account}"
     },
-    "feeNote": "Enter the amount this payment settles. If the bank withheld a fee, enter it too: the invoice is settled by the full amount, the fee is booked as an expense, and the account receives only the net. Without a fee, a shortfall stays open — it is never assumed to be a fee.",
-    "evidence": "Evidence (bank advice, remittance) — optional",
+    "feeNote": "If the bank withheld a fee, enter it too.",
+    "evidence": "Evidence (optional)",
     "feeDesc": "Bank fee deducted from a receipt",
     "feeDescNo": "Bank fee deducted — Invoice {number}",
     "noFeeCategories": "No expense categories — add one in Settings"
   },
   "link": {
-    "trigger": "Link an existing ledger entry",
+    "trigger": "Link ledger entry",
     "kind": "Link as",
     "title": "Link a ledger entry — {label}",
-    "paymentHelp": "Use this when one bank transfer covers several invoices, or the payment is already in the ledger.",
-    "feeHelp": "Only a fee with evidence attached (bank advice or receipt) can explain part of an invoice. A difference on its own is never treated as a fee.",
+    "paymentHelp": "For a payment already in the ledger, or one transfer that covers several invoices.",
+    "feeHelp": "Choose a fee entry with evidence attached (bank advice or receipt).",
     "entry": "Ledger entry",
     "chooseEntry": "Choose an entry",
     "free": "{amount} free",
     "freeOf": "{amount} free of {total}",
     "noEvidence": "(no evidence attached)",
-    "noChoices": "No {type, select, INCOME {income} other {expense}} entries in {currency} with money left to allocate",
+    "noChoices": "No {type, select, INCOME {income} other {expense}} entries in {currency} left to allocate",
     "amount": "Amount for this {label} ({currency})",
     "submit": "Link"
   },
   "errors": {
     "invalidAmount": "Enter a valid amount.",
-    "datesRequired": "Issue and due dates are required.",
-    "dueBeforeIssue": "The due date ({due}) is before the issue date ({issue}) — pick a due date on or after {issue}.",
-    "clientRequired": "Choose the client this invoice is for — a receivable needs one. If the client isn't listed, add it in Clients & Vendors first.",
-    "vendorRequired": "Choose the vendor this bill is from — a bill needs one. If the vendor isn't listed, add it in Clients & Vendors first.",
+    "datesRequired": "Enter the issue and due dates.",
+    "dueBeforeIssue": "Due date ({due}) is before the issue date ({issue}) — pick {issue} or later.",
+    "clientRequired": "Choose a client. Not listed? Add it in Clients & vendors.",
+    "vendorRequired": "Choose a vendor. Not listed? Add it in Clients & vendors.",
     "partyGone": "That {direction, select, PAYABLE {vendor} other {client}} no longer exists — choose another one from the list.",
-    "invoiceNumberRequired": "Enter the invoice number — copy it from the invoice PDF. If the invoice hasn't been issued yet, tick “No invoice yet”.",
-    "billNumberRequired": "Enter the bill number — copy it from the vendor's invoice. If it hasn't arrived yet, tick “No invoice yet”.",
+    "invoiceNumberRequired": "Enter the invoice number, or tick “No invoice yet”.",
+    "billNumberRequired": "Enter the bill number, or tick “No invoice yet”.",
     "invoiceVoided": "This invoice is voided.",
-    "currencyLocked": "Payments are linked in the current currency — unlink them before changing it.",
+    "currencyLocked": "Unlink the payments first to change the currency.",
     "voided": "This is voided.",
     "nothingToSettle": "Nothing left to settle.",
     "enterAmountPaid": "Enter the amount paid.",
     "moreThanOpen": "That's more than what's still open ({amount}).",
-    "chooseAccount": "Choose the account the money moved through.",
+    "chooseAccount": "Choose an account.",
     "usdAccount": "{account} is a USD account — this invoice is in {currency}.",
     "enterAllocation": "Enter the amount to allocate.",
     "chooseEntry": "Choose a ledger entry.",
@@ -175,7 +175,7 @@
     "receivableNeedsIncome": "A receivable is settled by income.",
     "billNeedsExpense": "A bill is settled by an expense.",
     "feeMustBeExpense": "A fee must be an expense entry.",
-    "feeNeedsEvidence": "Attach the fee evidence (bank advice or receipt) to that ledger entry first.",
+    "feeNeedsEvidence": "Attach the fee evidence (bank advice or receipt) to that entry first.",
     "alreadyLinked": "Already linked to this invoice.",
     "notEnoughFree": "That entry only has {amount} left to allocate.",
     "postedUnlink": "That payment is posted — only the owner can unlink it.",
@@ -185,7 +185,19 @@
     "feeReceiptsOnly": "A deducted fee can only be entered for money received.",
     "feeTooLarge": "The fee must be less than the amount settled.",
     "feeCategory": "Choose the expense category for the fee.",
-    "withheldFee": "This bank fee was withheld from a receipt and is already part of that receipt's settlement.",
-    "entryRejected": "This entry was rejected — it can be linked once it is corrected and resubmitted."
+    "withheldFee": "This bank fee was withheld from a receipt and is already counted there.",
+    "entryRejected": "This entry was rejected — fix and resubmit it, then link."
+  },
+  "tips": {
+    "form": {
+      "noInvoiceYet": "No invoice number yet. Add it when the invoice arrives."
+    },
+    "payment": {
+      "intro": "Creates a new ledger entry. Already in the ledger? Use Link ledger entry instead.",
+      "feeNote": "The invoice gets the full amount, fee included, and the fee becomes an expense. Without a fee, any shortfall stays open."
+    },
+    "link": {
+      "feeHelp": "A difference without evidence is never treated as a fee."
+    }
   }
 }

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import type { Pnl, PnlSide } from "@/lib/pnl";
 import { fmtMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ import { Chip, PanelHead } from "@/components/wf/ledger-ui";
 
 export function PnlTable({ pnl, labels, currency, className }: { pnl: Pnl; labels: string[]; currency: string; className?: string }) {
   const t = useTranslations("reports.detail");
+  const tip = useTranslations("reports.tips");
   const [open, setOpen] = useState<Set<string>>(new Set());
   // VND written the way the rest of the app writes it (110.880.000), in either
   // language; USD in dollars and cents (1,234.50), as fmtMoney writes it.
@@ -108,7 +110,7 @@ export function PnlTable({ pnl, labels, currency, className }: { pnl: Pnl; label
       {pnl.provisional > 0 && currency === "VND" && (
         <p className="flex items-start gap-2 border-b border-border px-5 py-3 text-[14.5px] text-text-secondary">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden="true" />
-          {t("provisionalNote", { count: pnl.provisional })}
+          <span>{t("provisionalNote", { count: pnl.provisional })} <InfoTip>{tip("detail.provisionalNote")}</InfoTip></span>
         </p>
       )}
       <div className="overflow-x-auto">
